@@ -60,3 +60,63 @@ export interface Idea {
   content: string
   created_at: string
 }
+
+// Magazine types
+export interface Publisher {
+  id: number
+  name: string
+  description?: string
+  magazine_count: number
+  created_at: string
+}
+
+export interface Magazine {
+  id: number
+  publisher_id: number
+  publisher_name?: string
+  title: string
+  file_path: string
+  file_size?: number
+  page_count?: number
+  year?: number
+  issue?: string
+  cover_url?: string
+  created_at: string
+}
+
+export interface MagazineUnderline {
+  id: number
+  magazine_id: number
+  text: string
+  page_number: number
+  start_offset: number
+  end_offset: number
+  idea_count: number
+  created_at: string
+}
+
+export interface MagazineIdea {
+  id: number
+  underline_id: number
+  content: string
+  created_at: string
+}
+
+// Ebook types
+export interface EbookCategory {
+  id: number
+  name: string
+  description?: string
+  ebook_count: number
+  created_at: string
+}
+
+export interface Ebook {
+  id: number
+  category_id: number
+  title: string
+  file_path: string
+  file_size?: number
+  cover_url?: string
+  created_at: string
+}

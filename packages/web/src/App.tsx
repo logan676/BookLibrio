@@ -3,14 +3,24 @@ import BookCard from './components/BookCard'
 import BookDetail from './components/BookDetail'
 import PostDetail from './components/PostDetail'
 import AddBookModal from './components/AddBookModal'
+import MagazinesDashboard from './components/MagazinesDashboard'
+import EbooksDashboard from './components/EbooksDashboard'
 import type { Book, BlogPost } from './types'
 
-type View = 'home' | 'detail' | 'post'
+type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks'
 
 // Parse URL hash to get current route
 function parseHash(): { view: View; bookId?: number; postId?: number } {
   const hash = window.location.hash.slice(1) // Remove #
   if (!hash) return { view: 'home' }
+
+  if (hash === 'magazines') {
+    return { view: 'magazines' }
+  }
+
+  if (hash === 'ebooks') {
+    return { view: 'ebooks' }
+  }
 
   const parts = hash.split('/')
   if (parts[0] === 'book' && parts[1]) {
@@ -38,6 +48,14 @@ function App() {
 
     if (newView === 'home') {
       setView('home')
+      setSelectedBook(null)
+      setSelectedPost(null)
+    } else if (newView === 'magazines') {
+      setView('magazines')
+      setSelectedBook(null)
+      setSelectedPost(null)
+    } else if (newView === 'ebooks') {
+      setView('ebooks')
       setSelectedBook(null)
       setSelectedPost(null)
     } else if (newView === 'detail' && bookId) {
@@ -164,10 +182,46 @@ function App() {
     )
   }
 
+  if (view === 'magazines') {
+    return (
+      <div className="app">
+        <MagazinesDashboard onBack={() => window.location.hash = ''} />
+      </div>
+    )
+  }
+
+  if (view === 'ebooks') {
+    return (
+      <div className="app">
+        <EbooksDashboard onBack={() => window.location.hash = ''} />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <header>
         <h1>BookPost</h1>
+        <nav className="tab-nav">
+          <button
+            className={`tab-btn ${view === 'home' ? 'active' : ''}`}
+            onClick={() => window.location.hash = ''}
+          >
+            Books
+          </button>
+          <button
+            className={`tab-btn`}
+            onClick={() => window.location.hash = 'magazines'}
+          >
+            Magazines
+          </button>
+          <button
+            className={`tab-btn`}
+            onClick={() => window.location.hash = 'ebooks'}
+          >
+            Ebooks
+          </button>
+        </nav>
         <button className="add-btn" onClick={() => setShowAddModal(true)}>
           + Add Book
         </button>
