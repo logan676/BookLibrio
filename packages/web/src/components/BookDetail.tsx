@@ -6,9 +6,10 @@ interface BookDetailProps {
   book: Book
   onBack: () => void
   onPostCreated: () => void
+  onPostClick: (post: BlogPost) => void
 }
 
-function BookDetail({ book, onBack, onPostCreated }: BookDetailProps) {
+function BookDetail({ book, onBack, onPostCreated, onPostClick }: BookDetailProps) {
   const [showScanPage, setShowScanPage] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -93,7 +94,7 @@ function BookDetail({ book, onBack, onPostCreated }: BookDetailProps) {
 
       <div className="posts-section">
         <div className="posts-header">
-          <h2>Reading Notes</h2>
+          <h2>Reading Pages</h2>
           <button className="add-btn" onClick={() => setShowScanPage(true)}>
             + Scan Page
           </button>
@@ -101,7 +102,7 @@ function BookDetail({ book, onBack, onPostCreated }: BookDetailProps) {
 
         {book.posts && book.posts.length > 0 ? (
           book.posts.map((post: BlogPost) => (
-            <div key={post.id} className="post-card">
+            <div key={post.id} className="post-card" onClick={() => onPostClick(post)}>
               <h3>{post.title}</h3>
               <p>{post.content.substring(0, 150)}...</p>
               <div className="post-date">{formatDate(post.created_at)}</div>
@@ -109,7 +110,7 @@ function BookDetail({ book, onBack, onPostCreated }: BookDetailProps) {
           ))
         ) : (
           <div className="empty-state" style={{ padding: '3rem' }}>
-            <p>No reading notes yet. Scan a page to create your first note.</p>
+            <p>No reading pages yet. Scan a page to create your first one.</p>
           </div>
         )}
       </div>

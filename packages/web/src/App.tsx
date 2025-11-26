@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import BookCard from './components/BookCard'
 import BookDetail from './components/BookDetail'
+import PostDetail from './components/PostDetail'
 import AddBookModal from './components/AddBookModal'
-import type { Book } from './types'
+import type { Book, BlogPost } from './types'
 
-type View = 'home' | 'detail'
+type View = 'home' | 'detail' | 'post'
 
 function App() {
   const [view, setView] = useState<View>('home')
@@ -12,6 +13,7 @@ function App() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null)
 
   useEffect(() => {
     fetchBooks()
@@ -62,6 +64,27 @@ function App() {
     }
   }
 
+  const handlePostClick = (post: BlogPost) => {
+    setSelectedPost(post)
+    setView('post')
+  }
+
+  const handleBackToBook = () => {
+    setSelectedPost(null)
+    setView('detail')
+  }
+
+  if (view === 'post' && selectedPost) {
+    return (
+      <div className="app">
+        <PostDetail
+          post={selectedPost}
+          onBack={handleBackToBook}
+        />
+      </div>
+    )
+  }
+
   if (view === 'detail' && selectedBook) {
     return (
       <div className="app">
@@ -69,6 +92,7 @@ function App() {
           book={selectedBook}
           onBack={handleBack}
           onPostCreated={handlePostCreated}
+          onPostClick={handlePostClick}
         />
       </div>
     )
