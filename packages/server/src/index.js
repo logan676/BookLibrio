@@ -1183,14 +1183,53 @@ app.get('/api/magazines/generate-covers/progress', (req, res) => {
 
 const EBOOKS_BASE_PATH = '/Volumes/杂志/【基础版】英文书单2024年全年更新'
 
+// Extract ZIP file to same directory
+async function extractZipFile(zipPath) {
+  const zipDir = dirname(zipPath)
+  const zipName = basename(zipPath, '.zip')
+  const extractDir = join(zipDir, zipName)
+
+  // Check if already extracted
+  try {
+    const extractStat = await stat(extractDir)
+    if (extractStat.isDirectory()) {
+      return extractDir // Already extracted
+    }
+  } catch {
+    // Not extracted yet
+  }
+
+  try {
+    // Extract ZIP file using unzip command
+    await execAsync(`unzip -o -q "${zipPath}" -d "${extractDir}"`)
+    return extractDir
+  } catch (err) {
+    console.error(`Failed to extract ${zipPath}:`, err.message)
+    return null
+  }
+}
+
 // Recursive helper to scan for ebooks in a folder (handles nested directories)
 async function scanFolderForEbooks(folderPath, category, results, depth = 0) {
-  if (depth > 5) return // Prevent infinite recursion
+  if (depth > 8) return // Prevent infinite recursion (increased for ZIP extraction)
 
   try {
     const items = await readdir(folderPath)
 
-    // First, check if this folder or its Ebook subfolder contains PDFs
+    // First, extract any ZIP files found
+    for (const item of items) {
+      if (item.startsWith('.') || item.startsWith('._')) continue
+      if (item.toLowerCase().endsWith('.zip')) {
+        const zipPath = join(folderPath, item)
+        const extractedDir = await extractZipFile(zipPath)
+        if (extractedDir) {
+          // Scan the extracted directory
+          await scanFolderForEbooks(extractedDir, category, results, depth + 1)
+        }
+      }
+    }
+
+    // Check if this folder or its Ebook subfolder contains PDFs
     let searchPath = folderPath
     const ebookPath = join(folderPath, 'Ebook')
     try {
@@ -1224,14 +1263,17 @@ async function scanFolderForEbooks(folderPath, category, results, depth = 0) {
         // Skip invalid PDFs (less than 10KB)
         if (fileSize < 10240) continue
 
-        // Use parent folder name as title
+        // Use parent folder name as title, or PDF filename
         const folderName = basename(folderPath)
-        const title = folderName.replace(/^\d+\./, '').trim() || basename(file, '.pdf')
+        const pdfName = basename(file, '.pdf')
+        const title = (folderName && !folderName.match(/^\d+$/))
+          ? folderName.replace(/^\d+\./, '').trim()
+          : pdfName.replace(/^\d+\./, '').trim()
 
         db.prepare(`
           INSERT INTO ebooks (category_id, title, file_path, file_size)
           VALUES (?, ?, ?, ?)
-        `).run(category.id, title, filePath, fileSize)
+        `).run(category.id, title || pdfName, filePath, fileSize)
 
         results.ebooks++
       } catch (err) {
@@ -1244,6 +1286,7 @@ async function scanFolderForEbooks(folderPath, category, results, depth = 0) {
       for (const item of items) {
         if (item.startsWith('.')) continue
         if (item === 'Ebook') continue // Already checked
+        if (item.toLowerCase().endsWith('.zip')) continue // Already processed
 
         const itemPath = join(folderPath, item)
         try {
