@@ -42,3 +42,14 @@ export interface ScanResult {
   language?: string
   cover_url?: string
 }
+
+export interface Underline {
+  id: number
+  post_id: number
+  text: string
+  start_offset: number
+  end_offset: number
+  paragraph_index: number
+  idea?: string
+  created_at: string
+}

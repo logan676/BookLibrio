@@ -65,6 +65,18 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS underlines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    start_offset INTEGER NOT NULL,
+    end_offset INTEGER NOT NULL,
+    paragraph_index INTEGER NOT NULL,
+    idea TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE
+  );
 `)
 
 // Middleware
@@ -427,6 +439,68 @@ app.delete('/api/posts/:id', (req, res) => {
     res.status(204).send()
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete post' })
+  }
+})
+
+// Get underlines for a post
+app.get('/api/posts/:id/underlines', (req, res) => {
+  try {
+    const underlines = db.prepare('SELECT * FROM underlines WHERE post_id = ? ORDER BY paragraph_index, start_offset').all(req.params.id)
+    res.json(underlines)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch underlines' })
+  }
+})
+
+// Create underline
+app.post('/api/posts/:id/underlines', (req, res) => {
+  try {
+    const postId = req.params.id
+    const { text, start_offset, end_offset, paragraph_index } = req.body
+
+    if (!text || start_offset === undefined || end_offset === undefined || paragraph_index === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    const result = db.prepare(`
+      INSERT INTO underlines (post_id, text, start_offset, end_offset, paragraph_index)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(postId, text, start_offset, end_offset, paragraph_index)
+
+    const newUnderline = db.prepare('SELECT * FROM underlines WHERE id = ?').get(result.lastInsertRowid)
+    res.status(201).json(newUnderline)
+  } catch (error) {
+    console.error('Create underline error:', error)
+    res.status(500).json({ error: 'Failed to create underline' })
+  }
+})
+
+// Update underline idea
+app.patch('/api/underlines/:id', (req, res) => {
+  try {
+    const { idea } = req.body
+    db.prepare('UPDATE underlines SET idea = ? WHERE id = ?').run(idea, req.params.id)
+
+    const updated = db.prepare('SELECT * FROM underlines WHERE id = ?').get(req.params.id)
+    if (!updated) {
+      return res.status(404).json({ error: 'Underline not found' })
+    }
+    res.json(updated)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update underline' })
+  }
+})
+
+// Delete underline
+app.delete('/api/underlines/:id', (req, res) => {
+  try {
+    const result = db.prepare('DELETE FROM underlines WHERE id = ?').run(req.params.id)
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Underline not found' })
+    }
+    res.status(204).send()
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete underline' })
   }
 })
 
