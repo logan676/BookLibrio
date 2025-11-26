@@ -1183,6 +1183,84 @@ app.get('/api/magazines/generate-covers/progress', (req, res) => {
 
 const EBOOKS_BASE_PATH = '/Volumes/杂志/【基础版】英文书单2024年全年更新'
 
+// Recursive helper to scan for ebooks in a folder (handles nested directories)
+async function scanFolderForEbooks(folderPath, category, results, depth = 0) {
+  if (depth > 5) return // Prevent infinite recursion
+
+  try {
+    const items = await readdir(folderPath)
+
+    // First, check if this folder or its Ebook subfolder contains PDFs
+    let searchPath = folderPath
+    const ebookPath = join(folderPath, 'Ebook')
+    try {
+      const ebookStat = await stat(ebookPath)
+      if (ebookStat.isDirectory()) {
+        searchPath = ebookPath
+      }
+    } catch {
+      // Ebook folder doesn't exist
+    }
+
+    // Look for PDFs in the search path
+    const searchItems = await readdir(searchPath)
+    let foundPdf = false
+    for (const file of searchItems) {
+      if (file.startsWith('.') || file.startsWith('._')) continue
+      if (!file.toLowerCase().endsWith('.pdf')) continue
+      if (/\(\d+\)\.pdf$/i.test(file)) continue // Skip duplicates
+
+      foundPdf = true
+      const filePath = join(searchPath, file)
+
+      // Check if already imported
+      const existing = db.prepare('SELECT id FROM ebooks WHERE file_path = ?').get(filePath)
+      if (existing) continue
+
+      try {
+        const fileStat = await stat(filePath)
+        const fileSize = fileStat.size
+
+        // Skip invalid PDFs (less than 10KB)
+        if (fileSize < 10240) continue
+
+        // Use parent folder name as title
+        const folderName = basename(folderPath)
+        const title = folderName.replace(/^\d+\./, '').trim() || basename(file, '.pdf')
+
+        db.prepare(`
+          INSERT INTO ebooks (category_id, title, file_path, file_size)
+          VALUES (?, ?, ?, ?)
+        `).run(category.id, title, filePath, fileSize)
+
+        results.ebooks++
+      } catch (err) {
+        results.errors.push({ file: filePath, error: err.message })
+      }
+    }
+
+    // If no PDFs found, recurse into subdirectories
+    if (!foundPdf) {
+      for (const item of items) {
+        if (item.startsWith('.')) continue
+        if (item === 'Ebook') continue // Already checked
+
+        const itemPath = join(folderPath, item)
+        try {
+          const itemStat = await stat(itemPath)
+          if (itemStat.isDirectory()) {
+            await scanFolderForEbooks(itemPath, category, results, depth + 1)
+          }
+        } catch (err) {
+          // Skip inaccessible folders
+        }
+      }
+    }
+  } catch (err) {
+    results.errors.push({ path: folderPath, error: err.message })
+  }
+}
+
 // Scan ebooks directory
 async function scanEbooksDirectory() {
   const results = { categories: 0, ebooks: 0, errors: [] }
@@ -1208,68 +1286,8 @@ async function scanEbooksDirectory() {
         results.categories++
       }
 
-      // Scan book folders inside category
-      const bookDirs = await readdir(categoryPath)
-      for (const bookDir of bookDirs) {
-        if (bookDir.startsWith('.')) continue
-
-        const bookPath = join(categoryPath, bookDir)
-        const bookStat = await stat(bookPath)
-        if (!bookStat.isDirectory()) continue
-
-        // Extract book title (remove number prefix)
-        const bookTitle = bookDir.replace(/^\d+\./, '').trim()
-
-        // Look for PDF file in Ebook subfolder or directly in book folder
-        const ebookPath = join(bookPath, 'Ebook')
-        let searchPath = bookPath
-        try {
-          const ebookStat = await stat(ebookPath)
-          if (ebookStat.isDirectory()) {
-            searchPath = ebookPath
-          }
-        } catch {
-          // Ebook folder doesn't exist, search in bookPath
-        }
-
-        try {
-          const files = await readdir(searchPath)
-          for (const file of files) {
-            if (file.startsWith('.') || file.startsWith('._')) continue
-            if (!file.toLowerCase().endsWith('.pdf')) continue
-            // Skip duplicate files like filename(1).pdf
-            if (/\(\d+\)\.pdf$/i.test(file)) continue
-
-            const filePath = join(searchPath, file)
-
-            // Check if already imported
-            const existing = db.prepare('SELECT id FROM ebooks WHERE file_path = ?').get(filePath)
-            if (existing) continue
-
-            try {
-              const fileStat = await stat(filePath)
-              const fileSize = fileStat.size
-
-              // Skip invalid PDFs (less than 10KB)
-              if (fileSize < 10240) continue
-
-              // Use book folder name as title, or filename if different
-              const title = bookTitle || basename(file, '.pdf')
-
-              db.prepare(`
-                INSERT INTO ebooks (category_id, title, file_path, file_size)
-                VALUES (?, ?, ?, ?)
-              `).run(category.id, title, filePath, fileSize)
-
-              results.ebooks++
-            } catch (err) {
-              results.errors.push({ file: filePath, error: err.message })
-            }
-          }
-        } catch (err) {
-          results.errors.push({ path: searchPath, error: err.message })
-        }
-      }
+      // Recursively scan for ebooks in this category
+      await scanFolderForEbooks(categoryPath, category, results)
     }
   } catch (error) {
     results.errors.push({ path: EBOOKS_BASE_PATH, error: error.message })
