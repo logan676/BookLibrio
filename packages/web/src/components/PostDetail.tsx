@@ -35,21 +35,6 @@ function PostDetail({ post, onBack }: PostDetailProps) {
     }
   }, [bubble.visible, bubble.type])
 
-  // Close bubble when clicking outside
-  useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent) => {
-      if (bubble.visible && bubble.type !== 'idea') {
-        const target = e.target as HTMLElement
-        if (!target.closest('.underline-bubble')) {
-          setBubble({ visible: false, x: 0, y: 0, type: 'confirm' })
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', handleDocumentClick)
-    return () => document.removeEventListener('mousedown', handleDocumentClick)
-  }, [bubble.visible, bubble.type])
-
   const fetchUnderlines = async () => {
     try {
       const res = await fetch(`/api/posts/${post.id}/underlines`)
@@ -70,62 +55,68 @@ function PostDetail({ post, onBack }: PostDetailProps) {
     })
   }
 
-  const handleMouseUp = () => {
-    // Small delay to ensure selection is complete
-    setTimeout(() => {
-      const selection = window.getSelection()
-      if (!selection || selection.isCollapsed || !contentRef.current) {
-        return
+  const handleMouseUp = (e: React.MouseEvent) => {
+    // Ignore if clicking on the bubble
+    if ((e.target as HTMLElement).closest('.underline-bubble')) {
+      return
+    }
+
+    const selection = window.getSelection()
+    if (!selection || selection.isCollapsed || !contentRef.current) {
+      // No selection - close bubble if open
+      if (bubble.visible && bubble.type === 'confirm') {
+        setBubble({ visible: false, x: 0, y: 0, type: 'confirm' })
       }
+      return
+    }
 
-      const selectedText = selection.toString().trim()
-      if (!selectedText) return
+    const selectedText = selection.toString().trim()
+    if (!selectedText) return
 
-      const range = selection.getRangeAt(0)
-      const startContainer = range.startContainer
+    const range = selection.getRangeAt(0)
+    const startContainer = range.startContainer
 
-      // Find the paragraph element
-      let paragraphEl: HTMLElement | null = startContainer.parentElement
-      while (paragraphEl && paragraphEl.tagName !== 'P') {
-        paragraphEl = paragraphEl.parentElement
+    // Find the paragraph element
+    let paragraphEl: HTMLElement | null = startContainer.parentElement
+    while (paragraphEl && paragraphEl.tagName !== 'P') {
+      paragraphEl = paragraphEl.parentElement
+    }
+
+    if (!paragraphEl || !contentRef.current.contains(paragraphEl)) {
+      return
+    }
+
+    // Get paragraph index
+    const paragraphs = contentRef.current.querySelectorAll('p')
+    let paragraphIndex = -1
+    paragraphs.forEach((p, i) => {
+      if (p === paragraphEl || p.contains(paragraphEl!)) {
+        paragraphIndex = i
       }
+    })
 
-      if (!paragraphEl || !contentRef.current.contains(paragraphEl)) {
-        return
-      }
+    if (paragraphIndex === -1) return
 
-      // Get paragraph index
-      const paragraphs = contentRef.current.querySelectorAll('p')
-      let paragraphIndex = -1
-      paragraphs.forEach((p, i) => {
-        if (p === paragraphEl || p.contains(paragraphEl!)) {
-          paragraphIndex = i
-        }
-      })
+    // Calculate offset within paragraph text
+    const paragraphText = paragraphEl.textContent || ''
+    const startOffset = paragraphText.indexOf(selectedText)
+    if (startOffset === -1) return
+    const endOffset = startOffset + selectedText.length
 
-      if (paragraphIndex === -1) return
+    // Get position for bubble
+    const rect = range.getBoundingClientRect()
+    const contentRect = contentRef.current.getBoundingClientRect()
 
-      // Calculate offset within paragraph text
-      const paragraphText = paragraphEl.textContent || ''
-      const startOffset = paragraphText.indexOf(selectedText)
-      if (startOffset === -1) return
-      const endOffset = startOffset + selectedText.length
-
-      // Get position for bubble - use fixed positioning relative to viewport
-      const rect = range.getBoundingClientRect()
-      const contentRect = contentRef.current.getBoundingClientRect()
-
-      setBubble({
-        visible: true,
-        x: rect.left + rect.width / 2 - contentRect.left,
-        y: rect.top - contentRect.top - 10,
-        type: 'confirm',
-        selectedText,
-        paragraphIndex,
-        startOffset,
-        endOffset
-      })
-    }, 10)
+    setBubble({
+      visible: true,
+      x: rect.left + rect.width / 2 - contentRect.left,
+      y: rect.top - contentRect.top - 10,
+      type: 'confirm',
+      selectedText,
+      paragraphIndex,
+      startOffset,
+      endOffset
+    })
   }
 
   const handleConfirmUnderline = async () => {
@@ -206,7 +197,7 @@ function PostDetail({ post, onBack }: PostDetailProps) {
     const parts: React.ReactNode[] = []
     let lastIndex = 0
 
-    paragraphUnderlines.forEach((underline, i) => {
+    paragraphUnderlines.forEach((underline) => {
       // Add text before this underline
       if (underline.start_offset > lastIndex) {
         parts.push(text.slice(lastIndex, underline.start_offset))
@@ -263,50 +254,50 @@ function PostDetail({ post, onBack }: PostDetailProps) {
               {renderParagraphWithUnderlines(paragraph, index)}
             </p>
           ))}
-        </div>
 
-        {bubble.visible && (
-          <div
-            className="underline-bubble"
-            style={{
-              left: `${bubble.x}px`,
-              top: `${bubble.y}px`
-            }}
-          >
-            {bubble.type === 'confirm' ? (
-              <div className="bubble-confirm">
-                <button className="bubble-btn confirm" onClick={handleConfirmUnderline}>
-                  Underline
-                </button>
-                <button className="bubble-btn cancel" onClick={closeBubble}>
-                  ×
-                </button>
-              </div>
-            ) : (
-              <div className="bubble-idea">
-                <input
-                  ref={ideaInputRef}
-                  type="text"
-                  placeholder="Add your idea..."
-                  value={ideaText}
-                  onChange={e => setIdeaText(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleSaveIdea()
-                    if (e.key === 'Escape') handleSkipIdea()
-                  }}
-                />
-                <div className="bubble-actions">
-                  <button className="bubble-btn save" onClick={handleSaveIdea}>
-                    Save
+          {bubble.visible && (
+            <div
+              className="underline-bubble"
+              style={{
+                left: `${bubble.x}px`,
+                top: `${bubble.y}px`
+              }}
+            >
+              {bubble.type === 'confirm' ? (
+                <div className="bubble-confirm">
+                  <button className="bubble-btn confirm" onClick={handleConfirmUnderline}>
+                    Underline
                   </button>
-                  <button className="bubble-btn skip" onClick={handleSkipIdea}>
-                    Skip
+                  <button className="bubble-btn cancel" onClick={closeBubble}>
+                    ×
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              ) : (
+                <div className="bubble-idea">
+                  <input
+                    ref={ideaInputRef}
+                    type="text"
+                    placeholder="Add your idea..."
+                    value={ideaText}
+                    onChange={e => setIdeaText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleSaveIdea()
+                      if (e.key === 'Escape') handleSkipIdea()
+                    }}
+                  />
+                  <div className="bubble-actions">
+                    <button className="bubble-btn save" onClick={handleSaveIdea}>
+                      Save
+                    </button>
+                    <button className="bubble-btn skip" onClick={handleSkipIdea}>
+                      Skip
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </article>
     </div>
   )
