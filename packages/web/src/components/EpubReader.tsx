@@ -17,6 +17,17 @@ interface TocItem {
 }
 
 type Theme = 'light' | 'sepia' | 'dark'
+type FontFamily = 'new-york' | 'san-francisco' | 'georgia' | 'palatino' | 'roboto' | 'arial' | 'times-new-roman'
+
+const fontFamilies: Record<FontFamily, string> = {
+  'new-york': '"New York", "Iowan Old Style", Georgia, serif',
+  'san-francisco': '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
+  'georgia': 'Georgia, serif',
+  'palatino': '"Palatino Linotype", "Book Antiqua", Palatino, serif',
+  'roboto': 'Roboto, "Helvetica Neue", Arial, sans-serif',
+  'arial': 'Arial, Helvetica, sans-serif',
+  'times-new-roman': '"Times New Roman", Times, serif'
+}
 
 export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const { token, user } = useAuth()
@@ -25,11 +36,14 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const [currentLocation, setCurrentLocation] = useState<string>('')
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [atStart, setAtStart] = useState(false)
+  const [atEnd, setAtEnd] = useState(false)
   const [progress, setProgress] = useState(0)
   const [toc, setToc] = useState<TocItem[]>([])
   const [showToc, setShowToc] = useState(false)
   const [currentChapter, setCurrentChapter] = useState('')
-  const [fontSize, setFontSize] = useState(150)
+  const [fontSize, setFontSize] = useState(200)
+  const [fontFamily, setFontFamily] = useState<FontFamily>('new-york')
   const [theme, setTheme] = useState<Theme>('light')
   const [isFullscreen, setIsFullscreen] = useState(false)
 
@@ -58,6 +72,8 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   useEffect(() => {
     if (!viewerRef.current) return
 
+    let cancelled = false
+
     const initBook = async () => {
       try {
         setLoading(true)
@@ -67,9 +83,16 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         // Clean up previous instance
         if (renditionRef.current) {
           renditionRef.current.destroy()
+          renditionRef.current = null
         }
         if (bookRef.current) {
           bookRef.current.destroy()
+          bookRef.current = null
+        }
+
+        // Clear the viewer element
+        if (viewerRef.current) {
+          viewerRef.current.innerHTML = ''
         }
 
         // Fetch EPUB as ArrayBuffer first (epub.js needs binary data)
@@ -83,6 +106,9 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         const arrayBuffer = await response.arrayBuffer()
         console.log('EpubReader: EPUB downloaded, size:', arrayBuffer.byteLength)
 
+        // Check if cancelled during fetch
+        if (cancelled) return
+
         // Create new book instance from ArrayBuffer
         const book = ePub(arrayBuffer)
         bookRef.current = book
@@ -92,18 +118,32 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         await book.ready
         console.log('EpubReader: Book is ready!')
 
+        if (cancelled) return
+
         // Get table of contents
         const navigation = await book.loaded.navigation
         const tocItems = flattenToc(navigation.toc)
         setToc(tocItems)
 
+        if (cancelled || !viewerRef.current) return
+
         // Create rendition with two-page spread
-        const rendition = book.renderTo(viewerRef.current!, {
-          width: '100%',
-          height: '100%',
+        // Wait a frame for the container to have proper dimensions
+        await new Promise(resolve => requestAnimationFrame(resolve))
+
+        if (cancelled || !viewerRef.current) return
+
+        const viewerEl = viewerRef.current
+        const viewerWidth = viewerEl.clientWidth || 800
+        const viewerHeight = viewerEl.clientHeight || 600
+        console.log('Viewer dimensions:', viewerWidth, viewerHeight)
+
+        const rendition = book.renderTo(viewerEl, {
+          width: viewerWidth,
+          height: viewerHeight,
           spread: 'always',
           flow: 'paginated',
-          minSpreadWidth: 900
+          allowScriptedContent: true
         })
         renditionRef.current = rendition
 
@@ -113,8 +153,9 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         rendition.themes.register('dark', themes.dark)
         rendition.themes.select(theme)
 
-        // Set initial font size
+        // Set initial font size and font family
         rendition.themes.fontSize(`${fontSize}%`)
+        rendition.themes.font(fontFamilies[fontFamily])
 
         // Display book
         if (initialCfi) {
@@ -135,6 +176,10 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         rendition.on('relocated', (location: any) => {
           const currentLoc = location.start.cfi
           setCurrentLocation(currentLoc)
+
+          // Update start/end status from epub.js location data
+          setAtStart(location.atStart === true)
+          setAtEnd(location.atEnd === true)
 
           // Update progress
           if (book.locations.length()) {
@@ -171,11 +216,17 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
     initBook()
 
     return () => {
+      cancelled = true
       if (renditionRef.current) {
         renditionRef.current.destroy()
+        renditionRef.current = null
       }
       if (bookRef.current) {
         bookRef.current.destroy()
+        bookRef.current = null
+      }
+      if (viewerRef.current) {
+        viewerRef.current.innerHTML = ''
       }
     }
   }, [ebook.id])
@@ -193,6 +244,13 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
       renditionRef.current.themes.fontSize(`${fontSize}%`)
     }
   }, [fontSize])
+
+  // Update font family
+  useEffect(() => {
+    if (renditionRef.current) {
+      renditionRef.current.themes.font(fontFamilies[fontFamily])
+    }
+  }, [fontFamily])
 
   // Flatten TOC structure
   const flattenToc = (items: NavItem[], level = 0): TocItem[] => {
@@ -218,12 +276,29 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   }
 
   // Navigation functions
-  const nextPage = useCallback(() => {
-    renditionRef.current?.next()
+  const nextPage = useCallback(async () => {
+    const rendition = renditionRef.current
+    console.log('nextPage called, rendition:', !!rendition, 'manager:', !!rendition?.manager)
+    if (rendition) {
+      console.log('currentLocation:', rendition.currentLocation())
+      try {
+        await rendition.next()
+        console.log('after next, currentLocation:', rendition.currentLocation())
+      } catch (err) {
+        console.error('next() error:', err)
+      }
+    }
   }, [])
 
-  const prevPage = useCallback(() => {
-    renditionRef.current?.prev()
+  const prevPage = useCallback(async () => {
+    console.log('prevPage called, rendition:', !!renditionRef.current)
+    if (renditionRef.current && renditionRef.current.manager) {
+      try {
+        await renditionRef.current.prev()
+      } catch (err) {
+        console.error('prev() error:', err)
+      }
+    }
   }, [])
 
   const goToLocation = useCallback((href: string) => {
@@ -320,8 +395,8 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   }
 
   // Font size controls
-  const increaseFontSize = () => setFontSize(prev => Math.min(prev + 10, 200))
-  const decreaseFontSize = () => setFontSize(prev => Math.max(prev - 10, 50))
+  const increaseFontSize = () => setFontSize(prev => Math.min(prev + 20, 300))
+  const decreaseFontSize = () => setFontSize(prev => Math.max(prev - 20, 100))
 
   // Get theme class for container
   const getThemeClass = () => {
@@ -367,6 +442,21 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
             <button onClick={decreaseFontSize} title="Decrease font size">A-</button>
             <button onClick={increaseFontSize} title="Increase font size">A+</button>
           </div>
+
+          <select
+            className="font-family-select"
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value as FontFamily)}
+            title="Font family"
+          >
+            <option value="new-york">New York</option>
+            <option value="san-francisco">San Francisco</option>
+            <option value="georgia">Georgia</option>
+            <option value="palatino">Palatino</option>
+            <option value="roboto">Roboto</option>
+            <option value="arial">Arial</option>
+            <option value="times-new-roman">Times New Roman</option>
+          </select>
 
           <div className="theme-controls">
             <button
@@ -425,7 +515,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
           <button
             className="nav-btn nav-prev"
             onClick={prevPage}
-            disabled={currentPage <= 0}
+            disabled={atStart}
             title="Previous page"
           >
             &#8249;
@@ -444,7 +534,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
           <button
             className="nav-btn nav-next"
             onClick={nextPage}
-            disabled={currentPage >= totalPages - 1}
+            disabled={atEnd}
             title="Next page"
           >
             &#8250;
