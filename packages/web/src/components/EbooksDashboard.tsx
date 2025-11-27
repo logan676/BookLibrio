@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useI18n } from '../i18n'
+import EbookReader from './EbookReader'
 import type { EbookCategory, Ebook } from '../types'
 
 export default function EbooksDashboard() {
@@ -7,6 +8,7 @@ export default function EbooksDashboard() {
   const [categories, setCategories] = useState<EbookCategory[]>([])
   const [selectedCategory, setSelectedCategory] = useState<EbookCategory | null>(null)
   const [ebooks, setEbooks] = useState<Ebook[]>([])
+  const [selectedEbook, setSelectedEbook] = useState<Ebook | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -56,6 +58,14 @@ export default function EbooksDashboard() {
     setSearchTerm('')
   }
 
+  const handleEbookClick = (ebook: Ebook) => {
+    setSelectedEbook(ebook)
+  }
+
+  const handleBackFromReader = () => {
+    setSelectedEbook(null)
+  }
+
   const handleSearch = (term: string) => {
     setSearchTerm(term)
     if (selectedCategory) {
@@ -67,6 +77,11 @@ export default function EbooksDashboard() {
     if (!bytes) return 'Unknown'
     const mb = bytes / (1024 * 1024)
     return `${mb.toFixed(1)} MB`
+  }
+
+  // Show ebook reader
+  if (selectedEbook) {
+    return <EbookReader ebook={selectedEbook} onBack={handleBackFromReader} />
   }
 
   // Show ebooks for selected category
@@ -98,7 +113,7 @@ export default function EbooksDashboard() {
             <div
               key={ebook.id}
               className="magazine-card"
-              onClick={() => window.open(`/api/ebooks/${ebook.id}/file`, '_blank')}
+              onClick={() => handleEbookClick(ebook)}
             >
               <div className="magazine-cover">
                 {ebook.cover_url ? (
