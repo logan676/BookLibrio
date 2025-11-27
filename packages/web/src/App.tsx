@@ -161,6 +161,14 @@ function App() {
     fetchBooks()
   }
 
+  const handleAddBookClick = () => {
+    if (!user) {
+      setShowLoginModal(true)
+      return
+    }
+    setShowAddModal(true)
+  }
+
   const handlePostCreated = () => {
     if (selectedBook) {
       fetchBookDetail(selectedBook.id)
@@ -218,7 +226,7 @@ function App() {
     return (
       <div className="bookshelf-view">
         <div className="bookshelf-actions">
-          <button className="add-btn" onClick={() => setShowAddModal(true)}>
+          <button className="add-btn" onClick={handleAddBookClick}>
             {t.addBook}
           </button>
         </div>
@@ -229,7 +237,7 @@ function App() {
           <div className="empty-state">
             <h2>{t.yourCollectionEmpty}</h2>
             <p>{t.takePhotoToStart}</p>
-            <button className="add-btn" onClick={() => setShowAddModal(true)}>
+            <button className="add-btn" onClick={handleAddBookClick}>
               {t.addFirstBook}
             </button>
           </div>
