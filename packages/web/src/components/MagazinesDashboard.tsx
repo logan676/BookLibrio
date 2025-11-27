@@ -1,20 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import type { Publisher, Magazine } from '../types'
 import MagazineReader from './MagazineReader'
 
-interface CoverProgress {
-  running: boolean
-  total: number
-  processed: number
-  success: number
-  failed: number
-  skipped: number
-  current: string
+interface YearInfo {
+  year: number
+  count: number
 }
 
 interface Props {
   onBack: () => void
 }
+
+// Publishers that should show year subcategories first
+const YEAR_CATEGORIZED_PUBLISHERS = ['The Economist', 'MIT Technology Review']
 
 export default function MagazinesDashboard({ onBack }: Props) {
   const [publishers, setPublishers] = useState<Publisher[]>([])
@@ -26,9 +24,8 @@ export default function MagazinesDashboard({ onBack }: Props) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [years, setYears] = useState<number[]>([])
-  const [generatingCovers, setGeneratingCovers] = useState(false)
-  const [coverProgress, setCoverProgress] = useState<CoverProgress | null>(null)
-  const progressIntervalRef = useRef<number | null>(null)
+  const [yearInfos, setYearInfos] = useState<YearInfo[]>([])
+  const [showYearSelection, setShowYearSelection] = useState(false)
 
   useEffect(() => {
     fetchPublishers()
@@ -69,6 +66,29 @@ export default function MagazinesDashboard({ onBack }: Props) {
     }
   }
 
+  const fetchYearInfos = async (publisherId: number) => {
+    try {
+      const response = await fetch(`/api/magazines?publisher_id=${publisherId}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Count magazines per year
+        const yearCounts: { [key: number]: number } = {}
+        data.forEach((m: Magazine) => {
+          if (m.year) {
+            yearCounts[m.year] = (yearCounts[m.year] || 0) + 1
+          }
+        })
+        // Convert to array and sort by year descending
+        const infos: YearInfo[] = Object.entries(yearCounts)
+          .map(([year, count]) => ({ year: parseInt(year), count }))
+          .sort((a, b) => b.year - a.year)
+        setYearInfos(infos)
+      }
+    } catch (error) {
+      console.error('Failed to fetch year infos:', error)
+    }
+  }
+
   const handleScanMagazines = async () => {
     setScanning(true)
     try {
@@ -86,80 +106,27 @@ export default function MagazinesDashboard({ onBack }: Props) {
     }
   }
 
-  const pollCoverProgress = async () => {
-    try {
-      const response = await fetch('/api/magazines/generate-covers/progress')
-      if (response.ok) {
-        const progress = await response.json()
-        setCoverProgress(progress)
-
-        if (!progress.running) {
-          // Generation complete, stop polling
-          if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current)
-            progressIntervalRef.current = null
-          }
-          setGeneratingCovers(false)
-          // Refresh magazines to show new covers
-          if (selectedPublisher) {
-            fetchMagazines(selectedPublisher.id, selectedYear, searchTerm)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get cover progress:', error)
-    }
-  }
-
-  const handleGenerateCovers = async (publisherId?: number) => {
-    setGeneratingCovers(true)
-    setCoverProgress(null)
-
-    try {
-      const body: { publisher_id?: number } = {}
-      if (publisherId) {
-        body.publisher_id = publisherId
-      }
-
-      const response = await fetch('/api/magazines/generate-covers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-
-      if (response.ok) {
-        // Start polling for progress
-        progressIntervalRef.current = window.setInterval(pollCoverProgress, 2000)
-        pollCoverProgress() // Initial poll
-      } else {
-        const error = await response.json()
-        if (error.progress) {
-          setCoverProgress(error.progress)
-        }
-        alert(error.error || 'Failed to start cover generation')
-        setGeneratingCovers(false)
-      }
-    } catch (error) {
-      console.error('Failed to generate covers:', error)
-      alert('Failed to generate covers')
-      setGeneratingCovers(false)
-    }
-  }
-
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-    }
-  }, [])
-
   const handlePublisherClick = (publisher: Publisher) => {
     setSelectedPublisher(publisher)
     setSelectedYear(null)
     setSearchTerm('')
-    fetchMagazines(publisher.id)
+
+    // Check if this publisher should show year selection first
+    if (YEAR_CATEGORIZED_PUBLISHERS.includes(publisher.name)) {
+      setShowYearSelection(true)
+      fetchYearInfos(publisher.id)
+    } else {
+      setShowYearSelection(false)
+      fetchMagazines(publisher.id)
+    }
+  }
+
+  const handleYearClick = (year: number) => {
+    setSelectedYear(year)
+    setShowYearSelection(false)
+    if (selectedPublisher) {
+      fetchMagazines(selectedPublisher.id, year)
+    }
   }
 
   const handleBackToPublishers = () => {
@@ -167,6 +134,18 @@ export default function MagazinesDashboard({ onBack }: Props) {
     setMagazines([])
     setSelectedYear(null)
     setSearchTerm('')
+    setShowYearSelection(false)
+    setYearInfos([])
+  }
+
+  const handleBackToYears = () => {
+    setShowYearSelection(true)
+    setSelectedYear(null)
+    setMagazines([])
+    setSearchTerm('')
+    if (selectedPublisher) {
+      fetchYearInfos(selectedPublisher.id)
+    }
   }
 
   const handleYearChange = (year: number | null) => {
@@ -207,8 +186,8 @@ export default function MagazinesDashboard({ onBack }: Props) {
     )
   }
 
-  // Show magazines for selected publisher
-  if (selectedPublisher) {
+  // Show year selection for categorized publishers
+  if (selectedPublisher && showYearSelection) {
     return (
       <div className="magazines-dashboard">
         <header className="dashboard-header">
@@ -217,36 +196,46 @@ export default function MagazinesDashboard({ onBack }: Props) {
           </button>
           <h1>{selectedPublisher.name}</h1>
           <div className="header-actions">
-            <span className="magazine-count">{magazines.length} magazines</span>
-            <button
-              className="generate-covers-btn"
-              onClick={() => handleGenerateCovers(selectedPublisher.id)}
-              disabled={generatingCovers}
-            >
-              {generatingCovers ? 'Generating...' : 'Generate Covers'}
-            </button>
+            <span className="magazine-count">{selectedPublisher.magazine_count} magazines</span>
           </div>
         </header>
 
-        {coverProgress && (
-          <div className="cover-progress">
-            <div className="progress-info">
-              <span>Generating covers: {coverProgress.processed}/{coverProgress.total}</span>
-              {coverProgress.current && <span className="current-file">Current: {coverProgress.current}</span>}
+        <div className="year-grid">
+          {yearInfos.map((info) => (
+            <div
+              key={info.year}
+              className="year-card"
+              onClick={() => handleYearClick(info.year)}
+            >
+              <div className="year-number">{info.year}</div>
+              <div className="year-count">{info.count} issues</div>
             </div>
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${coverProgress.total > 0 ? (coverProgress.processed / coverProgress.total) * 100 : 0}%` }}
-              />
-            </div>
-            <div className="progress-stats">
-              <span className="success">Success: {coverProgress.success}</span>
-              <span className="failed">Failed: {coverProgress.failed}</span>
-              <span className="skipped">Skipped: {coverProgress.skipped}</span>
-            </div>
+          ))}
+        </div>
+
+        {yearInfos.length === 0 && (
+          <div className="empty-state">
+            <p>No magazines found</p>
           </div>
         )}
+      </div>
+    )
+  }
+
+  // Show magazines for selected publisher
+  if (selectedPublisher) {
+    const isYearCategorized = YEAR_CATEGORIZED_PUBLISHERS.includes(selectedPublisher.name)
+    return (
+      <div className="magazines-dashboard">
+        <header className="dashboard-header">
+          <button className="back-btn" onClick={isYearCategorized ? handleBackToYears : handleBackToPublishers}>
+            Back
+          </button>
+          <h1>{selectedPublisher.name}{selectedYear ? ` - ${selectedYear}` : ''}</h1>
+          <div className="header-actions">
+            <span className="magazine-count">{magazines.length} magazines</span>
+          </div>
+        </header>
 
         <div className="filters">
           <input
@@ -317,39 +306,12 @@ export default function MagazinesDashboard({ onBack }: Props) {
           <button
             className="scan-btn"
             onClick={handleScanMagazines}
-            disabled={scanning || generatingCovers}
+            disabled={scanning}
           >
             {scanning ? 'Scanning...' : 'Scan Folder'}
           </button>
-          <button
-            className="generate-covers-btn"
-            onClick={() => handleGenerateCovers()}
-            disabled={generatingCovers || scanning}
-          >
-            {generatingCovers ? 'Generating...' : 'Generate Covers'}
-          </button>
         </div>
       </header>
-
-      {coverProgress && (
-        <div className="cover-progress">
-          <div className="progress-info">
-            <span>Generating covers: {coverProgress.processed}/{coverProgress.total}</span>
-            {coverProgress.current && <span className="current-file">Current: {coverProgress.current}</span>}
-          </div>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${coverProgress.total > 0 ? (coverProgress.processed / coverProgress.total) * 100 : 0}%` }}
-            />
-          </div>
-          <div className="progress-stats">
-            <span className="success">Success: {coverProgress.success}</span>
-            <span className="failed">Failed: {coverProgress.failed}</span>
-            <span className="skipped">Skipped: {coverProgress.skipped}</span>
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="loading">Loading publishers...</div>
