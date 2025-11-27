@@ -3,8 +3,9 @@ import cors from 'cors'
 import Database from 'better-sqlite3'
 import { fileURLToPath } from 'url'
 import { dirname, join, basename, extname } from 'path'
-import { readdir, readFile, stat, unlink, createReadStream } from 'fs/promises'
-import { createReadStream as fsCreateReadStream } from 'fs'
+import { readdir, readFile, stat, unlink, writeFile, mkdir } from 'fs/promises'
+import { existsSync } from 'fs'
+import { createReadStream } from 'fs'
 import multer from 'multer'
 import { v2 as cloudinary } from 'cloudinary'
 import vision from '@google-cloud/vision'
@@ -228,6 +229,16 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES ebook_categories(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    file_path TEXT NOT NULL UNIQUE,
+    year INTEGER,
+    content_preview TEXT,
+    s3_key TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `)
 
 // Migration: Add s3_key column to existing tables if not exists
@@ -245,6 +256,9 @@ try {
 // Middleware
 app.use(cors())
 app.use(express.json())
+
+// Serve local cover images
+app.use('/api/covers', express.static(join(__dirname, '../covers')))
 
 // Helper: Upload image to Cloudinary
 async function uploadToCloudinary(buffer, folder = 'bookpost', publicId = null) {
@@ -266,31 +280,174 @@ async function uploadToCloudinary(buffer, folder = 'bookpost', publicId = null) 
   })
 }
 
+// Local covers directory
+const COVERS_DIR = join(__dirname, '../covers')
+const MAGAZINE_COVERS_DIR = join(COVERS_DIR, 'magazines')
+const EBOOK_COVERS_DIR = join(COVERS_DIR, 'ebooks')
+
+// Ensure covers directories exist
+async function ensureCoversDir() {
+  if (!existsSync(MAGAZINE_COVERS_DIR)) {
+    await mkdir(MAGAZINE_COVERS_DIR, { recursive: true })
+  }
+  if (!existsSync(EBOOK_COVERS_DIR)) {
+    await mkdir(EBOOK_COVERS_DIR, { recursive: true })
+  }
+}
+
 // Helper: Generate cover image from PDF first page using pdftoppm
-// magazineId is used as the unique public_id in Cloudinary to prevent duplicates
+// Saves locally instead of uploading to cloud
 async function generateCoverFromPdf(pdfPath, magazineId) {
   const tempOutputBase = `/tmp/cover_${Date.now()}_${Math.random().toString(36).substring(7)}`
-  const tempOutputFile = `${tempOutputBase}-1.jpg`
+  const tempOutputFile = `${tempOutputBase}-01.jpg`
+  const localCoverFile = join(MAGAZINE_COVERS_DIR, `${magazineId}.jpg`)
 
   try {
+    await ensureCoversDir()
+
     // Use pdftoppm to convert first page to JPEG
     // -f 1 -l 1: only first page, -jpeg: JPEG format, -r 150: 150 DPI resolution
     await execAsync(`pdftoppm -f 1 -l 1 -jpeg -r 150 "${pdfPath}" "${tempOutputBase}"`)
 
-    // Read the generated image
+    // Read the generated image and save to local covers directory
     const imageBuffer = await readFile(tempOutputFile)
-
-    // Upload to Cloudinary with magazine ID as public_id
-    // This ensures same magazine always gets same URL and overwrites on regeneration
-    const publicId = `magazine_${magazineId}`
-    const result = await uploadToCloudinary(imageBuffer, 'bookpost/magazine-covers', publicId)
+    await writeFile(localCoverFile, imageBuffer)
 
     // Clean up temp file
     await unlink(tempOutputFile).catch(() => {})
 
-    return result.secure_url
+    // Return local API URL
+    return `/api/covers/magazines/${magazineId}.jpg`
   } catch (error) {
     // Clean up temp file on error
+    await unlink(tempOutputFile).catch(() => {})
+    throw error
+  }
+}
+
+// Background cover generation - runs automatically on server startup
+let backgroundCoverGenRunning = false
+async function startBackgroundCoverGeneration() {
+  if (backgroundCoverGenRunning) {
+    console.log('[Cover Gen] Already running, skipping...')
+    return
+  }
+
+  backgroundCoverGenRunning = true
+  console.log('[Cover Gen] Starting background cover generation...')
+
+  try {
+    // Get all magazines without covers
+    const magazines = db.prepare(`
+      SELECT id, title, file_path FROM magazines
+      WHERE cover_url IS NULL OR cover_url = ''
+      ORDER BY id ASC
+    `).all()
+
+    // Get all ebooks without covers
+    const ebooks = db.prepare(`
+      SELECT id, title, file_path FROM ebooks
+      WHERE cover_url IS NULL OR cover_url = ''
+      ORDER BY id ASC
+    `).all()
+
+    const totalMagazines = magazines.length
+    const totalEbooks = ebooks.length
+
+    if (totalMagazines === 0 && totalEbooks === 0) {
+      console.log('[Cover Gen] All magazines and ebooks already have covers')
+      backgroundCoverGenRunning = false
+      return
+    }
+
+    console.log(`[Cover Gen] Found ${totalMagazines} magazines and ${totalEbooks} ebooks without covers`)
+
+    // Process magazines
+    if (totalMagazines > 0) {
+      console.log(`[Cover Gen] Processing magazines...`)
+      let success = 0
+      let failed = 0
+
+      for (let i = 0; i < magazines.length; i++) {
+        const magazine = magazines[i]
+
+        try {
+          if (!existsSync(magazine.file_path)) {
+            failed++
+            continue
+          }
+
+          const coverUrl = await generateCoverFromPdf(magazine.file_path, magazine.id)
+          db.prepare('UPDATE magazines SET cover_url = ? WHERE id = ?').run(coverUrl, magazine.id)
+          success++
+
+          if ((i + 1) % 50 === 0) {
+            console.log(`[Cover Gen] Magazines: ${i + 1}/${totalMagazines} (${success} success, ${failed} failed)`)
+          }
+        } catch (error) {
+          failed++
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      console.log(`[Cover Gen] Magazines completed: ${success} success, ${failed} failed`)
+    }
+
+    // Process ebooks
+    if (totalEbooks > 0) {
+      console.log(`[Cover Gen] Processing ebooks...`)
+      let success = 0
+      let failed = 0
+
+      for (let i = 0; i < ebooks.length; i++) {
+        const ebook = ebooks[i]
+
+        try {
+          if (!existsSync(ebook.file_path)) {
+            failed++
+            continue
+          }
+
+          const coverUrl = await generateEbookCover(ebook.file_path, ebook.id)
+          db.prepare('UPDATE ebooks SET cover_url = ? WHERE id = ?').run(coverUrl, ebook.id)
+          success++
+
+          if ((i + 1) % 50 === 0) {
+            console.log(`[Cover Gen] Ebooks: ${i + 1}/${totalEbooks} (${success} success, ${failed} failed)`)
+          }
+        } catch (error) {
+          failed++
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      console.log(`[Cover Gen] Ebooks completed: ${success} success, ${failed} failed`)
+    }
+
+    console.log(`[Cover Gen] All cover generation completed`)
+  } catch (error) {
+    console.error('[Cover Gen] Error:', error)
+  } finally {
+    backgroundCoverGenRunning = false
+  }
+}
+
+// Generate cover for a single ebook (needs to be declared before background function uses it)
+async function generateEbookCover(pdfPath, ebookId) {
+  const tempOutputBase = `/tmp/ebook_cover_${Date.now()}_${Math.random().toString(36).substring(7)}`
+  const tempOutputFile = `${tempOutputBase}-01.jpg`
+  const localCoverFile = join(EBOOK_COVERS_DIR, `${ebookId}.jpg`)
+
+  try {
+    await ensureCoversDir()
+    await execAsync(`pdftoppm -f 1 -l 1 -jpeg -r 150 "${pdfPath}" "${tempOutputBase}"`)
+    const imageBuffer = await readFile(tempOutputFile)
+    await writeFile(localCoverFile, imageBuffer)
+    await unlink(tempOutputFile).catch(() => {})
+    return `/api/covers/ebooks/${ebookId}.jpg`
+  } catch (error) {
     await unlink(tempOutputFile).catch(() => {})
     throw error
   }
@@ -802,6 +959,42 @@ app.delete('/api/underlines/:id', (req, res) => {
 // Magazine base path
 const MAGAZINE_BASE_PATH = '/Volumes/杂志/杂志/月报更新1'
 
+// Helper: Recursively find all PDF files in a directory
+async function findPdfsRecursively(dirPath, year = null, depth = 0) {
+  const pdfFiles = []
+
+  try {
+    const entries = await readdir(dirPath)
+    if (depth <= 2) console.log(`[SCAN] Scanning ${dirPath} (${entries.length} entries, depth ${depth})`)
+
+    for (const entry of entries) {
+      if (entry.startsWith('.')) continue
+
+      const entryPath = join(dirPath, entry)
+      const entryStat = await stat(entryPath)
+
+      if (entryStat.isDirectory()) {
+        // Try to extract year from subfolder name if not already set
+        const yearMatch = entry.match(/\d{4}/)
+        const subYear = yearMatch ? parseInt(yearMatch[0]) : year
+
+        // Recursively scan subdirectories
+        const subPdfs = await findPdfsRecursively(entryPath, subYear, depth + 1)
+        pdfFiles.push(...subPdfs)
+      } else if (entry.toLowerCase().endsWith('.pdf')) {
+        // Skip duplicate files like filename(1).pdf, filename(2).pdf, etc.
+        if (/\(\d+\)\.pdf$/i.test(entry)) continue
+
+        pdfFiles.push({ path: entryPath, year })
+      }
+    }
+  } catch (err) {
+    // Silently skip inaccessible directories
+  }
+
+  return pdfFiles
+}
+
 // Helper: Scan magazine directory and import PDFs
 async function scanMagazineDirectory(basePath) {
   const results = { publishers: 0, magazines: 0, errors: [] }
@@ -827,57 +1020,42 @@ async function scanMagazineDirectory(basePath) {
         results.publishers++
       }
 
-      // Scan year folders
-      const yearDirs = await readdir(publisherPath)
-      for (const yearDir of yearDirs) {
-        if (yearDir.startsWith('.')) continue
+      // Recursively find all PDFs in the publisher directory
+      const pdfFiles = await findPdfsRecursively(publisherPath)
+      console.log(`[SCAN] Publisher ${publisherName}: found ${pdfFiles.length} PDFs`)
 
-        const yearPath = join(publisherPath, yearDir)
-        const yearStat = await stat(yearPath)
-        if (!yearStat.isDirectory()) continue
+      let skippedExisting = 0
+      let skippedSmall = 0
+      for (const { path: filePath, year } of pdfFiles) {
+        // Check if already imported
+        const existing = db.prepare('SELECT id FROM magazines WHERE file_path = ?').get(filePath)
+        if (existing) { skippedExisting++; continue }
 
-        // Extract year from folder name
-        const yearMatch = yearDir.match(/\d{4}/)
-        const year = yearMatch ? parseInt(yearMatch[0]) : null
+        try {
+          const fileStat = await stat(filePath)
+          const fileSize = fileStat.size
 
-        // Scan PDF files
-        const files = await readdir(yearPath)
-        for (const file of files) {
-          if (file.startsWith('.') || !file.toLowerCase().endsWith('.pdf')) continue
-          // Skip duplicate files like filename(1).pdf, filename(2).pdf, etc.
-          if (/\(\d+\)\.pdf$/i.test(file)) continue
+          // Skip invalid PDFs (less than 10KB)
+          if (fileSize < 10240) { skippedSmall++; continue }
 
-          const filePath = join(yearPath, file)
+          // Parse title from filename
+          const title = basename(filePath, '.pdf')
 
-          // Check if already imported
-          const existing = db.prepare('SELECT id FROM magazines WHERE file_path = ?').get(filePath)
-          if (existing) continue
+          // Extract issue (e.g., "06.07" from "Bloomberg Markets Asia 06.07 2023.pdf")
+          const issueMatch = title.match(/(\d{1,2}[.\-]\d{1,2}|\w+\s\d{4}|Issue\s*\d+)/i)
+          const issue = issueMatch ? issueMatch[0] : null
 
-          try {
-            const fileStat = await stat(filePath)
-            const fileSize = fileStat.size
+          db.prepare(`
+            INSERT INTO magazines (publisher_id, title, file_path, file_size, year, issue)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(publisher.id, title, filePath, fileSize, year, issue)
 
-            // Skip invalid PDFs (less than 10KB)
-            if (fileSize < 10240) continue
-
-            // Parse title from filename
-            const title = basename(file, '.pdf')
-
-            // Extract issue (e.g., "06.07" from "Bloomberg Markets Asia 06.07 2023.pdf")
-            const issueMatch = title.match(/(\d{1,2}[.\-]\d{1,2}|\w+\s\d{4}|Issue\s*\d+)/i)
-            const issue = issueMatch ? issueMatch[0] : null
-
-            db.prepare(`
-              INSERT INTO magazines (publisher_id, title, file_path, file_size, year, issue)
-              VALUES (?, ?, ?, ?, ?, ?)
-            `).run(publisher.id, title, filePath, fileSize, year, issue)
-
-            results.magazines++
-          } catch (err) {
-            results.errors.push({ file: filePath, error: err.message })
-          }
+          results.magazines++
+        } catch (err) {
+          results.errors.push({ file: filePath, error: err.message })
         }
       }
+      console.log(`[SCAN] Publisher ${publisherName}: skipped ${skippedExisting} existing, ${skippedSmall} small (<10KB)`)
     }
   } catch (error) {
     results.errors.push({ path: basePath, error: error.message })
@@ -1506,24 +1684,6 @@ app.get('/api/ebooks/:id', (req, res) => {
   }
 })
 
-// Generate cover for a single ebook
-async function generateEbookCover(pdfPath, ebookId) {
-  const tempOutputBase = `/tmp/ebook_cover_${Date.now()}_${Math.random().toString(36).substring(7)}`
-  const tempOutputFile = `${tempOutputBase}-01.jpg`
-
-  try {
-    await execAsync(`pdftoppm -f 1 -l 1 -jpeg -r 150 "${pdfPath}" "${tempOutputBase}"`)
-    const imageBuffer = await readFile(tempOutputFile)
-    const publicId = `ebook_${ebookId}`
-    const result = await uploadToCloudinary(imageBuffer, 'bookpost/ebook-covers', publicId)
-    await unlink(tempOutputFile).catch(() => {})
-    return result.secure_url
-  } catch (error) {
-    await unlink(tempOutputFile).catch(() => {})
-    throw error
-  }
-}
-
 // Generate cover for single ebook
 app.post('/api/ebooks/:id/generate-cover', async (req, res) => {
   try {
@@ -1644,6 +1804,177 @@ app.get('/api/ebooks/:id/file', async (req, res) => {
   }
 })
 
+// ==================================
+// Notes API (Thinking feature)
+// ==================================
+
+const NOTES_FOLDER = process.env.NOTES_FOLDER || join(__dirname, '../../../../blog')
+
+// Get all notes with optional year filter
+app.get('/api/notes', (req, res) => {
+  try {
+    const { year, search } = req.query
+    let query = 'SELECT * FROM notes WHERE 1=1'
+    const params = []
+
+    if (year) {
+      query += ' AND year = ?'
+      params.push(parseInt(year))
+    }
+
+    if (search) {
+      query += ' AND (title LIKE ? OR content_preview LIKE ?)'
+      const searchTerm = `%${search}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    query += ' ORDER BY year DESC, title ASC'
+
+    const notes = db.prepare(query).all(...params)
+    res.json(notes)
+  } catch (error) {
+    console.error('Get notes error:', error)
+    res.status(500).json({ error: 'Failed to fetch notes' })
+  }
+})
+
+// Get years with note counts
+app.get('/api/notes/years', (req, res) => {
+  try {
+    const years = db.prepare(`
+      SELECT year, COUNT(*) as count
+      FROM notes
+      WHERE year IS NOT NULL
+      GROUP BY year
+      ORDER BY year DESC
+    `).all()
+    res.json(years)
+  } catch (error) {
+    console.error('Get note years error:', error)
+    res.status(500).json({ error: 'Failed to fetch note years' })
+  }
+})
+
+// Get a single note
+app.get('/api/notes/:id', (req, res) => {
+  try {
+    const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id)
+    if (!note) {
+      return res.status(404).json({ error: 'Note not found' })
+    }
+    res.json(note)
+  } catch (error) {
+    console.error('Get note error:', error)
+    res.status(500).json({ error: 'Failed to fetch note' })
+  }
+})
+
+// Scan notes from blog folder
+app.post('/api/notes/scan', async (req, res) => {
+  try {
+    console.log('Scanning notes from:', NOTES_FOLDER)
+    const insertNote = db.prepare(`
+      INSERT OR REPLACE INTO notes (title, file_path, year, content_preview)
+      VALUES (?, ?, ?, ?)
+    `)
+
+    let scanned = 0
+    let errors = 0
+
+    // Helper to extract year from content frontmatter, path or filename
+    function extractYear(filePath, content) {
+      // Try to extract year from Hexo frontmatter (date: 2012-02-12 08:56:00)
+      const dateMatch = content.match(/^date:\s*(\d{4})-\d{2}-\d{2}/m)
+      if (dateMatch) return parseInt(dateMatch[1])
+
+      // Try to match year from path like /2024/ or filename like 2024-01-01
+      const pathMatch = filePath.match(/\/(\d{4})\//)
+      if (pathMatch) return parseInt(pathMatch[1])
+
+      const filenameMatch = basename(filePath).match(/^(\d{4})-/)
+      if (filenameMatch) return parseInt(filenameMatch[1])
+
+      return null
+    }
+
+    // Recursively scan directory for markdown files
+    async function scanDir(dir) {
+      try {
+        const entries = await readdir(dir, { withFileTypes: true })
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name)
+
+          if (entry.isDirectory()) {
+            // Skip hidden directories and node_modules
+            if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
+              await scanDir(fullPath)
+            }
+          } else if (entry.name.endsWith('.md') && !entry.name.toLowerCase().includes('readme')) {
+            try {
+              const content = await readFile(fullPath, 'utf-8')
+              // Extract title from first line (# Title) or filename
+              let title = entry.name.replace(/\.md$/, '')
+              const titleMatch = content.match(/^#\s+(.+)$/m)
+              if (titleMatch) {
+                title = titleMatch[1]
+              }
+
+              // Clean up title - remove date prefix if present
+              title = title.replace(/^\d{4}-\d{2}-\d{2}-/, '')
+
+              // Get first 500 chars as preview (skip frontmatter and title)
+              let preview = content
+                .replace(/^---[\s\S]*?---/m, '') // Remove frontmatter
+                .replace(/^#\s+.+$/m, '')        // Remove title
+                .trim()
+                .substring(0, 500)
+
+              const year = extractYear(fullPath, content)
+
+              insertNote.run(title, fullPath, year, preview)
+              scanned++
+            } catch (err) {
+              console.error(`Error processing ${fullPath}:`, err.message)
+              errors++
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`Error scanning directory ${dir}:`, err.message)
+      }
+    }
+
+    await scanDir(NOTES_FOLDER)
+
+    console.log(`Notes scan complete: ${scanned} scanned, ${errors} errors`)
+    res.json({ scanned, errors })
+  } catch (error) {
+    console.error('Scan notes error:', error)
+    res.status(500).json({ error: 'Failed to scan notes' })
+  }
+})
+
+// Serve note content
+app.get('/api/notes/:id/content', async (req, res) => {
+  try {
+    const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id)
+    if (!note) {
+      return res.status(404).json({ error: 'Note not found' })
+    }
+
+    const content = await readFile(note.file_path, 'utf-8')
+    res.json({ ...note, content })
+  } catch (error) {
+    console.error('Get note content error:', error)
+    res.status(500).json({ error: 'Failed to fetch note content' })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`BookPost server running on http://localhost:${PORT}`)
+
+  // Start background cover generation after 5 seconds to allow server to fully initialize
+  setTimeout(() => {
+    startBackgroundCoverGeneration()
+  }, 5000)
 })

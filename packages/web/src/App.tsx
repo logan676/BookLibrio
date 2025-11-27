@@ -5,9 +5,10 @@ import PostDetail from './components/PostDetail'
 import AddBookModal from './components/AddBookModal'
 import MagazinesDashboard from './components/MagazinesDashboard'
 import EbooksDashboard from './components/EbooksDashboard'
+import ThinkingDashboard from './components/ThinkingDashboard'
 import type { Book, BlogPost } from './types'
 
-type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks'
+type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks' | 'thinking'
 
 // Parse URL hash to get current route
 function parseHash(): { view: View; bookId?: number; postId?: number } {
@@ -20,6 +21,10 @@ function parseHash(): { view: View; bookId?: number; postId?: number } {
 
   if (hash === 'ebooks') {
     return { view: 'ebooks' }
+  }
+
+  if (hash === 'thinking') {
+    return { view: 'thinking' }
   }
 
   const parts = hash.split('/')
@@ -56,6 +61,10 @@ function App() {
       setSelectedPost(null)
     } else if (newView === 'ebooks') {
       setView('ebooks')
+      setSelectedBook(null)
+      setSelectedPost(null)
+    } else if (newView === 'thinking') {
+      setView('thinking')
       setSelectedBook(null)
       setSelectedPost(null)
     } else if (newView === 'detail' && bookId) {
@@ -198,6 +207,14 @@ function App() {
     )
   }
 
+  if (view === 'thinking') {
+    return (
+      <div className="app">
+        <ThinkingDashboard onBack={() => window.location.hash = ''} />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <header>
@@ -220,6 +237,12 @@ function App() {
             onClick={() => window.location.hash = 'ebooks'}
           >
             Ebooks
+          </button>
+          <button
+            className={`tab-btn`}
+            onClick={() => window.location.hash = 'thinking'}
+          >
+            Thinking
           </button>
         </nav>
         <button className="add-btn" onClick={() => setShowAddModal(true)}>

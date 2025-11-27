@@ -120,3 +120,20 @@ export interface Ebook {
   cover_url?: string
   created_at: string
 }
+
+// Note types (Thinking feature)
+export interface Note {
+  id: number
+  title: string
+  file_path: string
+  year?: number
+  content_preview?: string
+  s3_key?: string
+  created_at: string
+  content?: string
+}
+
+export interface NoteYear {
+  year: number
+  count: number
+}
