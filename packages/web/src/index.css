@@ -2087,3 +2087,30 @@ header .header-actions {
   min-height: 400px;
   resize: vertical;
 }
+
+/* Fullscreen Button */
+.fullscreen-btn {
+  padding: 0.5rem 0.75rem;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.fullscreen-btn:hover {
+  background: var(--gray-200);
+}
+
+.magazine-reader.fullscreen {
+  background: var(--primary);
+}
+
+.magazine-reader.fullscreen .reader-header {
+  padding: 0.5rem 1rem;
+}
+
+.magazine-reader.fullscreen .pdf-panel {
+  height: calc(100vh - 50px);
+}
