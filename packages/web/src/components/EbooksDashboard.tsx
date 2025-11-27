@@ -1,15 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import type { EbookCategory, Ebook } from '../types'
-
-interface CoverProgress {
-  running: boolean
-  total: number
-  processed: number
-  success: number
-  failed: number
-  skipped: number
-  current: string
-}
 
 interface Props {
   onBack: () => void
@@ -22,9 +12,6 @@ export default function EbooksDashboard({ onBack }: Props) {
   const [loading, setLoading] = useState(true)
   const [scanning, setScanning] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [generatingCovers, setGeneratingCovers] = useState(false)
-  const [coverProgress, setCoverProgress] = useState<CoverProgress | null>(null)
-  const progressIntervalRef = useRef<number | null>(null)
 
   useEffect(() => {
     fetchCategories()
@@ -77,71 +64,6 @@ export default function EbooksDashboard({ onBack }: Props) {
     }
   }
 
-  const pollCoverProgress = async () => {
-    try {
-      const response = await fetch('/api/ebooks/generate-covers/progress')
-      if (response.ok) {
-        const progress = await response.json()
-        setCoverProgress(progress)
-
-        if (!progress.running) {
-          if (progressIntervalRef.current) {
-            clearInterval(progressIntervalRef.current)
-            progressIntervalRef.current = null
-          }
-          setGeneratingCovers(false)
-          if (selectedCategory) {
-            fetchEbooks(selectedCategory.id, searchTerm)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get cover progress:', error)
-    }
-  }
-
-  const handleGenerateCovers = async (categoryId?: number) => {
-    setGeneratingCovers(true)
-    setCoverProgress(null)
-
-    try {
-      const body: { category_id?: number } = {}
-      if (categoryId) {
-        body.category_id = categoryId
-      }
-
-      const response = await fetch('/api/ebooks/generate-covers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-
-      if (response.ok) {
-        progressIntervalRef.current = window.setInterval(pollCoverProgress, 2000)
-        pollCoverProgress()
-      } else {
-        const error = await response.json()
-        if (error.progress) {
-          setCoverProgress(error.progress)
-        }
-        alert(error.error || 'Failed to start cover generation')
-        setGeneratingCovers(false)
-      }
-    } catch (error) {
-      console.error('Failed to generate covers:', error)
-      alert('Failed to generate covers')
-      setGeneratingCovers(false)
-    }
-  }
-
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-      }
-    }
-  }, [])
-
   const handleCategoryClick = (category: EbookCategory) => {
     setSelectedCategory(category)
     setSearchTerm('')
@@ -178,35 +100,8 @@ export default function EbooksDashboard({ onBack }: Props) {
           <h1>{selectedCategory.name}</h1>
           <div className="header-actions">
             <span className="magazine-count">{ebooks.length} ebooks</span>
-            <button
-              className="generate-covers-btn"
-              onClick={() => handleGenerateCovers(selectedCategory.id)}
-              disabled={generatingCovers}
-            >
-              {generatingCovers ? 'Generating...' : 'Generate Covers'}
-            </button>
           </div>
         </header>
-
-        {coverProgress && (
-          <div className="cover-progress">
-            <div className="progress-info">
-              <span>Generating covers: {coverProgress.processed}/{coverProgress.total}</span>
-              {coverProgress.current && <span className="current-file">Current: {coverProgress.current}</span>}
-            </div>
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${coverProgress.total > 0 ? (coverProgress.processed / coverProgress.total) * 100 : 0}%` }}
-              />
-            </div>
-            <div className="progress-stats">
-              <span className="success">Success: {coverProgress.success}</span>
-              <span className="failed">Failed: {coverProgress.failed}</span>
-              <span className="skipped">Skipped: {coverProgress.skipped}</span>
-            </div>
-          </div>
-        )}
 
         <div className="filters">
           <input
@@ -265,39 +160,12 @@ export default function EbooksDashboard({ onBack }: Props) {
           <button
             className="scan-btn"
             onClick={handleScanEbooks}
-            disabled={scanning || generatingCovers}
+            disabled={scanning}
           >
             {scanning ? 'Scanning...' : 'Scan Folder'}
           </button>
-          <button
-            className="generate-covers-btn"
-            onClick={() => handleGenerateCovers()}
-            disabled={generatingCovers || scanning}
-          >
-            {generatingCovers ? 'Generating...' : 'Generate Covers'}
-          </button>
         </div>
       </header>
-
-      {coverProgress && (
-        <div className="cover-progress">
-          <div className="progress-info">
-            <span>Generating covers: {coverProgress.processed}/{coverProgress.total}</span>
-            {coverProgress.current && <span className="current-file">Current: {coverProgress.current}</span>}
-          </div>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${coverProgress.total > 0 ? (coverProgress.processed / coverProgress.total) * 100 : 0}%` }}
-            />
-          </div>
-          <div className="progress-stats">
-            <span className="success">Success: {coverProgress.success}</span>
-            <span className="failed">Failed: {coverProgress.failed}</span>
-            <span className="skipped">Skipped: {coverProgress.skipped}</span>
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="loading">Loading categories...</div>
