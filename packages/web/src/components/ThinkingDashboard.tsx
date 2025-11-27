@@ -306,7 +306,7 @@ export default function ThinkingDashboard() {
           <h2>{t.noNotesFound}</h2>
           <p>{t.startWritingHint}</p>
           <button className="add-btn" onClick={handleWriteClick}>
-            {t.writeNote}
+            {t.writeFirstNote}
           </button>
         </div>
       ) : (

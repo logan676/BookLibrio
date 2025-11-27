@@ -36,6 +36,7 @@ interface Translations {
   noNotesFound: string
   startWritingHint: string
   notesCount: string
+  writeFirstNote: string
   searchNotes: string
   notes: string
   writeNote: string
@@ -88,6 +89,7 @@ const en: Translations = {
   searchNotes: 'Search notes...',
   notes: 'notes',
   writeNote: '+ Write',
+  writeFirstNote: '+ Write Your First Thought',
   noteTitle: 'Title',
   noteContent: 'Content',
   save: 'Save',
@@ -135,6 +137,7 @@ const zh: Translations = {
   searchNotes: '搜索笔记...',
   notes: '篇笔记',
   writeNote: '+ 写笔记',
+  writeFirstNote: '+ 写下你的第一个想法',
   noteTitle: '标题',
   noteContent: '内容',
   save: '保存',
