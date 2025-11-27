@@ -81,6 +81,7 @@ export interface Magazine {
   year?: number
   issue?: string
   cover_url?: string
+  preprocessed?: number
   created_at: string
 }
 
@@ -117,6 +118,7 @@ export interface Ebook {
   title: string
   file_path: string
   file_size?: number
+  file_type?: 'epub' | 'pdf'
   cover_url?: string
   created_at: string
 }

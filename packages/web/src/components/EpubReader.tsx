@@ -386,15 +386,19 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   }, [])
 
   // Auto-hide controls after inactivity
+  const [isHoveringControls, setIsHoveringControls] = useState(false)
+
   useEffect(() => {
     let hideTimeout: ReturnType<typeof setTimeout>
 
     const showControlsTemporarily = () => {
       setShowControls(true)
       clearTimeout(hideTimeout)
-      hideTimeout = setTimeout(() => {
-        setShowControls(false)
-      }, 1500) // Hide after 1.5 seconds
+      if (!isHoveringControls) {
+        hideTimeout = setTimeout(() => {
+          setShowControls(false)
+        }, 1500) // Hide after 1.5 seconds
+      }
     }
 
     const handleMouseMove = () => {
@@ -410,7 +414,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
       document.removeEventListener('mousemove', handleMouseMove)
       clearTimeout(hideTimeout)
     }
-  }, [])
+  }, [isHoveringControls])
 
   // Resize handler - auto fill container on resize/fullscreen
   useEffect(() => {
@@ -542,10 +546,17 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
 
   return (
     <div className={`epub-reader ${getThemeClass()} ${isFullscreen ? 'fullscreen' : ''} ${showControls ? 'controls-visible' : ''}`} ref={containerRef}>
-      <header className={`epub-header ${showControls ? 'visible' : ''}`}>
+      <header
+        className={`epub-header ${showControls ? 'visible' : ''}`}
+        onMouseEnter={() => setIsHoveringControls(true)}
+        onMouseLeave={() => setIsHoveringControls(false)}
+      >
         <div className="header-left">
           <button className="toc-btn" onClick={() => setShowToc(!showToc)} title="Table of Contents (T)">
             &#9776;
+          </button>
+          <button className="back-btn" onClick={handleBack} title="Back">
+            Back
           </button>
         </div>
 
@@ -632,6 +643,8 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
           <button
             className={`nav-btn nav-prev ${showControls ? 'visible' : ''}`}
             onClick={prevPage}
+            onMouseEnter={() => setIsHoveringControls(true)}
+            onMouseLeave={() => setIsHoveringControls(false)}
             disabled={atStart}
             title="Previous page"
           >
@@ -651,6 +664,8 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
           <button
             className={`nav-btn nav-next ${showControls ? 'visible' : ''}`}
             onClick={nextPage}
+            onMouseEnter={() => setIsHoveringControls(true)}
+            onMouseLeave={() => setIsHoveringControls(false)}
             disabled={atEnd}
             title="Next page"
           >
@@ -659,7 +674,11 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         </div>
       </div>
 
-      <footer className={`epub-footer ${showControls ? 'visible' : ''}`}>
+      <footer
+        className={`epub-footer ${showControls ? 'visible' : ''}`}
+        onMouseEnter={() => setIsHoveringControls(true)}
+        onMouseLeave={() => setIsHoveringControls(false)}
+      >
         <div className="progress-info">
           <span>{progress}%</span>
           <span className="page-info">{currentPage + 1} / {totalPages}</span>

@@ -1323,6 +1323,29 @@ header .header-actions {
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--gray-200);
+  position: relative;
+}
+
+.file-type-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-type-badge.epub {
+  background: #10b981;
+  color: white;
+}
+
+.file-type-badge.pdf {
+  background: #ef4444;
+  color: white;
 }
 
 .magazine-cover img {
@@ -2582,10 +2605,40 @@ header .header-actions {
   width: 100%;
   height: 100%;
   max-width: 1200px;
+  /* Hardware acceleration for smoother flip animations */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  perspective: 1000px;
 }
 
 .flipbook {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  background: #fff;
+  /* Hardware acceleration for smoother animations */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* Hide the duplicate/ghost page element created by page-flip during animation */
+.flipbook .stf__block {
+  overflow: hidden;
+}
+
+/* The page-flip library creates extra elements - hide any overflow */
+.stf__parent {
+  overflow: hidden !important;
+}
+
+/* Hide the bottom layer ghost image during flip */
+.stf__item {
+  overflow: hidden;
+}
+
+/* Ensure flipping page doesn't show content bleeding through */
+.stf__page {
+  overflow: hidden;
   background: #fff;
 }
 
@@ -2593,13 +2646,24 @@ header .header-actions {
   background: #fff;
   position: relative;
   overflow: hidden;
+  /* Hardware acceleration to prevent flickering during flip */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .flipbook-page img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #f5f5f5;
+  background: #fff;
+  /* Prevent flickering during animation */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  /* Smooth image rendering */
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .flipbook-page .page-number {
@@ -2921,12 +2985,24 @@ header .header-actions {
 
 .epub-reader .back-btn,
 .epub-reader .toc-btn {
-  padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.875rem;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 0.75rem;
+  line-height: 32px;
+  box-sizing: border-box;
+}
+
+.epub-reader .toc-btn {
+  width: 32px;
+  padding: 0;
+  font-size: 1.25rem;
 }
 
 .epub-reader .floating-back {
@@ -2981,10 +3057,7 @@ header .header-actions {
   background: #1a4980;
 }
 
-.toc-btn {
-  font-size: 1.25rem !important;
-  padding: 0.375rem 0.75rem !important;
-}
+
 
 .font-controls {
   display: flex;

@@ -4,9 +4,18 @@ import EbookReader from './EbookReader'
 import EpubReader from './EpubReader'
 import type { EbookCategory, Ebook } from '../types'
 
+// Helper to get file type from ebook
+const getFileType = (ebook: Ebook): 'epub' | 'pdf' => {
+  // Use file_type field if available, otherwise detect from path
+  if (ebook.file_type) {
+    return ebook.file_type as 'epub' | 'pdf'
+  }
+  return ebook.file_path.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf'
+}
+
 // Helper to detect if file is EPUB
-const isEpubFile = (filePath: string): boolean => {
-  return filePath.toLowerCase().endsWith('.epub')
+const isEpubFile = (ebook: Ebook): boolean => {
+  return getFileType(ebook) === 'epub'
 }
 
 export default function EbooksDashboard() {
@@ -87,7 +96,7 @@ export default function EbooksDashboard() {
 
   // Show ebook reader - use EpubReader for EPUB files, EbookReader for PDFs
   if (selectedEbook) {
-    if (isEpubFile(selectedEbook.file_path)) {
+    if (isEpubFile(selectedEbook)) {
       return <EpubReader ebook={selectedEbook} onBack={handleBackFromReader} />
     }
     return <EbookReader ebook={selectedEbook} onBack={handleBackFromReader} />
@@ -118,29 +127,35 @@ export default function EbooksDashboard() {
         </div>
 
         <div className="magazine-grid">
-          {ebooks.map((ebook) => (
-            <div
-              key={ebook.id}
-              className="magazine-card"
-              onClick={() => handleEbookClick(ebook)}
-            >
-              <div className="magazine-cover">
-                {ebook.cover_url ? (
-                  <img src={ebook.cover_url} alt={ebook.title} />
-                ) : (
-                  <div className="magazine-placeholder">
-                    <span>{isEpubFile(ebook.file_path) ? 'EPUB' : 'PDF'}</span>
+          {ebooks.map((ebook) => {
+            const fileType = getFileType(ebook)
+            return (
+              <div
+                key={ebook.id}
+                className="magazine-card"
+                onClick={() => handleEbookClick(ebook)}
+              >
+                <div className="magazine-cover">
+                  {ebook.cover_url ? (
+                    <img src={ebook.cover_url} alt={ebook.title} />
+                  ) : (
+                    <div className="magazine-placeholder">
+                      <span>{fileType.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <span className={`file-type-badge ${fileType}`}>
+                    {fileType.toUpperCase()}
+                  </span>
+                </div>
+                <div className="magazine-info">
+                  <h3 className="magazine-title">{ebook.title}</h3>
+                  <div className="magazine-meta">
+                    <span className="size">{formatFileSize(ebook.file_size)}</span>
                   </div>
-                )}
-              </div>
-              <div className="magazine-info">
-                <h3 className="magazine-title">{ebook.title}</h3>
-                <div className="magazine-meta">
-                  <span className="size">{formatFileSize(ebook.file_size)}</span>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {ebooks.length === 0 && (

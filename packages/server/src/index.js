@@ -226,6 +226,8 @@ db.exec(`
     title TEXT NOT NULL,
     file_path TEXT NOT NULL UNIQUE,
     file_size INTEGER,
+    file_type TEXT DEFAULT 'pdf',
+    normalized_title TEXT,
     cover_url TEXT,
     s3_key TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -286,6 +288,12 @@ try {
 } catch (err) {
   // Column likely already exists
 }
+try {
+  db.exec(`ALTER TABLE ebooks ADD COLUMN file_type TEXT DEFAULT 'pdf'`)
+} catch (err) {}
+try {
+  db.exec(`ALTER TABLE ebooks ADD COLUMN normalized_title TEXT`)
+} catch (err) {}
 
 // Migration: Add user_id to user-bound tables
 try {
@@ -306,6 +314,13 @@ try {
   db.exec(`ALTER TABLE users ADD COLUMN email TEXT`)
   // Copy existing usernames to email column
   db.exec(`UPDATE users SET email = username WHERE email IS NULL`)
+} catch (err) {
+  // Column likely already exists
+}
+
+// Migration: Add preprocessed column to magazines table
+try {
+  db.exec(`ALTER TABLE magazines ADD COLUMN preprocessed INTEGER DEFAULT 0`)
 } catch (err) {
   // Column likely already exists
 }
@@ -539,21 +554,135 @@ async function startBackgroundCoverGeneration() {
   }
 }
 
-// Generate cover for a single ebook (needs to be declared before background function uses it)
-async function generateEbookCover(pdfPath, ebookId) {
-  const tempOutputBase = `/tmp/ebook_cover_${Date.now()}_${Math.random().toString(36).substring(7)}`
-  const tempOutputFile = `${tempOutputBase}-001.jpg`
+// Generate cover for a single ebook (supports both PDF and EPUB)
+async function generateEbookCover(filePath, ebookId) {
   const localCoverFile = join(EBOOK_COVERS_DIR, `${ebookId}.jpg`)
+  await ensureCoversDir()
+
+  const ext = extname(filePath).toLowerCase()
+
+  if (ext === '.epub') {
+    // Extract cover from EPUB file
+    return await extractEpubCover(filePath, ebookId)
+  } else if (ext === '.pdf') {
+    // Use pdftoppm for PDF files
+    const tempOutputBase = `/tmp/ebook_cover_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const tempOutputFile = `${tempOutputBase}-001.jpg`
+
+    try {
+      await execAsync(`pdftoppm -f 1 -l 1 -jpeg -r 150 "${filePath}" "${tempOutputBase}"`)
+      const imageBuffer = await readFile(tempOutputFile)
+      await writeFile(localCoverFile, imageBuffer)
+      await unlink(tempOutputFile).catch(() => {})
+      return `/api/covers/ebooks/${ebookId}.jpg`
+    } catch (error) {
+      await unlink(tempOutputFile).catch(() => {})
+      throw error
+    }
+  } else {
+    throw new Error(`Unsupported file format: ${ext}`)
+  }
+}
+
+// Extract cover image from EPUB file
+async function extractEpubCover(epubPath, ebookId) {
+  const localCoverFile = join(EBOOK_COVERS_DIR, `${ebookId}.jpg`)
+  const tempDir = `/tmp/epub_extract_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
   try {
-    await ensureCoversDir()
-    await execAsync(`pdftoppm -f 1 -l 1 -jpeg -r 150 "${pdfPath}" "${tempOutputBase}"`)
-    const imageBuffer = await readFile(tempOutputFile)
-    await writeFile(localCoverFile, imageBuffer)
-    await unlink(tempOutputFile).catch(() => {})
+    // Extract EPUB (it's a ZIP file)
+    await execAsync(`mkdir -p "${tempDir}" && unzip -q -o "${epubPath}" -d "${tempDir}"`)
+
+    // Find and read container.xml to get the OPF location
+    const containerPath = join(tempDir, 'META-INF', 'container.xml')
+    let opfPath = ''
+
+    try {
+      const containerXml = await readFile(containerPath, 'utf-8')
+      const opfMatch = containerXml.match(/full-path="([^"]+\.opf)"/i)
+      if (opfMatch) {
+        opfPath = join(tempDir, opfMatch[1])
+      }
+    } catch {
+      // Try common OPF locations
+      const commonPaths = ['OEBPS/content.opf', 'content.opf', 'EPUB/package.opf']
+      for (const p of commonPaths) {
+        const fullPath = join(tempDir, p)
+        if (existsSync(fullPath)) {
+          opfPath = fullPath
+          break
+        }
+      }
+    }
+
+    if (!opfPath || !existsSync(opfPath)) {
+      throw new Error('Could not find OPF file')
+    }
+
+    // Read OPF and find cover image
+    const opfContent = await readFile(opfPath, 'utf-8')
+    const opfDir = dirname(opfPath)
+    let coverPath = ''
+
+    // Method 1: Look for cover-image in metadata
+    const coverIdMatch = opfContent.match(/<meta[^>]*name="cover"[^>]*content="([^"]+)"/i) ||
+                         opfContent.match(/<meta[^>]*content="([^"]+)"[^>]*name="cover"/i)
+    if (coverIdMatch) {
+      const coverId = coverIdMatch[1]
+      const itemMatch = opfContent.match(new RegExp(`<item[^>]*id="${coverId}"[^>]*href="([^"]+)"`, 'i')) ||
+                       opfContent.match(new RegExp(`<item[^>]*href="([^"]+)"[^>]*id="${coverId}"`, 'i'))
+      if (itemMatch) {
+        coverPath = join(opfDir, itemMatch[1])
+      }
+    }
+
+    // Method 2: Look for item with id containing 'cover' and image media-type
+    if (!coverPath || !existsSync(coverPath)) {
+      const coverItemMatch = opfContent.match(/<item[^>]*id="[^"]*cover[^"]*"[^>]*href="([^"]+)"[^>]*media-type="image\/[^"]+"/i) ||
+                            opfContent.match(/<item[^>]*href="([^"]+)"[^>]*id="[^"]*cover[^"]*"[^>]*media-type="image\/[^"]+"/i)
+      if (coverItemMatch) {
+        coverPath = join(opfDir, coverItemMatch[1])
+      }
+    }
+
+    // Method 3: Look for properties="cover-image"
+    if (!coverPath || !existsSync(coverPath)) {
+      const propsMatch = opfContent.match(/<item[^>]*properties="cover-image"[^>]*href="([^"]+)"/i) ||
+                        opfContent.match(/<item[^>]*href="([^"]+)"[^>]*properties="cover-image"/i)
+      if (propsMatch) {
+        coverPath = join(opfDir, propsMatch[1])
+      }
+    }
+
+    // Method 4: Look for any image named 'cover'
+    if (!coverPath || !existsSync(coverPath)) {
+      const { stdout } = await execAsync(`find "${tempDir}" -iname "*cover*" -type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \\) 2>/dev/null | head -1`)
+      if (stdout.trim()) {
+        coverPath = stdout.trim()
+      }
+    }
+
+    if (!coverPath || !existsSync(coverPath)) {
+      throw new Error('Could not find cover image in EPUB')
+    }
+
+    // Copy and convert cover image to JPG
+    const coverExt = extname(coverPath).toLowerCase()
+    if (coverExt === '.png') {
+      // Convert PNG to JPG using sips (macOS) or ImageMagick
+      await execAsync(`sips -s format jpeg "${coverPath}" --out "${localCoverFile}" 2>/dev/null || convert "${coverPath}" "${localCoverFile}"`)
+    } else {
+      // Copy JPG directly
+      await execAsync(`cp "${coverPath}" "${localCoverFile}"`)
+    }
+
+    // Cleanup temp directory
+    await execAsync(`rm -rf "${tempDir}"`)
+
     return `/api/covers/ebooks/${ebookId}.jpg`
   } catch (error) {
-    await unlink(tempOutputFile).catch(() => {})
+    // Cleanup on error
+    await execAsync(`rm -rf "${tempDir}"`).catch(() => {})
     throw error
   }
 }
@@ -1734,6 +1863,72 @@ app.get('/api/magazines/generate-covers/progress', (req, res) => {
   res.json(coverGenerationProgress)
 })
 
+// Preprocess a single magazine
+app.post('/api/magazines/:id/preprocess', async (req, res) => {
+  try {
+    const result = await preprocessMagazine(req.params.id)
+    res.json(result)
+  } catch (error) {
+    console.error('Preprocess error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Preprocess all magazines (or only non-preprocessed ones)
+let preprocessProgress = { running: false, current: 0, total: 0, currentMagazine: '' }
+
+app.post('/api/magazines/preprocess-all', async (req, res) => {
+  if (preprocessProgress.running) {
+    return res.status(409).json({ error: 'Preprocessing already in progress' })
+  }
+
+  const { force = false } = req.body || {}
+
+  // Get magazines to preprocess
+  const magazines = force
+    ? db.prepare('SELECT id, title FROM magazines ORDER BY id').all()
+    : db.prepare('SELECT id, title FROM magazines WHERE preprocessed = 0 OR preprocessed IS NULL ORDER BY id').all()
+
+  if (magazines.length === 0) {
+    return res.json({ message: 'No magazines to preprocess', processed: 0 })
+  }
+
+  preprocessProgress = { running: true, current: 0, total: magazines.length, currentMagazine: '' }
+
+  res.json({
+    message: `Starting preprocessing of ${magazines.length} magazines`,
+    total: magazines.length
+  })
+
+  // Process in background
+  ;(async () => {
+    let successCount = 0
+    let failCount = 0
+
+    for (const magazine of magazines) {
+      preprocessProgress.current++
+      preprocessProgress.currentMagazine = magazine.title
+
+      try {
+        await preprocessMagazine(magazine.id)
+        successCount++
+        console.log(`Preprocessed ${preprocessProgress.current}/${magazines.length}: ${magazine.title}`)
+      } catch (err) {
+        failCount++
+        console.error(`Failed to preprocess ${magazine.title}:`, err.message)
+      }
+    }
+
+    preprocessProgress.running = false
+    console.log(`Preprocessing complete: ${successCount} success, ${failCount} failed`)
+  })()
+})
+
+// Get preprocessing progress
+app.get('/api/magazines/preprocess-all/progress', (req, res) => {
+  res.json(preprocessProgress)
+})
+
 // ==================== EBOOKS API ====================
 
 const EBOOKS_BASE_PATH = '/Volumes/杂志/【基础版】英文书单2024年全年更新'
@@ -1764,94 +1959,215 @@ async function extractZipFile(zipPath) {
   }
 }
 
-// Recursive helper to scan for ebooks in a folder (handles nested directories)
+// Preprocess magazine PDF pages to images for faster viewing
+async function preprocessMagazine(magazineId) {
+  const magazine = db.prepare('SELECT * FROM magazines WHERE id = ?').get(magazineId)
+  if (!magazine) {
+    throw new Error('Magazine not found')
+  }
+
+  // Get page count from database or PDF info
+  let pageCount = magazine.page_count
+  if (!pageCount) {
+    // Try to get from PDF
+    let pdfPath = magazine.file_path
+    if (useS3Storage && magazine.s3_key) {
+      const tempDir = join(__dirname, '../cache/temp')
+      await mkdir(tempDir, { recursive: true })
+      pdfPath = join(tempDir, `magazine_${magazineId}.pdf`)
+
+      if (!existsSync(pdfPath)) {
+        const s3Stream = await streamFromS3(magazine.s3_key)
+        const chunks = []
+        for await (const chunk of s3Stream) {
+          chunks.push(chunk)
+        }
+        await writeFile(pdfPath, Buffer.concat(chunks))
+      }
+    }
+
+    // Use pdfinfo to get page count
+    try {
+      const { stdout } = await execAsync(`pdfinfo "${pdfPath}" | grep Pages`)
+      const match = stdout.match(/Pages:\s*(\d+)/)
+      if (match) {
+        pageCount = parseInt(match[1])
+        db.prepare('UPDATE magazines SET page_count = ? WHERE id = ?').run(pageCount, magazineId)
+      }
+    } catch (err) {
+      console.error('Failed to get page count:', err)
+      throw new Error('Failed to get page count from PDF')
+    }
+  }
+
+  if (!pageCount) {
+    throw new Error('Unable to determine page count')
+  }
+
+  // Create cache directory for this magazine
+  const cacheDir = join(__dirname, '../cache/pages')
+  await mkdir(cacheDir, { recursive: true })
+
+  // Get PDF file path
+  let pdfPath = magazine.file_path
+  if (useS3Storage && magazine.s3_key) {
+    const tempDir = join(__dirname, '../cache/temp')
+    await mkdir(tempDir, { recursive: true })
+    pdfPath = join(tempDir, `magazine_${magazineId}.pdf`)
+
+    if (!existsSync(pdfPath)) {
+      const s3Stream = await streamFromS3(magazine.s3_key)
+      const chunks = []
+      for await (const chunk of s3Stream) {
+        chunks.push(chunk)
+      }
+      await writeFile(pdfPath, Buffer.concat(chunks))
+    }
+  }
+
+  // Check if file exists
+  if (!existsSync(pdfPath)) {
+    throw new Error('PDF file not found: ' + pdfPath)
+  }
+
+  console.log(`Preprocessing magazine ${magazineId}: ${magazine.title} (${pageCount} pages)`)
+
+  // Use pdftoppm to render all pages at once (more efficient)
+  const outputPrefix = join(cacheDir, `magazine_${magazineId}`)
+
+  try {
+    // Render all pages as PNG (r=150 is a good balance of quality/size)
+    await execAsync(`pdftoppm -png -r 150 "${pdfPath}" "${outputPrefix}"`, { timeout: 300000 }) // 5 min timeout
+
+    // pdftoppm creates files like magazine_1-1.png, magazine_1-2.png, etc.
+    // Rename them to our standard cache format
+    let successCount = 0
+    for (let i = 1; i <= pageCount; i++) {
+      // pdftoppm pads page numbers, so we need to try different formats
+      const possibleNames = [
+        `${outputPrefix}-${i}.png`,
+        `${outputPrefix}-${String(i).padStart(2, '0')}.png`,
+        `${outputPrefix}-${String(i).padStart(3, '0')}.png`,
+        `${outputPrefix}-${String(i).padStart(4, '0')}.png`
+      ]
+
+      const finalPath = join(cacheDir, `magazine_${magazineId}_page_${i}.png`)
+
+      for (const srcPath of possibleNames) {
+        if (existsSync(srcPath)) {
+          // Move to final location if not already there
+          if (srcPath !== finalPath) {
+            const data = await readFile(srcPath)
+            await writeFile(finalPath, data)
+            await unlink(srcPath)
+          }
+          successCount++
+          break
+        }
+      }
+    }
+
+    console.log(`Preprocessed ${successCount}/${pageCount} pages for magazine ${magazineId}`)
+
+    // Mark magazine as preprocessed
+    db.prepare('UPDATE magazines SET preprocessed = 1 WHERE id = ?').run(magazineId)
+
+    return { success: true, pages: successCount, total: pageCount }
+  } catch (err) {
+    console.error('Preprocessing error:', err)
+    throw new Error('Failed to preprocess magazine: ' + err.message)
+  }
+}
+
+// Normalize title for deduplication (remove special chars, lowercase, trim)
+function normalizeTitle(title) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fff]/g, '') // Keep only alphanumeric and Chinese characters
+    .trim()
+}
+
+// Recursive helper to scan for EPUB and PDF files in a folder (handles nested directories)
 async function scanFolderForEbooks(folderPath, category, results, depth = 0) {
-  if (depth > 8) return // Prevent infinite recursion (increased for ZIP extraction)
+  if (depth > 10) return // Prevent infinite recursion
 
   try {
     const items = await readdir(folderPath)
 
-    // First, extract any ZIP files found
-    for (const item of items) {
-      if (item.startsWith('.') || item.startsWith('._')) continue
-      if (item.toLowerCase().endsWith('.zip')) {
-        const zipPath = join(folderPath, item)
-        const extractedDir = await extractZipFile(zipPath)
-        if (extractedDir) {
-          // Scan the extracted directory
-          await scanFolderForEbooks(extractedDir, category, results, depth + 1)
-        }
-      }
-    }
-
-    // Check if this folder or its Ebook subfolder contains PDFs
-    let searchPath = folderPath
-    const ebookPath = join(folderPath, 'Ebook')
-    try {
-      const ebookStat = await stat(ebookPath)
-      if (ebookStat.isDirectory()) {
-        searchPath = ebookPath
-      }
-    } catch {
-      // Ebook folder doesn't exist
-    }
-
-    // Look for PDFs in the search path
-    const searchItems = await readdir(searchPath)
-    let foundPdf = false
-    for (const file of searchItems) {
+    // Look for ebook files in this directory
+    for (const file of items) {
       if (file.startsWith('.') || file.startsWith('._')) continue
-      if (!file.toLowerCase().endsWith('.pdf')) continue
-      if (/\(\d+\)\.pdf$/i.test(file)) continue // Skip duplicates
 
-      foundPdf = true
-      const filePath = join(searchPath, file)
-
-      // Check if already imported
-      const existing = db.prepare('SELECT id FROM ebooks WHERE file_path = ?').get(filePath)
-      if (existing) continue
+      const filePath = join(folderPath, file)
 
       try {
         const fileStat = await stat(filePath)
-        const fileSize = fileStat.size
 
-        // Skip invalid PDFs (less than 10KB)
-        if (fileSize < 10240) continue
+        if (fileStat.isDirectory()) {
+          // Recurse into subdirectory
+          await scanFolderForEbooks(filePath, category, results, depth + 1)
+        } else {
+          const lowerFile = file.toLowerCase()
+          const isEpub = lowerFile.endsWith('.epub')
+          const isPdf = lowerFile.endsWith('.pdf')
 
-        // Use parent folder name as title, or PDF filename
-        const folderName = basename(folderPath)
-        const pdfName = basename(file, '.pdf')
-        const title = (folderName && !folderName.match(/^\d+$/))
-          ? folderName.replace(/^\d+\./, '').trim()
-          : pdfName.replace(/^\d+\./, '').trim()
+          if (!isEpub && !isPdf) continue
 
-        db.prepare(`
-          INSERT INTO ebooks (category_id, title, file_path, file_size)
-          VALUES (?, ?, ?, ?)
-        `).run(category.id, title || pdfName, filePath, fileSize)
+          // Skip duplicates like "book (1).epub" or "book (1).pdf"
+          if (/\(\d+\)\.(epub|pdf)$/i.test(file)) continue
 
-        results.ebooks++
+          const fileSize = fileStat.size
+
+          // Skip invalid files (less than 10KB)
+          if (fileSize < 10240) continue
+
+          // Extract title from filename
+          const ext = isEpub ? '.epub' : '.pdf'
+          const fileName = basename(file, ext)
+          const title = fileName.replace(/^\d+\./, '').trim()
+          const normalizedTitle = normalizeTitle(title || fileName)
+          const fileType = isEpub ? 'epub' : 'pdf'
+
+          // Check if this exact file already imported
+          const existingByPath = db.prepare('SELECT id FROM ebooks WHERE file_path = ?').get(filePath)
+          if (existingByPath) continue
+
+          // Check if same book already exists (by normalized title in same category)
+          const existingByTitle = db.prepare(
+            'SELECT id, file_type, file_path FROM ebooks WHERE normalized_title = ? AND category_id = ?'
+          ).get(normalizedTitle, category.id)
+
+          if (existingByTitle) {
+            // If existing is PDF and new is EPUB, replace with EPUB (EPUB has priority)
+            if (existingByTitle.file_type === 'pdf' && fileType === 'epub') {
+              db.prepare(`
+                UPDATE ebooks SET file_path = ?, file_size = ?, file_type = ?, cover_url = NULL
+                WHERE id = ?
+              `).run(filePath, fileSize, fileType, existingByTitle.id)
+              results.upgraded++
+              console.log(`[Scan] Upgraded to EPUB: ${title}`)
+            } else {
+              // Skip - already have this book (either same type or EPUB already exists)
+              results.skipped++
+            }
+            continue
+          }
+
+          // Insert new ebook
+          db.prepare(`
+            INSERT INTO ebooks (category_id, title, file_path, file_size, file_type, normalized_title)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(category.id, title || fileName, filePath, fileSize, fileType, normalizedTitle)
+
+          results.ebooks++
+
+          // Log progress every 100 ebooks
+          if (results.ebooks % 100 === 0) {
+            console.log(`[Scan] Processed ${results.ebooks} ebooks...`)
+          }
+        }
       } catch (err) {
         results.errors.push({ file: filePath, error: err.message })
-      }
-    }
-
-    // If no PDFs found, recurse into subdirectories
-    if (!foundPdf) {
-      for (const item of items) {
-        if (item.startsWith('.')) continue
-        if (item === 'Ebook') continue // Already checked
-        if (item.toLowerCase().endsWith('.zip')) continue // Already processed
-
-        const itemPath = join(folderPath, item)
-        try {
-          const itemStat = await stat(itemPath)
-          if (itemStat.isDirectory()) {
-            await scanFolderForEbooks(itemPath, category, results, depth + 1)
-          }
-        } catch (err) {
-          // Skip inaccessible folders
-        }
       }
     }
   } catch (err) {
@@ -1861,7 +2177,7 @@ async function scanFolderForEbooks(folderPath, category, results, depth = 0) {
 
 // Scan ebooks directory
 async function scanEbooksDirectory() {
-  const results = { categories: 0, ebooks: 0, errors: [] }
+  const results = { categories: 0, ebooks: 0, skipped: 0, upgraded: 0, errors: [] }
 
   try {
     const categoryDirs = await readdir(EBOOKS_BASE_PATH)
@@ -1884,15 +2200,31 @@ async function scanEbooksDirectory() {
         results.categories++
       }
 
-      // Recursively scan for ebooks in this category
+      // Recursively scan for EPUB and PDF files in this category
       await scanFolderForEbooks(categoryPath, category, results)
     }
   } catch (error) {
     results.errors.push({ path: EBOOKS_BASE_PATH, error: error.message })
   }
 
+  console.log(`[Scan] Complete: ${results.ebooks} new, ${results.skipped} skipped, ${results.upgraded} upgraded`)
   return results
 }
+
+// Clear all ebooks endpoint
+app.delete('/api/ebooks/clear', async (req, res) => {
+  try {
+    // Delete all ebooks but keep covers for reuse
+    const result = db.prepare('DELETE FROM ebooks').run()
+    // Also clear categories
+    db.prepare('DELETE FROM ebook_categories').run()
+    console.log(`[Clear] Deleted ${result.changes} ebooks`)
+    res.json({ message: `Deleted ${result.changes} ebooks`, deleted: result.changes })
+  } catch (error) {
+    console.error('Clear ebooks error:', error)
+    res.status(500).json({ error: 'Failed to clear ebooks' })
+  }
+})
 
 // Scan ebooks endpoint
 app.post('/api/ebooks/scan', async (req, res) => {
@@ -1902,6 +2234,24 @@ app.post('/api/ebooks/scan', async (req, res) => {
   } catch (error) {
     console.error('Scan ebooks error:', error)
     res.status(500).json({ error: 'Failed to scan ebooks directory' })
+  }
+})
+
+// Rescan ebooks (clear and scan)
+app.post('/api/ebooks/rescan', async (req, res) => {
+  try {
+    // Clear existing ebooks
+    const deleteResult = db.prepare('DELETE FROM ebooks').run()
+    db.prepare('DELETE FROM ebook_categories').run()
+    console.log(`[Rescan] Deleted ${deleteResult.changes} old ebooks`)
+
+    // Scan for new ebooks
+    const results = await scanEbooksDirectory()
+    results.deleted = deleteResult.changes
+    res.json(results)
+  } catch (error) {
+    console.error('Rescan ebooks error:', error)
+    res.status(500).json({ error: 'Failed to rescan ebooks directory' })
   }
 })
 

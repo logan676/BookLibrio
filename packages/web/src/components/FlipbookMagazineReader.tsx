@@ -9,6 +9,9 @@ interface Props {
   initialPage?: number
 }
 
+// Number of pages to preload before showing the flipbook
+const PRELOAD_COUNT = 6
+
 export default function FlipbookMagazineReader({ magazine, onBack, initialPage = 1 }: Props) {
   const { token, user } = useAuth()
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -16,6 +19,8 @@ export default function FlipbookMagazineReader({ magazine, onBack, initialPage =
   const [totalPages, setTotalPages] = useState(magazine.page_count || 0)
   const [loading, setLoading] = useState(true)
   const [pageImages, setPageImages] = useState<string[]>([])
+  const [preloadedImages, setPreloadedImages] = useState<Map<string, HTMLImageElement>>(new Map())
+  const [imagesReady, setImagesReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const readerRef = useRef<HTMLDivElement>(null)
@@ -41,20 +46,49 @@ export default function FlipbookMagazineReader({ magazine, onBack, initialPage =
     }
   }, [magazine.id, magazine.page_count])
 
-  // Generate page image URLs
+  // Generate page image URLs and preload first pages
   useEffect(() => {
     if (totalPages > 0) {
       const urls = Array.from({ length: totalPages }, (_, i) =>
         `/api/magazines/${magazine.id}/page/${i + 1}/image`
       )
       setPageImages(urls)
-      setLoading(false)
+
+      // Preload the first several pages before showing the flipbook
+      const preloadPages = async () => {
+        const pagesToPreload = Math.min(PRELOAD_COUNT, totalPages)
+        const loadPromises: Promise<void>[] = []
+        const newPreloaded = new Map<string, HTMLImageElement>()
+
+        for (let i = 0; i < pagesToPreload; i++) {
+          const url = urls[i]
+          const promise = new Promise<void>((resolve) => {
+            const img = new Image()
+            img.onload = () => {
+              newPreloaded.set(url, img)
+              resolve()
+            }
+            img.onerror = () => {
+              resolve() // Continue even if image fails to load
+            }
+            img.src = url
+          })
+          loadPromises.push(promise)
+        }
+
+        await Promise.all(loadPromises)
+        setPreloadedImages(newPreloaded)
+        setImagesReady(true)
+        setLoading(false)
+      }
+
+      preloadPages()
     }
   }, [totalPages, magazine.id])
 
   // Initialize PageFlip
   useEffect(() => {
-    if (!flipbookRef.current || pageImages.length === 0 || loading) return
+    if (!flipbookRef.current || pageImages.length === 0 || loading || !imagesReady) return
 
     // Destroy existing instance
     if (pageFlipRef.current) {
@@ -75,23 +109,31 @@ export default function FlipbookMagazineReader({ magazine, onBack, initialPage =
       usePortrait: true,
       startPage: initialPage - 1,
       drawShadow: true,
-      flippingTime: 800,
+      flippingTime: 600, // Slightly faster for smoother feel
       useMouseEvents: true,
       swipeDistance: 30,
       showPageCorners: true,
       disableFlipByClick: false
     })
 
-    // Create pages from images
+    // Create pages from images, using preloaded images for initial pages
     const pages = pageImages.map((url, index) => {
       const pageDiv = document.createElement('div')
       pageDiv.className = 'flipbook-page'
       pageDiv.dataset.pageNumber = String(index + 1)
 
       const img = document.createElement('img')
-      img.src = url
+
+      // Use preloaded image if available (for first pages)
+      const preloadedImg = preloadedImages.get(url)
+      if (preloadedImg) {
+        img.src = preloadedImg.src
+      } else {
+        img.src = url
+        img.loading = 'lazy'
+      }
+
       img.alt = `Page ${index + 1}`
-      img.loading = index < 4 ? 'eager' : 'lazy'
       img.onerror = () => {
         img.src = '/placeholder-page.png'
         img.alt = 'Page not available'
@@ -110,6 +152,15 @@ export default function FlipbookMagazineReader({ magazine, onBack, initialPage =
 
     pageFlip.on('flip', (e) => {
       setCurrentPage(e.data + 1)
+
+      // Preload upcoming pages when flipping
+      const nextPages = [e.data + 2, e.data + 3, e.data + 4]
+      nextPages.forEach(pageNum => {
+        if (pageNum < pageImages.length && !preloadedImages.has(pageImages[pageNum])) {
+          const img = new Image()
+          img.src = pageImages[pageNum]
+        }
+      })
     })
 
     pageFlipRef.current = pageFlip
@@ -120,7 +171,7 @@ export default function FlipbookMagazineReader({ magazine, onBack, initialPage =
         pageFlipRef.current = null
       }
     }
-  }, [pageImages, loading, initialPage])
+  }, [pageImages, loading, initialPage, imagesReady, preloadedImages])
 
   // Handle fullscreen changes
   useEffect(() => {
