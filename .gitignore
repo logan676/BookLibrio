@@ -68,3 +68,5 @@ packages/mobile-rn/ios/build/
 
 .claude/
 .claude/*packages/server/covers/
+
+packages/server/covers
