@@ -298,6 +298,11 @@ export default function ThinkingDashboard() {
       ) : years.length === 0 ? (
         <div className="empty-state">
           <h2>{t.noNotesFound}</h2>
+          {user && (
+            <button className="add-btn" onClick={handleWriteClick}>
+              {t.writeNote}
+            </button>
+          )}
         </div>
       ) : (
         <div className="year-grid">
