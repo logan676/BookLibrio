@@ -97,15 +97,15 @@ export default function ThinkingDashboard() {
   if (selectedNote) {
     return (
       <div className="thinking-dashboard note-reader">
-        <header className="dashboard-header">
-          <button className="back-btn" onClick={handleBackFromNote}>
-            {t.back}
-          </button>
-          <h1>{selectedNote.title}</h1>
-          <div className="header-actions">
-            {selectedNote.year && <span className="note-year">{selectedNote.year}</span>}
+        <div className="sub-view-header">
+          <h1 className="sub-view-title">{selectedNote.title}</h1>
+          <div className="sub-view-nav">
+            <button className="back-btn" onClick={handleBackFromNote}>
+              {t.back}
+            </button>
+            {selectedNote.year && <span className="item-count">{selectedNote.year}</span>}
           </div>
-        </header>
+        </div>
 
         <div className="note-content">
           <div className="markdown-body">
@@ -137,15 +137,15 @@ export default function ThinkingDashboard() {
   if (selectedYear) {
     return (
       <div className="thinking-dashboard">
-        <header className="dashboard-header">
-          <button className="back-btn" onClick={handleBackToYears}>
-            {t.back}
-          </button>
-          <h1>{t.thinkingTitle} - {selectedYear}</h1>
-          <div className="header-actions">
-            <span className="note-count">{formatCount(t.notesCount, notes.length)}</span>
+        <div className="sub-view-header">
+          <h1 className="sub-view-title">{t.thinkingTitle} - {selectedYear}</h1>
+          <div className="sub-view-nav">
+            <button className="back-btn" onClick={handleBackToYears}>
+              {t.back}
+            </button>
+            <span className="item-count">{formatCount(t.notesCount, notes.length)}</span>
           </div>
-        </header>
+        </div>
 
         <div className="filters">
           <input

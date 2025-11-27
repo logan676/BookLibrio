@@ -2032,3 +2032,31 @@ header .header-actions {
 .login-modal .auth-switch span:hover {
   opacity: 0.8;
 }
+
+/* Sub-view Header Layout */
+.sub-view-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.sub-view-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.sub-view-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sub-view-nav .back-btn {
+  margin-bottom: 0;
+}
+
+.sub-view-nav .item-count {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}

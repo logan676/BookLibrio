@@ -73,15 +73,15 @@ export default function EbooksDashboard() {
   if (selectedCategory) {
     return (
       <div className="magazines-dashboard">
-        <header className="dashboard-header">
-          <button className="back-btn" onClick={handleBackToCategories}>
-            {t.back}
-          </button>
-          <h1>{selectedCategory.name}</h1>
-          <div className="header-actions">
-            <span className="magazine-count">{formatCount(t.ebooksCount, ebooks.length)}</span>
+        <div className="sub-view-header">
+          <h1 className="sub-view-title">{selectedCategory.name}</h1>
+          <div className="sub-view-nav">
+            <button className="back-btn" onClick={handleBackToCategories}>
+              {t.back}
+            </button>
+            <span className="item-count">{formatCount(t.ebooksCount, ebooks.length)}</span>
           </div>
-        </header>
+        </div>
 
         <div className="filters">
           <input

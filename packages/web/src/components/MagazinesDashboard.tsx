@@ -170,15 +170,15 @@ export default function MagazinesDashboard() {
   if (selectedPublisher && showYearSelection) {
     return (
       <div className="magazines-dashboard">
-        <header className="dashboard-header">
-          <button className="back-btn" onClick={handleBackToPublishers}>
-            {t.back}
-          </button>
-          <h1>{selectedPublisher.name}</h1>
-          <div className="header-actions">
-            <span className="magazine-count">{formatCount(t.magazinesCount, selectedPublisher.magazine_count)}</span>
+        <div className="sub-view-header">
+          <h1 className="sub-view-title">{selectedPublisher.name}</h1>
+          <div className="sub-view-nav">
+            <button className="back-btn" onClick={handleBackToPublishers}>
+              {t.back}
+            </button>
+            <span className="item-count">{formatCount(t.magazinesCount, selectedPublisher.magazine_count)}</span>
           </div>
-        </header>
+        </div>
 
         <div className="year-grid">
           {yearInfos.map((info) => (
@@ -207,15 +207,15 @@ export default function MagazinesDashboard() {
     const isYearCategorized = YEAR_CATEGORIZED_PUBLISHERS.includes(selectedPublisher.name)
     return (
       <div className="magazines-dashboard">
-        <header className="dashboard-header">
-          <button className="back-btn" onClick={isYearCategorized ? handleBackToYears : handleBackToPublishers}>
-            {t.back}
-          </button>
-          <h1>{selectedPublisher.name}{selectedYear ? ` - ${selectedYear}` : ''}</h1>
-          <div className="header-actions">
-            <span className="magazine-count">{formatCount(t.magazinesCount, magazines.length)}</span>
+        <div className="sub-view-header">
+          <h1 className="sub-view-title">{selectedPublisher.name}{selectedYear ? ` - ${selectedYear}` : ''}</h1>
+          <div className="sub-view-nav">
+            <button className="back-btn" onClick={isYearCategorized ? handleBackToYears : handleBackToPublishers}>
+              {t.back}
+            </button>
+            <span className="item-count">{formatCount(t.magazinesCount, magazines.length)}</span>
           </div>
-        </header>
+        </div>
 
         <div className="filters">
           <input
