@@ -6,11 +6,13 @@ import MagazinesDashboard from './components/MagazinesDashboard'
 import EbooksDashboard from './components/EbooksDashboard'
 import ThinkingDashboard from './components/ThinkingDashboard'
 import BookshelfDashboard from './components/BookshelfDashboard'
+import AdminDashboard from './components/AdminDashboard'
+import NBADashboard from './components/NBADashboard'
 import { useI18n } from './i18n'
 import { useAuth } from './auth'
 import type { Book, BlogPost } from './types'
 
-type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks' | 'thinking'
+type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks' | 'thinking' | 'admin' | 'nba'
 
 // Parse URL hash to get current route
 function parseHash(): { view: View; bookId?: number; postId?: number } {
@@ -27,6 +29,14 @@ function parseHash(): { view: View; bookId?: number; postId?: number } {
 
   if (hash === 'thinking') {
     return { view: 'thinking' }
+  }
+
+  if (hash === 'admin') {
+    return { view: 'admin' }
+  }
+
+  if (hash === 'nba') {
+    return { view: 'nba' }
   }
 
   const parts = hash.split('/')
@@ -82,6 +92,14 @@ function App() {
       setSelectedPost(null)
     } else if (newView === 'thinking') {
       setView('thinking')
+      setSelectedBook(null)
+      setSelectedPost(null)
+    } else if (newView === 'admin') {
+      setView('admin')
+      setSelectedBook(null)
+      setSelectedPost(null)
+    } else if (newView === 'nba') {
+      setView('nba')
       setSelectedBook(null)
       setSelectedPost(null)
     } else if (newView === 'detail' && bookId) {
@@ -224,6 +242,12 @@ function App() {
     if (view === 'thinking') {
       return <ThinkingDashboard />
     }
+    if (view === 'nba') {
+      return <NBADashboard />
+    }
+    if (view === 'admin' && user?.is_admin) {
+      return <AdminDashboard />
+    }
 
     // Home / Bookshelf view
     return (
@@ -233,6 +257,11 @@ function App() {
         onBookAdded={handleBookAdded}
       />
     )
+  }
+
+  // Helper to get email prefix
+  const getEmailPrefix = (email: string) => {
+    return email.split('@')[0]
   }
 
   return (
@@ -264,6 +293,12 @@ function App() {
           >
             {t.thinking}
           </button>
+          <button
+            className={`tab-btn ${view === 'nba' ? 'active' : ''}`}
+            onClick={() => window.location.hash = 'nba'}
+          >
+            NBA
+          </button>
         </nav>
         <div className="header-actions">
           {user ? (
@@ -272,10 +307,15 @@ function App() {
                 className="user-menu-btn"
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
-                {user.email}
+                {getEmailPrefix(user.email)}
               </button>
               {showUserMenu && (
                 <div className="user-menu-dropdown">
+                  {user.is_admin && (
+                    <button onClick={() => { window.location.hash = 'admin'; setShowUserMenu(false); }}>
+                      Admin
+                    </button>
+                  )}
                   <button onClick={() => { logout(); setShowUserMenu(false); }}>
                     {t.logout}
                   </button>

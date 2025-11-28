@@ -275,6 +275,31 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, item_type, item_id)
   );
+
+  CREATE TABLE IF NOT EXISTS nba_series (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    teams TEXT,
+    folder_path TEXT NOT NULL UNIQUE,
+    cover_url TEXT,
+    category TEXT DEFAULT 'chinese',
+    source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS nba_games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    series_id INTEGER NOT NULL,
+    game_number INTEGER,
+    title TEXT NOT NULL,
+    file_path TEXT NOT NULL UNIQUE,
+    file_type TEXT DEFAULT 'mkv',
+    duration INTEGER,
+    thumbnail_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (series_id) REFERENCES nba_series(id) ON DELETE CASCADE
+  );
 `)
 
 // Migration: Add s3_key column to existing tables if not exists
@@ -325,6 +350,26 @@ try {
   // Column likely already exists
 }
 
+// Migration: Add category and source columns to nba_series table
+try {
+  db.exec(`ALTER TABLE nba_series ADD COLUMN category TEXT DEFAULT 'chinese'`)
+} catch (err) {}
+try {
+  db.exec(`ALTER TABLE nba_series ADD COLUMN source TEXT`)
+} catch (err) {}
+
+// Migration: Add is_admin column to users table
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`)
+} catch (err) {
+  // Column likely already exists
+}
+
+// Set logan676@163.com as admin
+try {
+  db.exec(`UPDATE users SET is_admin = 1 WHERE email = 'logan676@163.com'`)
+} catch (err) {}
+
 // Auth helper functions
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex')
@@ -351,13 +396,13 @@ function authMiddleware(req, res, next) {
   }
 
   const session = db.prepare(`
-    SELECT s.*, u.email FROM sessions s
+    SELECT s.*, u.email, u.is_admin FROM sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.token = ? AND s.expires_at > datetime('now')
   `).get(token)
 
   if (session) {
-    req.user = { id: session.user_id, email: session.email }
+    req.user = { id: session.user_id, email: session.email, is_admin: session.is_admin === 1 }
   } else {
     req.user = null
   }
@@ -368,6 +413,17 @@ function authMiddleware(req, res, next) {
 function requireAuth(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' })
+  }
+  next()
+}
+
+// Require admin middleware
+function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' })
+  }
+  if (!req.user.is_admin) {
+    return res.status(403).json({ error: 'Admin access required' })
   }
   next()
 }
@@ -411,7 +467,7 @@ const PAGES_CACHE_DIR = join(CACHE_DIR, 'pages')
 
 // Generate a unique filename based on file path hash
 // This ensures the same file always gets the same cache/cover filename
-// Format: sanitized_title_hash.ext (e.g., "azure_2020_01_a1b2c3d4.jpg")
+// Format: sanitized_title_hash.ext (e.g., "economist_2020_01_a1b2c3d4.jpg")
 function generateCacheFilename(filePath, title) {
   const hash = crypto.createHash('md5').update(filePath).digest('hex').substring(0, 8)
   // Sanitize title: lowercase, replace non-alphanumeric with underscore, limit length
@@ -2009,6 +2065,7 @@ async function preprocessMagazine(magazineId) {
 
   // Generate cache filename using path hash + title for resilience
   const cacheBasename = generateCacheFilename(magazine.file_path, magazine.title)
+  const cacheDir = join(__dirname, '../cache/pages')
 
   // Get page count from database or PDF info
   let pageCount = magazine.page_count
@@ -2049,23 +2106,62 @@ async function preprocessMagazine(magazineId) {
     throw new Error('Unable to determine page count')
   }
 
-  // Create cache directory for this magazine
-  const cacheDir = join(__dirname, '../cache/pages')
+  // Check if cache already exists (all pages present)
+  // This allows resuming after server restart without re-processing
+  // Support both new format (hash-based) and legacy format (magazine_{id}_page_{num}.png)
   await mkdir(cacheDir, { recursive: true })
+  let cachedPages = 0
+  let usingLegacyFormat = false
+  const legacyBasename = `magazine_${magazineId}`
+
+  // First check new format
+  for (let i = 1; i <= pageCount; i++) {
+    const cachePath = join(cacheDir, `${cacheBasename}_page_${i}.png`)
+    if (existsSync(cachePath)) {
+      cachedPages++
+    }
+  }
+
+  // If not all cached with new format, check legacy format
+  if (cachedPages < pageCount) {
+    let legacyCachedPages = 0
+    for (let i = 1; i <= pageCount; i++) {
+      const legacyPath = join(cacheDir, `${legacyBasename}_page_${i}.png`)
+      if (existsSync(legacyPath)) {
+        legacyCachedPages++
+      }
+    }
+    // Use legacy format if it has more cached pages
+    if (legacyCachedPages > cachedPages) {
+      cachedPages = legacyCachedPages
+      usingLegacyFormat = true
+    }
+  }
+
+  // If all pages are already cached, just mark as preprocessed and skip
+  if (cachedPages === pageCount) {
+    db.prepare('UPDATE magazines SET preprocessed = 1 WHERE id = ?').run(magazineId)
+    console.log(`Magazine ${magazineId} already cached (${pageCount} pages, ${usingLegacyFormat ? 'legacy format' : 'new format'}), marked as preprocessed`)
+    return { success: true, pages: pageCount, total: pageCount, skipped: true }
+  }
 
   // Check if file exists
   if (!existsSync(pdfPath)) {
     throw new Error('PDF file not found: ' + pdfPath)
   }
 
-  console.log(`Preprocessing magazine ${magazineId}: ${magazine.title} (${pageCount} pages)`)
+  console.log(`Preprocessing magazine ${magazineId}: ${magazine.title} (${pageCount} pages, ${cachedPages} already cached)`)
 
   // Use pdftoppm to render all pages at once (more efficient)
   const outputPrefix = join(cacheDir, `temp_${cacheBasename}`)
 
   try {
     // Render all pages as PNG (r=150 is a good balance of quality/size)
-    await execAsync(`pdftoppm -png -r 150 "${pdfPath}" "${outputPrefix}"`, { timeout: 300000 }) // 5 min timeout
+    // Increased timeout to 10 min and maxBuffer to handle large PDFs
+    await execAsync(`pdftoppm -png -r 150 "${pdfPath}" "${outputPrefix}"`, {
+      timeout: 600000, // 10 min timeout
+      maxBuffer: 50 * 1024 * 1024 // 50MB buffer
+    })
 
     // pdftoppm creates files like magazine_1-1.png, magazine_1-2.png, etc.
     // Rename them to our standard cache format
@@ -2924,6 +3020,536 @@ app.delete('/api/reading-history/:type/:id', requireAuth, (req, res) => {
   }
 })
 
+// ==================== ADMIN API ====================
+
+// Admin: Import from folder path
+let adminImportProgress = { running: false, type: '', current: 0, total: 0, currentItem: '', errors: [] }
+
+app.post('/api/admin/import', requireAdmin, async (req, res) => {
+  const { type, folderPath } = req.body
+
+  if (!type || !folderPath) {
+    return res.status(400).json({ error: 'Missing type or folderPath' })
+  }
+
+  if (!['magazine', 'ebook'].includes(type)) {
+    return res.status(400).json({ error: 'Invalid type. Must be magazine or ebook' })
+  }
+
+  if (adminImportProgress.running) {
+    return res.status(409).json({ error: 'Import already in progress' })
+  }
+
+  // Check if folder exists
+  if (!existsSync(folderPath)) {
+    return res.status(400).json({ error: 'Folder path does not exist' })
+  }
+
+  adminImportProgress = { running: true, type, current: 0, total: 0, currentItem: '', errors: [] }
+
+  res.json({ message: `Starting ${type} import from ${folderPath}` })
+
+  // Process in background
+  ;(async () => {
+    try {
+      if (type === 'magazine') {
+        await adminImportMagazines(folderPath)
+      } else {
+        await adminImportEbooks(folderPath)
+      }
+    } catch (err) {
+      console.error('Admin import error:', err)
+      adminImportProgress.errors.push(err.message)
+    } finally {
+      adminImportProgress.running = false
+    }
+  })()
+})
+
+// Admin import progress
+app.get('/api/admin/import/progress', requireAdmin, (req, res) => {
+  res.json(adminImportProgress)
+})
+
+// Admin: Import magazines from folder
+async function adminImportMagazines(folderPath) {
+  const results = { imported: 0, skipped: 0, errors: [] }
+
+  // Find all PDFs recursively
+  const pdfFiles = []
+  async function findPdfs(dir) {
+    const items = await readdir(dir)
+    for (const item of items) {
+      if (item.startsWith('.') || item.startsWith('._')) continue
+      const fullPath = join(dir, item)
+      const itemStat = await stat(fullPath)
+      if (itemStat.isDirectory()) {
+        await findPdfs(fullPath)
+      } else if (item.toLowerCase().endsWith('.pdf')) {
+        pdfFiles.push(fullPath)
+      }
+    }
+  }
+
+  await findPdfs(folderPath)
+  adminImportProgress.total = pdfFiles.length
+  console.log(`[Admin Import] Found ${pdfFiles.length} PDF files`)
+
+  // Get or create default publisher
+  let defaultPublisher = db.prepare('SELECT * FROM publishers WHERE name = ?').get('Imported')
+  if (!defaultPublisher) {
+    const result = db.prepare('INSERT INTO publishers (name, description) VALUES (?, ?)').run('Imported', 'Manually imported magazines')
+    defaultPublisher = { id: result.lastInsertRowid, name: 'Imported' }
+  }
+
+  const magazinesToPreprocess = []
+
+  for (const pdfPath of pdfFiles) {
+    adminImportProgress.current++
+    adminImportProgress.currentItem = basename(pdfPath)
+
+    // Check if already exists
+    const existing = db.prepare('SELECT id FROM magazines WHERE file_path = ?').get(pdfPath)
+    if (existing) {
+      results.skipped++
+      continue
+    }
+
+    try {
+      const fileStat = await stat(pdfPath)
+      if (fileStat.size < 10240) {
+        results.skipped++
+        continue
+      }
+
+      const title = basename(pdfPath, '.pdf')
+
+      // Try to extract year from path or filename
+      const yearMatch = pdfPath.match(/20\d{2}/)
+      const year = yearMatch ? parseInt(yearMatch[0]) : null
+
+      const result = db.prepare(`
+        INSERT INTO magazines (publisher_id, title, file_path, file_size, year)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(defaultPublisher.id, title, pdfPath, fileStat.size, year)
+
+      magazinesToPreprocess.push(result.lastInsertRowid)
+      results.imported++
+      console.log(`[Admin Import] Imported: ${title}`)
+    } catch (err) {
+      results.errors.push(`${basename(pdfPath)}: ${err.message}`)
+      adminImportProgress.errors.push(`${basename(pdfPath)}: ${err.message}`)
+    }
+  }
+
+  console.log(`[Admin Import] Magazines import complete: ${results.imported} imported, ${results.skipped} skipped`)
+
+  // Trigger cover generation and preprocessing
+  if (magazinesToPreprocess.length > 0) {
+    console.log(`[Admin Import] Starting preprocessing for ${magazinesToPreprocess.length} magazines`)
+    adminImportProgress.currentItem = 'Preprocessing magazines...'
+
+    for (const magazineId of magazinesToPreprocess) {
+      try {
+        await preprocessMagazine(magazineId)
+      } catch (err) {
+        console.error(`Failed to preprocess magazine ${magazineId}:`, err.message)
+      }
+    }
+  }
+}
+
+// Admin: Import ebooks from folder
+async function adminImportEbooks(folderPath) {
+  const results = { imported: 0, skipped: 0, errors: [] }
+
+  // Find all ebooks recursively
+  const ebookFiles = []
+  async function findEbooks(dir) {
+    const items = await readdir(dir)
+    for (const item of items) {
+      if (item.startsWith('.') || item.startsWith('._')) continue
+      const fullPath = join(dir, item)
+      const itemStat = await stat(fullPath)
+      if (itemStat.isDirectory()) {
+        await findEbooks(fullPath)
+      } else {
+        const lower = item.toLowerCase()
+        if (lower.endsWith('.epub') || lower.endsWith('.pdf')) {
+          ebookFiles.push(fullPath)
+        }
+      }
+    }
+  }
+
+  await findEbooks(folderPath)
+  adminImportProgress.total = ebookFiles.length
+  console.log(`[Admin Import] Found ${ebookFiles.length} ebook files`)
+
+  // Get or create default category
+  let defaultCategory = db.prepare('SELECT * FROM ebook_categories WHERE name = ?').get('Imported')
+  if (!defaultCategory) {
+    const result = db.prepare('INSERT INTO ebook_categories (name, description) VALUES (?, ?)').run('Imported', 'Manually imported ebooks')
+    defaultCategory = { id: result.lastInsertRowid, name: 'Imported' }
+  }
+
+  for (const ebookPath of ebookFiles) {
+    adminImportProgress.current++
+    adminImportProgress.currentItem = basename(ebookPath)
+
+    // Check if already exists
+    const existing = db.prepare('SELECT id FROM ebooks WHERE file_path = ?').get(ebookPath)
+    if (existing) {
+      results.skipped++
+      continue
+    }
+
+    try {
+      const fileStat = await stat(ebookPath)
+      const title = basename(ebookPath).replace(/\.(epub|pdf)$/i, '')
+      const fileType = ebookPath.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf'
+
+      db.prepare(`
+        INSERT INTO ebooks (category_id, title, file_path, file_size, file_type)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(defaultCategory.id, title, ebookPath, fileStat.size, fileType)
+
+      results.imported++
+      console.log(`[Admin Import] Imported: ${title}`)
+    } catch (err) {
+      results.errors.push(`${basename(ebookPath)}: ${err.message}`)
+      adminImportProgress.errors.push(`${basename(ebookPath)}: ${err.message}`)
+    }
+  }
+
+  console.log(`[Admin Import] Ebooks import complete: ${results.imported} imported, ${results.skipped} skipped`)
+}
+
+// Admin: Browse folders
+app.get('/api/admin/browse', requireAdmin, async (req, res) => {
+  try {
+    const requestedPath = req.query.path || '/Volumes'
+
+    // Security: only allow browsing /Volumes
+    if (!requestedPath.startsWith('/Volumes')) {
+      return res.status(403).json({ error: 'Access denied. Can only browse /Volumes' })
+    }
+
+    if (!existsSync(requestedPath)) {
+      return res.status(404).json({ error: 'Path does not exist' })
+    }
+
+    const pathStat = await stat(requestedPath)
+    if (!pathStat.isDirectory()) {
+      return res.status(400).json({ error: 'Path is not a directory' })
+    }
+
+    const items = await readdir(requestedPath)
+    const folders = []
+
+    for (const item of items) {
+      if (item.startsWith('.')) continue
+      const fullPath = join(requestedPath, item)
+      try {
+        const itemStat = await stat(fullPath)
+        if (itemStat.isDirectory()) {
+          folders.push({ name: item, path: fullPath })
+        }
+      } catch (err) {
+        // Skip inaccessible items
+      }
+    }
+
+    // Sort folders alphabetically
+    folders.sort((a, b) => a.name.localeCompare(b.name))
+
+    res.json({
+      currentPath: requestedPath,
+      parentPath: requestedPath === '/Volumes' ? null : dirname(requestedPath),
+      folders
+    })
+  } catch (error) {
+    console.error('Browse folders error:', error)
+    res.status(500).json({ error: 'Failed to browse folders' })
+  }
+})
+
+// Admin: Get stats
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  try {
+    const magazineCount = db.prepare('SELECT COUNT(*) as count FROM magazines').get().count
+    const magazinePreprocessed = db.prepare('SELECT COUNT(*) as count FROM magazines WHERE preprocessed = 1').get().count
+    const ebookCount = db.prepare('SELECT COUNT(*) as count FROM ebooks').get().count
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count
+
+    res.json({
+      magazines: { total: magazineCount, preprocessed: magazinePreprocessed },
+      ebooks: ebookCount,
+      users: userCount
+    })
+  } catch (error) {
+    console.error('Admin stats error:', error)
+    res.status(500).json({ error: 'Failed to get stats' })
+  }
+})
+
+// Admin: Get user list
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  try {
+    const users = db.prepare(`
+      SELECT id, email, is_admin, created_at
+      FROM users
+      ORDER BY created_at DESC
+    `).all()
+    res.json(users)
+  } catch (error) {
+    console.error('Admin users error:', error)
+    res.status(500).json({ error: 'Failed to get users' })
+  }
+})
+
+// NBA Finals API endpoints
+const NBA_ROOT_PATH = '/Volumes/杂志/nba总决赛'
+
+// Get all NBA series with optional category and year filter
+app.get('/api/nba/series', (req, res) => {
+  try {
+    const { category, year } = req.query
+    let sql = 'SELECT * FROM nba_series WHERE 1=1'
+    const params = []
+
+    if (category) {
+      sql += ' AND category = ?'
+      params.push(category)
+    }
+    if (year) {
+      sql += ' AND year = ?'
+      params.push(parseInt(year))
+    }
+
+    sql += ' ORDER BY year DESC, title ASC'
+    const series = db.prepare(sql).all(...params)
+    res.json(series)
+  } catch (error) {
+    console.error('NBA series error:', error)
+    res.status(500).json({ error: 'Failed to get NBA series' })
+  }
+})
+
+// Get available NBA categories and years
+app.get('/api/nba/categories', (req, res) => {
+  try {
+    const categories = db.prepare(`
+      SELECT DISTINCT category FROM nba_series WHERE category IS NOT NULL ORDER BY category
+    `).all().map(r => r.category)
+
+    const years = db.prepare(`
+      SELECT DISTINCT year FROM nba_series ORDER BY year DESC
+    `).all().map(r => r.year)
+
+    res.json({ categories, years })
+  } catch (error) {
+    console.error('NBA categories error:', error)
+    res.status(500).json({ error: 'Failed to get NBA categories' })
+  }
+})
+
+// Get games for a specific series
+app.get('/api/nba/series/:id/games', (req, res) => {
+  try {
+    const games = db.prepare(`
+      SELECT * FROM nba_games WHERE series_id = ? ORDER BY game_number ASC, title ASC
+    `).all(req.params.id)
+    res.json(games)
+  } catch (error) {
+    console.error('NBA games error:', error)
+    res.status(500).json({ error: 'Failed to get NBA games' })
+  }
+})
+
+// Stream video file
+app.get('/api/nba/games/:id/stream', async (req, res) => {
+  try {
+    const game = db.prepare('SELECT * FROM nba_games WHERE id = ?').get(req.params.id)
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' })
+    }
+
+    const filePath = game.file_path
+    if (!existsSync(filePath)) {
+      return res.status(404).json({ error: 'Video file not found' })
+    }
+
+    const fileStat = await stat(filePath)
+    const fileSize = fileStat.size
+    const range = req.headers.range
+
+    // Determine content type based on file extension
+    const ext = extname(filePath).toLowerCase()
+    const contentTypes = {
+      '.mp4': 'video/mp4',
+      '.mkv': 'video/x-matroska',
+      '.avi': 'video/x-msvideo',
+      '.mov': 'video/quicktime',
+      '.ts': 'video/mp2t',
+      '.webm': 'video/webm'
+    }
+    const contentType = contentTypes[ext] || 'video/mp4'
+
+    if (range) {
+      // Handle range request for video seeking
+      const parts = range.replace(/bytes=/, '').split('-')
+      const start = parseInt(parts[0], 10)
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+      const chunkSize = end - start + 1
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': contentType
+      })
+
+      const stream = createReadStream(filePath, { start, end })
+      stream.pipe(res)
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': contentType
+      })
+      createReadStream(filePath).pipe(res)
+    }
+  } catch (error) {
+    console.error('Video stream error:', error)
+    res.status(500).json({ error: 'Failed to stream video' })
+  }
+})
+
+// Background NBA scan function - scans folder and adds to database
+async function scanNBAFolder() {
+  if (!existsSync(NBA_ROOT_PATH)) {
+    console.log('[NBA Scan] Folder not found:', NBA_ROOT_PATH)
+    return { series: 0, games: 0 }
+  }
+
+  console.log('[NBA Scan] Starting scan of', NBA_ROOT_PATH)
+  const folders = await readdir(NBA_ROOT_PATH)
+  let seriesCount = 0
+  let gamesCount = 0
+
+  for (const folderName of folders) {
+    const folderPath = join(NBA_ROOT_PATH, folderName)
+    const folderStat = await stat(folderPath)
+
+    if (!folderStat.isDirectory() || folderName.startsWith('.')) continue
+
+    // Extract year from folder name (e.g., "2020总决赛 湖人VS热火中文版" -> 2020)
+    const yearMatch = folderName.match(/^(\d{4})/)
+    const year = yearMatch ? parseInt(yearMatch[1]) : null
+    if (!year) continue
+
+    // Detect category (chinese/english) from folder name
+    const lowerName = folderName.toLowerCase()
+    const isEnglish = lowerName.includes('英文') || lowerName.includes('英语') ||
+                      lowerName.includes('english') || lowerName.includes('-abc') ||
+                      lowerName.includes('hdtv') || lowerName.includes('remux') ||
+                      (lowerName.includes('720p') && !lowerName.includes('中文')) ||
+                      (lowerName.includes('1080') && !lowerName.includes('央视') && !lowerName.includes('cctv'))
+    const category = isEnglish ? 'english' : 'chinese'
+
+    // Detect source from folder name
+    let source = null
+    if (lowerName.includes('cctv') || lowerName.includes('央视')) {
+      source = 'CCTV'
+    } else if (lowerName.includes('abc')) {
+      source = 'ABC'
+    } else if (lowerName.includes('纬来')) {
+      source = '纬来'
+    } else if (lowerName.includes('百事通')) {
+      source = '百事通'
+    }
+
+    // Check if series already exists
+    const existingSeries = db.prepare('SELECT id FROM nba_series WHERE folder_path = ?').get(folderPath)
+    let seriesId
+
+    if (existingSeries) {
+      seriesId = existingSeries.id
+      // Update category and source if not set
+      db.prepare('UPDATE nba_series SET category = ?, source = ? WHERE id = ? AND (category IS NULL OR category = ?)').run(category, source, seriesId, 'chinese')
+    } else {
+      // Create new series
+      const result = db.prepare(`
+        INSERT INTO nba_series (year, title, folder_path, category, source) VALUES (?, ?, ?, ?, ?)
+      `).run(year, folderName, folderPath, category, source)
+      seriesId = result.lastInsertRowid
+      seriesCount++
+    }
+
+    // Scan for video files recursively
+    const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.ts', '.webm']
+    const scanDir = async (dirPath) => {
+      try {
+        const items = await readdir(dirPath)
+        for (const item of items) {
+          if (item.startsWith('.')) continue
+          const itemPath = join(dirPath, item)
+          const itemStat = await stat(itemPath)
+
+          if (itemStat.isDirectory()) {
+            await scanDir(itemPath)
+          } else if (videoExtensions.some(ext => item.toLowerCase().endsWith(ext))) {
+            // Check if game already exists
+            const existingGame = db.prepare('SELECT id FROM nba_games WHERE file_path = ?').get(itemPath)
+            if (!existingGame) {
+              const ext = extname(item).toLowerCase().slice(1)
+              // Try to extract game number from filename
+              const gameMatch = item.match(/G(\d+)|Game\s*(\d+)|第(\d+)场/i)
+              const gameNumber = gameMatch ? parseInt(gameMatch[1] || gameMatch[2] || gameMatch[3]) : null
+
+              db.prepare(`
+                INSERT INTO nba_games (series_id, game_number, title, file_path, file_type)
+                VALUES (?, ?, ?, ?, ?)
+              `).run(seriesId, gameNumber, item, itemPath, ext)
+              gamesCount++
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[NBA Scan] Error scanning directory:', dirPath, err.message)
+      }
+    }
+
+    await scanDir(folderPath)
+  }
+
+  console.log(`[NBA Scan] Completed: ${seriesCount} new series, ${gamesCount} new games`)
+  return { series: seriesCount, games: gamesCount }
+}
+
+// API endpoint to manually trigger scan (optional, for admin)
+app.post('/api/nba/scan', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const result = await scanNBAFolder()
+    res.json({ message: 'Scan completed', ...result })
+  } catch (error) {
+    console.error('NBA scan error:', error)
+    res.status(500).json({ error: 'Failed to scan NBA folder' })
+  }
+})
+
+// Get NBA stats
+app.get('/api/nba/stats', (req, res) => {
+  try {
+    const seriesCount = db.prepare('SELECT COUNT(*) as count FROM nba_series').get().count
+    const gamesCount = db.prepare('SELECT COUNT(*) as count FROM nba_games').get().count
+    res.json({ series: seriesCount, games: gamesCount })
+  } catch (error) {
+    console.error('NBA stats error:', error)
+    res.status(500).json({ error: 'Failed to get NBA stats' })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`BookPost server running on http://localhost:${PORT}`)
 
@@ -2931,4 +3557,9 @@ app.listen(PORT, () => {
   setTimeout(() => {
     startBackgroundCoverGeneration()
   }, 5000)
+
+  // Start NBA folder scan after 3 seconds
+  setTimeout(() => {
+    scanNBAFolder().catch(err => console.error('[NBA Scan] Error:', err))
+  }, 3000)
 })

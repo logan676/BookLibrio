@@ -57,6 +57,15 @@ interface Translations {
   password: string
   loginRequired: string
   loginToAccess: string
+  // NBA
+  loadingSeries: string
+  noSeriesFound: string
+  noGamesFound: string
+  gamesCount: string
+  searchGames: string
+  allLanguages: string
+  seriesLabel: string
+  gamesLabel: string
 }
 
 const en: Translations = {
@@ -106,6 +115,14 @@ const en: Translations = {
   password: 'Password',
   loginRequired: 'Login Required',
   loginToAccess: 'Please login to access this feature',
+  loadingSeries: 'Loading series...',
+  noSeriesFound: 'No series found',
+  noGamesFound: 'No games found',
+  gamesCount: '{count} games',
+  searchGames: 'Search games...',
+  allLanguages: 'All Languages',
+  seriesLabel: 'Series',
+  gamesLabel: 'Games',
 }
 
 const zh: Translations = {
@@ -155,6 +172,14 @@ const zh: Translations = {
   password: '密码',
   loginRequired: '需要登录',
   loginToAccess: '请登录后访问此功能',
+  loadingSeries: '加载系列中...',
+  noSeriesFound: '没有找到系列',
+  noGamesFound: '没有找到比赛',
+  gamesCount: '{count} 场比赛',
+  searchGames: '搜索比赛...',
+  allLanguages: '全部语言',
+  seriesLabel: '系列',
+  gamesLabel: '场比赛',
 }
 
 const translations: Record<Locale, Translations> = { en, zh }
