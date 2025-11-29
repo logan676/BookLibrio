@@ -22,8 +22,6 @@ interface BubbleState {
 
 interface ImagePopupState {
   visible: boolean
-  x: number
-  y: number
   imageUrl: string
   explanation: string
   loading: boolean
@@ -97,7 +95,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
     visible: false, x: 0, y: 0, text: '', meaning: '', loading: false
   })
   const [imagePopup, setImagePopup] = useState<ImagePopupState>({
-    visible: false, x: 0, y: 0, imageUrl: '', explanation: '', loading: false
+    visible: false, imageUrl: '', explanation: '', loading: false
   })
 
   const viewerRef = useRef<HTMLDivElement>(null)
@@ -223,10 +221,39 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
             h2 { font-size: ${fontSizePx + 8}px !important; }
             h3 { font-size: ${fontSizePx + 4}px !important; }
             h4, h5, h6 { font-size: ${fontSizePx + 2}px !important; }
-            img { cursor: pointer; transition: opacity 0.2s; }
-            img:hover { opacity: 0.8; }
+            img { cursor: pointer; transition: all 0.2s; }
+            img:hover { opacity: 0.9; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); }
+            .img-tooltip { position: absolute; background: #ffffff; color: #333333; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; white-space: nowrap; pointer-events: none; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,0.15); border: 1px solid #e5e5e5; transform: translate(-50%, -50%); }
           `
           contents.document.head.appendChild(style)
+
+          // Create tooltip element for images
+          let tooltip: HTMLElement | null = null
+
+          // Add hover handlers for images to show tooltip
+          contents.document.addEventListener('mouseover', (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            if (target.tagName === 'IMG') {
+              if (!tooltip) {
+                tooltip = contents.document.createElement('div')
+                tooltip.className = 'img-tooltip'
+                tooltip.textContent = 'Click to see meaning'
+                contents.document.body.appendChild(tooltip)
+              }
+              const rect = target.getBoundingClientRect()
+              // Position tooltip centered on the image
+              tooltip.style.left = `${rect.left + rect.width / 2}px`
+              tooltip.style.top = `${rect.top + rect.height / 2}px`
+              tooltip.style.display = 'block'
+            }
+          })
+
+          contents.document.addEventListener('mouseout', (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            if (target.tagName === 'IMG' && tooltip) {
+              tooltip.style.display = 'none'
+            }
+          })
 
           // Add click handler for images
           contents.document.addEventListener('click', (e: MouseEvent) => {
@@ -235,56 +262,63 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
               e.preventDefault()
               e.stopPropagation()
 
+              // Hide tooltip when clicked
+              if (tooltip) tooltip.style.display = 'none'
+
               const img = target as HTMLImageElement
-              const rect = img.getBoundingClientRect()
-              const iframe = viewerRef.current?.querySelector('iframe')
-              const iframeRect = iframe?.getBoundingClientRect() || { left: 0, top: 0 }
-              const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 }
-
-              const popupX = rect.left + rect.width / 2 + iframeRect.left - containerRect.left
-              const popupY = rect.bottom + iframeRect.top - containerRect.top + 10
-
-              // Get the image URL (could be blob or data URL from epub)
               const imageUrl = img.src
 
               setImagePopup({
                 visible: true,
-                x: popupX,
-                y: popupY,
                 imageUrl,
                 explanation: '',
                 loading: true
               })
 
+              // Convert image to base64 for API
+              const getBase64FromImage = async (imgElement: HTMLImageElement): Promise<string> => {
+                const canvas = document.createElement('canvas')
+                canvas.width = imgElement.naturalWidth || imgElement.width
+                canvas.height = imgElement.naturalHeight || imgElement.height
+                const ctx = canvas.getContext('2d')
+                if (ctx) {
+                  ctx.drawImage(imgElement, 0, 0)
+                  return canvas.toDataURL('image/png')
+                }
+                return ''
+              }
+
               // Call AI to analyze image
               if (token) {
-                fetch('/api/ai/explain-image', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                  },
-                  body: JSON.stringify({
-                    imageUrl,
-                    targetLanguage: locale === 'zh' ? 'zh' : 'en'
+                getBase64FromImage(img).then(base64Image => {
+                  fetch('/api/ai/explain-image', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      imageUrl: base64Image,
+                      targetLanguage: locale === 'zh' ? 'zh' : 'en'
+                    })
                   })
+                    .then(res => res.ok ? res.json() : Promise.reject('Failed'))
+                    .then(data => {
+                      setImagePopup(prev => ({
+                        ...prev,
+                        explanation: data.explanation,
+                        loading: false
+                      }))
+                    })
+                    .catch(err => {
+                      console.error('Failed to analyze image:', err)
+                      setImagePopup(prev => ({
+                        ...prev,
+                        explanation: 'Failed to analyze image',
+                        loading: false
+                      }))
+                    })
                 })
-                  .then(res => res.ok ? res.json() : Promise.reject('Failed'))
-                  .then(data => {
-                    setImagePopup(prev => ({
-                      ...prev,
-                      explanation: data.explanation,
-                      loading: false
-                    }))
-                  })
-                  .catch(err => {
-                    console.error('Failed to analyze image:', err)
-                    setImagePopup(prev => ({
-                      ...prev,
-                      explanation: 'Failed to analyze image',
-                      loading: false
-                    }))
-                  })
               }
             }
           })
@@ -806,6 +840,28 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const handleGetMeaning = async () => {
     if (!bubble.selectedText || !token) return
 
+    // Try to get the full paragraph containing the selected text
+    let paragraph = bubble.selectedText
+    try {
+      const iframe = viewerRef.current?.querySelector('iframe')
+      if (iframe && iframe.contentDocument) {
+        const selection = iframe.contentDocument.getSelection()
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0)
+          // Find the parent paragraph element
+          let node: Node | null = range.startContainer
+          while (node && node.nodeName !== 'P' && node.nodeName !== 'DIV' && node.parentNode) {
+            node = node.parentNode
+          }
+          if (node && (node as HTMLElement).textContent) {
+            paragraph = (node as HTMLElement).textContent?.trim() || bubble.selectedText
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to get paragraph:', e)
+    }
+
     setMeaningPopup({
       visible: true,
       x: bubble.x,
@@ -825,7 +881,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         },
         body: JSON.stringify({
           text: bubble.selectedText,
-          paragraph: bubble.selectedText,
+          paragraph: paragraph,
           targetLanguage: locale === 'zh' ? 'en' : 'zh'
         })
       })
@@ -977,7 +1033,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
 
   // Close image popup
   const closeImagePopup = () => {
-    setImagePopup({ visible: false, x: 0, y: 0, imageUrl: '', explanation: '', loading: false })
+    setImagePopup({ visible: false, imageUrl: '', explanation: '', loading: false })
   }
 
   // Handle image click for AI explanation
@@ -1364,7 +1420,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         >
           <div className="meaning-popup-header">
             <span>Meaning</span>
-            <button className="popup-close" onClick={closeMeaningPopup}>&times;</button>
+            <button className="popup-close-btn" onClick={closeMeaningPopup}>Close</button>
           </div>
           <div className="meaning-popup-text">
             "{meaningPopup.text}"
@@ -1378,8 +1434,24 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
             ) : (
               <div className="meaning-result" dangerouslySetInnerHTML={{
                 __html: meaningPopup.meaning
+                  // Headers
+                  .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+                  .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+                  .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+                  // Bold
                   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  // Italic
+                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                  // Inline code
+                  .replace(/`([^`]+)`/g, '<code>$1</code>')
+                  // List items
+                  .replace(/^- (.+)$/gm, '<li>$1</li>')
+                  // Paragraphs (double newlines)
+                  .replace(/\n\n/g, '</p><p>')
+                  // Single newlines to br
                   .replace(/\n/g, '<br/>')
+                  // Wrap in paragraph
+                  .replace(/^(.+)$/, '<p>$1</p>')
               }} />
             )}
           </div>
@@ -1400,7 +1472,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         >
           <div className="ideas-popup-header">
             <span>Ideas</span>
-            <button className="popup-close" onClick={closeIdeaPopup}>&times;</button>
+            <button className="popup-close-btn" onClick={closeIdeaPopup}>Close</button>
           </div>
           <div className="ideas-popup-content">
             {ideaPopup.ideas.length === 0 ? (
@@ -1418,39 +1490,50 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         </div>
       )}
 
-      {/* Image explanation popup */}
+      {/* Image explanation popup - centered toast */}
       {imagePopup.visible && (
-        <div
-          className="meaning-popup image-popup"
-          style={{
-            position: 'absolute',
-            left: `${imagePopup.x}px`,
-            top: `${imagePopup.y}px`,
-            transform: 'translateX(-50%)',
-            zIndex: 1000,
-            maxWidth: '400px'
-          }}
-        >
-          <div className="meaning-popup-header">
-            <span>Image Analysis</span>
-            <button className="popup-close" onClick={closeImagePopup}>&times;</button>
-          </div>
-          <div className="image-popup-preview">
-            <img src={imagePopup.imageUrl} alt="Selected" style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }} />
-          </div>
-          <div className="meaning-popup-content">
-            {imagePopup.loading ? (
-              <div className="meaning-loading">
-                <span className="loading-spinner"></span>
-                <span>Analyzing image...</span>
-              </div>
-            ) : (
-              <div className="meaning-result" dangerouslySetInnerHTML={{
-                __html: imagePopup.explanation
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/\n/g, '<br/>')
-              }} />
-            )}
+        <div className="image-toast-overlay" onClick={closeImagePopup}>
+          <div className="image-toast" onClick={(e) => e.stopPropagation()}>
+            <div className="image-toast-header">
+              <span>Image Analysis</span>
+              <button className="popup-close-btn" onClick={closeImagePopup}>Close</button>
+            </div>
+            <div className="image-toast-preview">
+              <img src={imagePopup.imageUrl} alt="Selected" />
+            </div>
+            <div className="image-toast-content">
+              {imagePopup.loading ? (
+                <div className="meaning-loading">
+                  <span className="loading-spinner"></span>
+                  <span>Analyzing image...</span>
+                </div>
+              ) : (
+                <div className="image-analysis-result" dangerouslySetInnerHTML={{
+                  __html: imagePopup.explanation
+                    // Headers
+                    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+                    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+                    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+                    // Bold
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // Italic
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    // List items (- at start of line)
+                    .replace(/^- (.+)$/gm, '<li>$1</li>')
+                    // Wrap consecutive <li> in <ul>
+                    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                    // Paragraphs (double newlines)
+                    .replace(/\n\n/g, '</p><p>')
+                    // Single newlines to space (within paragraphs)
+                    .replace(/\n/g, ' ')
+                    // Wrap in paragraph
+                    .replace(/^(.+)$/s, '<p>$1</p>')
+                    // Clean up empty paragraphs
+                    .replace(/<p><\/p>/g, '')
+                    .replace(/<p>\s*<\/p>/g, '')
+                }} />
+              )}
+            </div>
           </div>
         </div>
       )}
