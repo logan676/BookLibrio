@@ -104,6 +104,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const renditionRef = useRef<Rendition | null>(null)
   const selectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ideaPopupRef = useRef<HTMLDivElement>(null)
+  const bubbleRef = useRef<HTMLDivElement>(null)
 
   // Theme configurations
   const themes = {
@@ -724,6 +725,27 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
     setBubble({ visible: false, x: 0, y: 0, type: 'confirm' })
     setIdeaText('')
   }
+
+  // Close bubble when clicking outside
+  useEffect(() => {
+    if (!bubble.visible) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (bubbleRef.current && !bubbleRef.current.contains(event.target as Node)) {
+        closeBubble()
+      }
+    }
+
+    // Add listener with a small delay to prevent immediate close
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [bubble.visible])
 
   const handleConfirmUnderline = async () => {
     if (!bubble.selectedText || !bubble.cfiRange || !token) return
@@ -1355,6 +1377,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
       {/* Underline bubble */}
       {bubble.visible && (
         <div
+          ref={bubbleRef}
           className="underline-bubble"
           style={{
             position: 'absolute',
