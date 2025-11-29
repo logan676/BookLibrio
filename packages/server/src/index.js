@@ -1516,15 +1516,41 @@ app.get('/api/auth/me', (req, res) => {
   }
 })
 
-// Get all books (user-specific)
+// Get all books (user-specific) with optional search
 app.get('/api/books', (req, res) => {
   try {
     if (!req.user) {
       return res.json([]) // No books for unauthenticated users
     }
+
+    const { q, includeContent } = req.query
+
+    if (q && includeContent === 'true') {
+      // Search books including content from blog posts
+      const searchTerm = `%${q}%`
+      const books = db.prepare(`
+        SELECT DISTINCT b.* FROM books b
+        LEFT JOIN blog_posts p ON b.id = p.book_id
+        WHERE b.user_id = ?
+        AND (
+          b.title LIKE ? OR
+          b.author LIKE ? OR
+          b.publisher LIKE ? OR
+          b.isbn LIKE ? OR
+          b.description LIKE ? OR
+          b.categories LIKE ? OR
+          p.content LIKE ? OR
+          p.extracted_text LIKE ?
+        )
+        ORDER BY b.created_at DESC
+      `).all(req.user.id, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
+      return res.json(books)
+    }
+
     const books = db.prepare('SELECT * FROM books WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id)
     res.json(books)
   } catch (error) {
+    console.error('Failed to fetch books:', error)
     res.status(500).json({ error: 'Failed to fetch books' })
   }
 })
@@ -6838,6 +6864,337 @@ function generatePredictions(data) {
 
   return predictions
 }
+
+// ============================================
+// Global Search API
+// ============================================
+
+// Global search endpoint - searches across all content types
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q, limit = 50 } = req.query
+
+    if (!q || q.trim().length < 2) {
+      return res.json({ results: [], message: 'Search query must be at least 2 characters' })
+    }
+
+    const searchTerm = `%${q.trim()}%`
+    const searchLimit = Math.min(parseInt(limit) || 50, 100)
+    const results = []
+
+    // Search Books (title, author)
+    const books = db.prepare(`
+      SELECT id, title, author, cover_url, cover_photo_url, 'book' as type
+      FROM books
+      WHERE title LIKE ? OR author LIKE ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    books.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.author,
+        type: 'book',
+        cover: item.cover_url || item.cover_photo_url
+      })
+    })
+
+    // Search Ebooks (title)
+    const ebooks = db.prepare(`
+      SELECT e.id, e.title, e.cover_url, c.name as category_name, 'ebook' as type
+      FROM ebooks e
+      LEFT JOIN ebook_categories c ON e.category_id = c.id
+      WHERE e.title LIKE ?
+      ORDER BY e.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchLimit)
+    ebooks.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.category_name || 'Ebook',
+        type: 'ebook',
+        cover: item.cover_url
+      })
+    })
+
+    // Search Magazines (title, publisher)
+    const magazines = db.prepare(`
+      SELECT m.id, m.title, m.cover_url, m.year, m.issue, p.name as publisher_name, 'magazine' as type
+      FROM magazines m
+      LEFT JOIN publishers p ON m.publisher_id = p.id
+      WHERE m.title LIKE ? OR p.name LIKE ?
+      ORDER BY m.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    magazines.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.publisher_name || (item.year ? `${item.year}` : 'Magazine'),
+        type: 'magazine',
+        cover: item.cover_url
+      })
+    })
+
+    // Search Notes (title, content preview)
+    const notes = db.prepare(`
+      SELECT id, title, content_preview, year, 'note' as type
+      FROM notes
+      WHERE title LIKE ? OR content_preview LIKE ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    notes.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.year ? `${item.year}` : 'Note',
+        type: 'note',
+        cover: null
+      })
+    })
+
+    // Search Audio (title, series)
+    const audio = db.prepare(`
+      SELECT a.id, a.title, s.name as series_name, 'audio' as type
+      FROM audio_files a
+      LEFT JOIN audio_series s ON a.series_id = s.id
+      WHERE a.title LIKE ? OR s.name LIKE ?
+      ORDER BY a.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    audio.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_name || 'Audio',
+        type: 'audio',
+        cover: null
+      })
+    })
+
+    // Search Lectures (title, series)
+    const lectures = db.prepare(`
+      SELECT l.id, l.title, s.name as series_name, 'lecture' as type
+      FROM lecture_videos l
+      LEFT JOIN lecture_series s ON l.series_id = s.id
+      WHERE l.title LIKE ? OR s.name LIKE ?
+      ORDER BY l.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    lectures.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_name || 'Lecture',
+        type: 'lecture',
+        cover: null
+      })
+    })
+
+    // Search Speeches (title, series)
+    const speeches = db.prepare(`
+      SELECT s.id, s.title, ss.name as series_name, 'speech' as type
+      FROM speech_videos s
+      LEFT JOIN speech_series ss ON s.series_id = ss.id
+      WHERE s.title LIKE ? OR ss.name LIKE ?
+      ORDER BY s.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    speeches.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_name || 'Speech',
+        type: 'speech',
+        cover: null
+      })
+    })
+
+    // Search Movies (title)
+    const movies = db.prepare(`
+      SELECT id, title, year, 'movie' as type
+      FROM movies
+      WHERE title LIKE ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchLimit)
+    movies.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.year ? `${item.year}` : 'Movie',
+        type: 'movie',
+        cover: null
+      })
+    })
+
+    // Search TV Shows (title, series)
+    const tvshows = db.prepare(`
+      SELECT e.id, e.title, e.season, e.episode, s.name as series_name, 'tvshow' as type
+      FROM tvshow_episodes e
+      LEFT JOIN tvshow_series s ON e.series_id = s.id
+      WHERE e.title LIKE ? OR s.name LIKE ?
+      ORDER BY e.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    tvshows.forEach(item => {
+      const epInfo = item.season && item.episode ? `S${item.season}E${item.episode}` : ''
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_name ? `${item.series_name} ${epInfo}`.trim() : 'TV Show',
+        type: 'tvshow',
+        cover: null
+      })
+    })
+
+    // Search Documentaries (title, series)
+    const documentaries = db.prepare(`
+      SELECT d.id, d.title, s.name as series_name, 'documentary' as type
+      FROM documentary_episodes d
+      LEFT JOIN documentary_series s ON d.series_id = s.id
+      WHERE d.title LIKE ? OR s.name LIKE ?
+      ORDER BY d.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    documentaries.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_name || 'Documentary',
+        type: 'documentary',
+        cover: null
+      })
+    })
+
+    // Search Animation (title, series)
+    const animations = db.prepare(`
+      SELECT a.id, a.title, s.name as series_name, 'animation' as type
+      FROM animation_episodes a
+      LEFT JOIN animation_series s ON a.series_id = s.id
+      WHERE a.title LIKE ? OR s.name LIKE ?
+      ORDER BY a.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchLimit)
+    animations.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_name || 'Animation',
+        type: 'animation',
+        cover: null
+      })
+    })
+
+    // Search NBA Games (title, teams, series)
+    const nbaGames = db.prepare(`
+      SELECT g.id, g.title, s.title as series_title, s.teams, 'nba' as type
+      FROM nba_games g
+      LEFT JOIN nba_series s ON g.series_id = s.id
+      WHERE g.title LIKE ? OR s.title LIKE ? OR s.teams LIKE ?
+      ORDER BY g.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchTerm, searchTerm, searchLimit)
+    nbaGames.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.title,
+        subtitle: item.series_title || item.teams || 'NBA Game',
+        type: 'nba',
+        cover: null
+      })
+    })
+
+    // Search Underlines and Ideas (text content)
+    const underlines = db.prepare(`
+      SELECT u.id, u.text, b.title as book_title, 'underline' as type
+      FROM underlines u
+      LEFT JOIN blog_posts bp ON u.post_id = bp.id
+      LEFT JOIN books b ON bp.book_id = b.id
+      WHERE u.text LIKE ?
+      ORDER BY u.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchLimit)
+    underlines.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.text.substring(0, 100) + (item.text.length > 100 ? '...' : ''),
+        subtitle: item.book_title || 'Underline',
+        type: 'underline',
+        cover: null
+      })
+    })
+
+    // Search Ebook Underlines
+    const ebookUnderlines = db.prepare(`
+      SELECT u.id, u.text, e.title as ebook_title, 'ebook_underline' as type
+      FROM ebook_underlines u
+      LEFT JOIN ebooks e ON u.ebook_id = e.id
+      WHERE u.text LIKE ?
+      ORDER BY u.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchLimit)
+    ebookUnderlines.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.text.substring(0, 100) + (item.text.length > 100 ? '...' : ''),
+        subtitle: item.ebook_title || 'Ebook Underline',
+        type: 'ebook_underline',
+        cover: null
+      })
+    })
+
+    // Search Ideas
+    const ideas = db.prepare(`
+      SELECT i.id, i.content, u.text as underline_text, 'idea' as type
+      FROM ideas i
+      LEFT JOIN underlines u ON i.underline_id = u.id
+      WHERE i.content LIKE ?
+      ORDER BY i.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchLimit)
+    ideas.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.content.substring(0, 100) + (item.content.length > 100 ? '...' : ''),
+        subtitle: 'Idea',
+        type: 'idea',
+        cover: null
+      })
+    })
+
+    // Search Ebook Ideas
+    const ebookIdeas = db.prepare(`
+      SELECT i.id, i.content, 'ebook_idea' as type
+      FROM ebook_ideas i
+      WHERE i.content LIKE ?
+      ORDER BY i.created_at DESC
+      LIMIT ?
+    `).all(searchTerm, searchLimit)
+    ebookIdeas.forEach(item => {
+      results.push({
+        id: item.id,
+        title: item.content.substring(0, 100) + (item.content.length > 100 ? '...' : ''),
+        subtitle: 'Ebook Idea',
+        type: 'ebook_idea',
+        cover: null
+      })
+    })
+
+    res.json({
+      query: q,
+      total: results.length,
+      results: results.slice(0, searchLimit)
+    })
+
+  } catch (error) {
+    console.error('Global search error:', error)
+    res.status(500).json({ error: 'Search failed' })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`BookPost server running on http://localhost:${PORT}`)
