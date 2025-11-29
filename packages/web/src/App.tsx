@@ -15,12 +15,14 @@ import MoviesDashboard from './components/MoviesDashboard'
 import TVShowsDashboard from './components/TVShowsDashboard'
 import DocumentariesDashboard from './components/DocumentariesDashboard'
 import AnimationDashboard from './components/AnimationDashboard'
+import PhysicalBooksDashboard from './components/PhysicalBooksDashboard'
 import UserProfile from './components/UserProfile'
+import GlobalSearch from './components/GlobalSearch'
 import { useI18n } from './i18n'
 import { useAuth } from './auth'
 import type { Book, BlogPost } from './types'
 
-type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks' | 'thinking' | 'admin' | 'nba' | 'audio' | 'lectures' | 'speeches' | 'movies' | 'tvshows' | 'documentaries' | 'animation' | 'profile'
+type View = 'home' | 'detail' | 'post' | 'magazines' | 'ebooks' | 'books' | 'thinking' | 'admin' | 'nba' | 'audio' | 'lectures' | 'speeches' | 'movies' | 'tvshows' | 'documentaries' | 'animation' | 'profile'
 
 // Parse URL hash to get current route
 function parseHash(): { view: View; bookId?: number; postId?: number } {
@@ -33,6 +35,10 @@ function parseHash(): { view: View; bookId?: number; postId?: number } {
 
   if (hash === 'ebooks') {
     return { view: 'ebooks' }
+  }
+
+  if (hash === 'books') {
+    return { view: 'books' }
   }
 
   if (hash === 'thinking') {
@@ -102,6 +108,7 @@ function App() {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
 
@@ -133,6 +140,10 @@ function App() {
       setSelectedPost(null)
     } else if (newView === 'ebooks') {
       setView('ebooks')
+      setSelectedBook(null)
+      setSelectedPost(null)
+    } else if (newView === 'books') {
+      setView('books')
       setSelectedBook(null)
       setSelectedPost(null)
     } else if (newView === 'thinking') {
@@ -316,6 +327,9 @@ function App() {
     if (view === 'ebooks') {
       return <EbooksDashboard />
     }
+    if (view === 'books') {
+      return <PhysicalBooksDashboard onBookClick={handleBookClick} />
+    }
     if (view === 'thinking') {
       return <ThinkingDashboard />
     }
@@ -350,14 +364,8 @@ function App() {
       return <AdminDashboard />
     }
 
-    // Home / Bookshelf view
-    return (
-      <BookshelfDashboard
-        books={books}
-        onBookClick={handleBookClick}
-        onBookAdded={handleBookAdded}
-      />
-    )
+    // Home / Bookshelf view (reading history)
+    return <BookshelfDashboard />
   }
 
   // Helper to get email prefix
@@ -368,6 +376,64 @@ function App() {
   // Check if current view is in the "more" menu
   const moreViews = ['nba', 'audio', 'lectures', 'speeches', 'movies', 'tvshows', 'documentaries', 'animation']
   const isMoreActive = moreViews.includes(view)
+
+  // Global keyboard shortcut for search (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Handle search navigation
+  const handleSearchNavigate = (type: string, id: number) => {
+    // Navigate based on result type
+    switch (type) {
+      case 'book':
+        window.location.hash = `book/${id}`
+        break
+      case 'ebook':
+        window.location.hash = 'ebooks'
+        break
+      case 'magazine':
+        window.location.hash = 'magazines'
+        break
+      case 'note':
+        window.location.hash = 'thinking'
+        break
+      case 'audio':
+        window.location.hash = 'audio'
+        break
+      case 'lecture':
+        window.location.hash = 'lectures'
+        break
+      case 'speech':
+        window.location.hash = 'speeches'
+        break
+      case 'movie':
+        window.location.hash = 'movies'
+        break
+      case 'tvshow':
+        window.location.hash = 'tvshows'
+        break
+      case 'documentary':
+        window.location.hash = 'documentaries'
+        break
+      case 'animation':
+        window.location.hash = 'animation'
+        break
+      case 'nba':
+        window.location.hash = 'nba'
+        break
+      default:
+        // For underlines, ideas, etc. - navigate to home for now
+        window.location.hash = ''
+    }
+  }
 
   return (
     <div className="app">
@@ -385,6 +451,12 @@ function App() {
             onClick={() => window.location.hash = 'magazines'}
           >
             {t.magazines}
+          </button>
+          <button
+            className={`tab-btn ${view === 'books' ? 'active' : ''}`}
+            onClick={() => window.location.hash = 'books'}
+          >
+            {t.physicalBooks}
           </button>
           <button
             className={`tab-btn ${view === 'home' ? 'active' : ''}`}
@@ -436,6 +508,16 @@ function App() {
           </div>
         </nav>
         <div className="header-actions">
+          <button
+            className="search-btn"
+            onClick={() => setShowSearch(true)}
+            title={t.search || 'Search (Cmd+K)'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </button>
           {user ? (
             <div className="user-menu-container" ref={userMenuRef}>
               <button
@@ -471,6 +553,12 @@ function App() {
       {showLoginModal && (
         <LoginModal onClose={() => setShowLoginModal(false)} />
       )}
+
+      <GlobalSearch
+        isOpen={showSearch}
+        onClose={() => setShowSearch(false)}
+        onNavigate={handleSearchNavigate}
+      />
 
       {renderContent()}
     </div>
