@@ -46,7 +46,10 @@ export default function MagazinesDashboard() {
     try {
       const params = new URLSearchParams()
       params.set('publisher_id', publisherId.toString())
-      if (year) params.set('year', year.toString())
+      // year=0 means "Other" (items without valid year), pass as special value
+      if (year !== null && year !== undefined) {
+        params.set('year', year.toString())
+      }
       if (search) params.set('search', search)
 
       const response = await fetch(`/api/magazines?${params}`)
@@ -68,17 +71,24 @@ export default function MagazinesDashboard() {
       const response = await fetch(`/api/magazines?publisher_id=${publisherId}`)
       if (response.ok) {
         const data = await response.json()
-        // Count magazines per year
+        // Count magazines per year (treat 0, null, undefined as "Other")
         const yearCounts: { [key: number]: number } = {}
+        let otherCount = 0
         data.forEach((m: Magazine) => {
-          if (m.year) {
+          if (m.year && m.year > 1900) {
             yearCounts[m.year] = (yearCounts[m.year] || 0) + 1
+          } else {
+            otherCount++
           }
         })
         // Convert to array and sort by year descending
         const infos: YearInfo[] = Object.entries(yearCounts)
           .map(([year, count]) => ({ year: parseInt(year), count }))
           .sort((a, b) => b.year - a.year)
+        // Add "Other" category (year=0) if there are items without valid year
+        if (otherCount > 0) {
+          infos.push({ year: 0, count: otherCount })
+        }
         setYearInfos(infos)
       }
     } catch (error) {
@@ -237,7 +247,7 @@ export default function MagazinesDashboard() {
               className="year-card"
               onClick={() => handleYearClick(info.year)}
             >
-              <div className="year-number">{info.year}</div>
+              <div className="year-number">{info.year === 0 ? 'Other' : info.year}</div>
               <div className="year-count">{formatCount(t.issues, info.count)}</div>
             </div>
           ))}
@@ -258,7 +268,7 @@ export default function MagazinesDashboard() {
     return (
       <div className="magazines-dashboard">
         <div className="sub-view-header">
-          <h1 className="sub-view-title">{selectedPublisher.name}{selectedYear ? ` - ${selectedYear}` : ''}</h1>
+          <h1 className="sub-view-title">{selectedPublisher.name}{selectedYear !== null ? ` - ${selectedYear === 0 ? 'Other' : selectedYear}` : ''}</h1>
           <div className="sub-view-nav">
             <button className="back-btn" onClick={isYearCategorized ? handleBackToYears : handleBackToPublishers}>
               {t.back}
