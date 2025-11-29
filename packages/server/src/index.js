@@ -3449,7 +3449,7 @@ app.delete('/api/ebook-ideas/:id', requireAuth, (req, res) => {
   }
 })
 
-// AI-powered meaning endpoint - uses OpenAI GPT-4o to explain text in context
+// AI-powered meaning endpoint - uses DeepSeek to explain text in context
 app.post('/api/ai/meaning', requireAuth, async (req, res) => {
   try {
     const { text, paragraph, targetLanguage = 'zh' } = req.body
@@ -3458,10 +3458,10 @@ app.post('/api/ai/meaning', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Text is required' })
     }
 
-    // Use OpenAI API for intelligent meaning extraction
-    const openaiApiKey = process.env.OPENAI_API_KEY
-    if (!openaiApiKey) {
-      return res.status(500).json({ error: 'AI service not configured. Please add OPENAI_API_KEY to .env' })
+    // Use DeepSeek API for intelligent meaning extraction
+    const deepseekApiKey = process.env.DEEPSEEK_API_KEY
+    if (!deepseekApiKey) {
+      return res.status(500).json({ error: 'AI service not configured. Please add DEEPSEEK_API_KEY to .env' })
     }
 
     const systemPrompt = targetLanguage === 'zh'
@@ -3484,14 +3484,14 @@ Format your response as:
       ? `Selected text: "${text}"\n\nFull paragraph for context:\n"${paragraph}"\n\nPlease explain the meaning of the selected text within this context.`
       : `Text: "${text}"\n\nPlease explain the meaning of this text.`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`
+        'Authorization': `Bearer ${deepseekApiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -3503,7 +3503,7 @@ Format your response as:
 
     if (!response.ok) {
       const errorData = await response.text()
-      console.error('OpenAI API error:', errorData)
+      console.error('DeepSeek API error:', errorData)
       return res.status(500).json({ error: 'AI service error' })
     }
 
@@ -3521,7 +3521,7 @@ Format your response as:
   }
 })
 
-// AI-powered image explanation endpoint - uses OpenAI GPT-4o vision to analyze images
+// AI-powered image explanation endpoint - uses DeepSeek VL for image analysis
 app.post('/api/ai/explain-image', requireAuth, async (req, res) => {
   try {
     const { imageUrl, targetLanguage = 'en' } = req.body
@@ -3530,10 +3530,10 @@ app.post('/api/ai/explain-image', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Image URL is required' })
     }
 
-    // Use OpenAI API for image analysis
-    const openaiApiKey = process.env.OPENAI_API_KEY
-    if (!openaiApiKey) {
-      return res.status(500).json({ error: 'AI service not configured. Please add OPENAI_API_KEY to .env' })
+    // Use DeepSeek API for image analysis
+    const deepseekApiKey = process.env.DEEPSEEK_API_KEY
+    if (!deepseekApiKey) {
+      return res.status(500).json({ error: 'AI service not configured. Please add DEEPSEEK_API_KEY to .env' })
     }
 
     const systemPrompt = targetLanguage === 'zh'
@@ -3552,14 +3552,14 @@ Keep your response concise but informative. Respond in Chinese.`
 
 Keep your response concise but informative. Respond in English.`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`
+        'Authorization': `Bearer ${deepseekApiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -3577,7 +3577,7 @@ Keep your response concise but informative. Respond in English.`
 
     if (!response.ok) {
       const errorData = await response.text()
-      console.error('OpenAI API error:', errorData)
+      console.error('DeepSeek API error:', errorData)
       return res.status(500).json({ error: 'AI service error' })
     }
 
