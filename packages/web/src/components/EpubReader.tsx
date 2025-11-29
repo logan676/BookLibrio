@@ -1,12 +1,49 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import ePub, { Book, Rendition, NavItem } from 'epubjs'
 import { useAuth } from '../auth'
-import type { Ebook } from '../types'
+import { useI18n } from '../i18n'
+import type { Ebook, EbookUnderline, EbookIdea } from '../types'
 
 interface Props {
   ebook: Ebook
   onBack: () => void
   initialCfi?: string
+}
+
+interface BubbleState {
+  visible: boolean
+  x: number
+  y: number
+  type: 'confirm' | 'idea' | 'existing'
+  selectedText?: string
+  cfiRange?: string
+  underlineId?: number
+}
+
+interface ImagePopupState {
+  visible: boolean
+  x: number
+  y: number
+  imageUrl: string
+  explanation: string
+  loading: boolean
+}
+
+interface IdeaPopupState {
+  visible: boolean
+  underlineId: number | null
+  ideas: EbookIdea[]
+  x: number
+  y: number
+}
+
+interface MeaningPopupState {
+  visible: boolean
+  x: number
+  y: number
+  text: string
+  meaning: string
+  loading: boolean
 }
 
 interface TocItem {
@@ -31,6 +68,7 @@ const fontFamilies: Record<FontFamily, string> = {
 
 export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const { token, user } = useAuth()
+  const { locale } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentLocation, setCurrentLocation] = useState<string>('')
@@ -48,10 +86,24 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
 
+  // Underline state
+  const [underlines, setUnderlines] = useState<EbookUnderline[]>([])
+  const [bubble, setBubble] = useState<BubbleState>({ visible: false, x: 0, y: 0, type: 'confirm' })
+  const [ideaText, setIdeaText] = useState('')
+  const [ideaPopup, setIdeaPopup] = useState<IdeaPopupState>({ visible: false, underlineId: null, ideas: [], x: 0, y: 0 })
+  const [newIdeaText, setNewIdeaText] = useState('')
+  const [meaningPopup, setMeaningPopup] = useState<MeaningPopupState>({
+    visible: false, x: 0, y: 0, text: '', meaning: '', loading: false
+  })
+  const [imagePopup, setImagePopup] = useState<ImagePopupState>({
+    visible: false, x: 0, y: 0, imageUrl: '', explanation: '', loading: false
+  })
+
   const viewerRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const bookRef = useRef<Book | null>(null)
   const renditionRef = useRef<Rendition | null>(null)
+  const selectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Theme configurations
   const themes = {
@@ -160,7 +212,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
         // Set initial font family
         rendition.themes.font(fontFamilies[fontFamily])
 
-        // Inject initial font size CSS
+        // Inject initial font size CSS and image click handlers
         rendition.hooks.content.register((contents: any) => {
           const style = contents.document.createElement('style')
           style.id = 'custom-font-size'
@@ -170,8 +222,71 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
             h2 { font-size: ${fontSizePx + 8}px !important; }
             h3 { font-size: ${fontSizePx + 4}px !important; }
             h4, h5, h6 { font-size: ${fontSizePx + 2}px !important; }
+            img { cursor: pointer; transition: opacity 0.2s; }
+            img:hover { opacity: 0.8; }
           `
           contents.document.head.appendChild(style)
+
+          // Add click handler for images
+          contents.document.addEventListener('click', (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            if (target.tagName === 'IMG') {
+              e.preventDefault()
+              e.stopPropagation()
+
+              const img = target as HTMLImageElement
+              const rect = img.getBoundingClientRect()
+              const iframe = viewerRef.current?.querySelector('iframe')
+              const iframeRect = iframe?.getBoundingClientRect() || { left: 0, top: 0 }
+              const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 }
+
+              const popupX = rect.left + rect.width / 2 + iframeRect.left - containerRect.left
+              const popupY = rect.bottom + iframeRect.top - containerRect.top + 10
+
+              // Get the image URL (could be blob or data URL from epub)
+              const imageUrl = img.src
+
+              setImagePopup({
+                visible: true,
+                x: popupX,
+                y: popupY,
+                imageUrl,
+                explanation: '',
+                loading: true
+              })
+
+              // Call AI to analyze image
+              if (token) {
+                fetch('/api/ai/explain-image', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    imageUrl,
+                    targetLanguage: locale === 'zh' ? 'zh' : 'en'
+                  })
+                })
+                  .then(res => res.ok ? res.json() : Promise.reject('Failed'))
+                  .then(data => {
+                    setImagePopup(prev => ({
+                      ...prev,
+                      explanation: data.explanation,
+                      loading: false
+                    }))
+                  })
+                  .catch(err => {
+                    console.error('Failed to analyze image:', err)
+                    setImagePopup(prev => ({
+                      ...prev,
+                      explanation: 'Failed to analyze image',
+                      loading: false
+                    }))
+                  })
+              }
+            }
+          })
         })
 
         // Display book
@@ -183,6 +298,59 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
 
         // Book is now displayed, hide loading
         setLoading(false)
+
+        // Fetch and display existing underlines
+        if (token) {
+          try {
+            const underlinesRes = await fetch(`/api/ebooks/${ebook.id}/underlines`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+            if (underlinesRes.ok) {
+              const existingUnderlines = await underlinesRes.json()
+              setUnderlines(existingUnderlines)
+
+              // Apply visual underlines for each saved underline with cfi_range
+              existingUnderlines.forEach((ul: any) => {
+                if (ul.cfi_range) {
+                  rendition.annotations.highlight(
+                    ul.cfi_range,
+                    { underlineId: ul.id, text: ul.text },
+                    (e: MouseEvent) => {
+                      // Handle click on existing underline
+                      const target = e.target as HTMLElement
+                      const rect = target.getBoundingClientRect()
+                      const iframe = viewerRef.current?.querySelector('iframe')
+                      const iframeRect = iframe?.getBoundingClientRect() || { left: 0, top: 0 }
+                      const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 }
+
+                      const bubbleX = rect.left + rect.width / 2 + iframeRect.left - containerRect.left
+                      const bubbleY = rect.top + iframeRect.top - containerRect.top - 10
+
+                      setBubble({
+                        visible: true,
+                        x: bubbleX,
+                        y: bubbleY,
+                        type: 'existing',
+                        selectedText: ul.text,
+                        cfiRange: ul.cfi_range,
+                        underlineId: ul.id
+                      })
+                    },
+                    'epub-underline',
+                    {
+                      'background-color': 'transparent',
+                      'border-bottom': '2px solid #f59e0b',
+                      'padding-bottom': '2px',
+                      'cursor': 'pointer'
+                    }
+                  )
+                }
+              })
+            }
+          } catch (err) {
+            console.error('Failed to load underlines:', err)
+          }
+        }
 
         // Generate locations for pagination (do this in background)
         book.locations.generate(1024).then(() => {
@@ -223,6 +391,60 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
           }
         })
 
+        // Text selection handler for underline feature with debounce
+        // The 'selected' event fires continuously during selection, so we debounce
+        // to only show the bubble after user finishes selecting (300ms delay)
+        rendition.on('selected', (cfiRange: string, contents: any) => {
+          // Clear any pending timeout
+          if (selectionTimeoutRef.current) {
+            clearTimeout(selectionTimeoutRef.current)
+          }
+
+          // Debounce: wait 300ms after last selection change before showing bubble
+          selectionTimeoutRef.current = setTimeout(() => {
+            console.log('Selection finished, cfiRange:', cfiRange)
+
+            if (!user || !token) {
+              console.log('User not logged in')
+              return
+            }
+
+            const selection = contents.window.getSelection()
+            const selectedText = selection?.toString().trim()
+
+            if (!selectedText) {
+              console.log('No selected text')
+              return
+            }
+
+            console.log('Selected text:', selectedText)
+
+            // Get the position for the bubble
+            const range = selection.getRangeAt(0)
+            const rect = range.getBoundingClientRect()
+
+            // Get the iframe position
+            const iframe = viewerRef.current?.querySelector('iframe')
+            const iframeRect = iframe?.getBoundingClientRect() || { left: 0, top: 0 }
+            const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 }
+
+            const bubbleX = rect.left + rect.width / 2 + iframeRect.left - containerRect.left
+            // Position bubble above the selection with 10px gap (translateY(-100%) moves it up by its height)
+            const bubbleY = rect.top + iframeRect.top - containerRect.top - 10
+
+            console.log('Setting bubble at:', bubbleX, bubbleY)
+
+            setBubble({
+              visible: true,
+              x: bubbleX,
+              y: bubbleY,
+              type: 'confirm',
+              selectedText,
+              cfiRange
+            })
+          }, 300) // 300ms debounce delay
+        })
+
       } catch (err) {
         console.error('Failed to load EPUB:', err)
         setError(err instanceof Error ? err.message : 'Failed to load ebook')
@@ -234,6 +456,11 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
 
     return () => {
       cancelled = true
+      // Clear selection timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current)
+        selectionTimeoutRef.current = null
+      }
       if (renditionRef.current) {
         renditionRef.current.destroy()
         renditionRef.current = null
@@ -462,6 +689,262 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   // Font size controls
   const increaseFontSize = () => setFontSizePx(prev => Math.min(prev + 1, 30))
   const decreaseFontSize = () => setFontSizePx(prev => Math.max(prev - 1, 15))
+
+  // Underline functions
+  const closeBubble = () => {
+    setBubble({ visible: false, x: 0, y: 0, type: 'confirm' })
+    setIdeaText('')
+  }
+
+  const handleConfirmUnderline = async () => {
+    if (!bubble.selectedText || !bubble.cfiRange || !token) return
+
+    try {
+      const res = await fetch(`/api/ebooks/${ebook.id}/underlines`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: bubble.selectedText,
+          cfi_range: bubble.cfiRange,
+          chapter_index: 0,
+          paragraph_index: 0,
+          start_offset: 0,
+          end_offset: bubble.selectedText.length
+        })
+      })
+
+      if (res.ok) {
+        const newUnderline = await res.json()
+        setUnderlines(prev => [...prev, { ...newUnderline, idea_count: 0 }])
+
+        // Add visual underline using epub.js annotations highlight
+        if (renditionRef.current && bubble.cfiRange) {
+          const cfiRange = bubble.cfiRange
+          const text = bubble.selectedText
+          const underlineId = newUnderline.id
+
+          renditionRef.current.annotations.highlight(
+            cfiRange,
+            { underlineId, text },
+            (e: MouseEvent) => {
+              // Handle click on underline
+              const target = e.target as HTMLElement
+              const rect = target.getBoundingClientRect()
+              const iframe = viewerRef.current?.querySelector('iframe')
+              const iframeRect = iframe?.getBoundingClientRect() || { left: 0, top: 0 }
+              const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 }
+
+              const bubbleX = rect.left + rect.width / 2 + iframeRect.left - containerRect.left
+              const bubbleY = rect.top + iframeRect.top - containerRect.top - 10
+
+              setBubble({
+                visible: true,
+                x: bubbleX,
+                y: bubbleY,
+                type: 'existing',
+                selectedText: text,
+                cfiRange: cfiRange,
+                underlineId: underlineId
+              })
+            },
+            'epub-underline',
+            {
+              'background-color': 'transparent',
+              'border-bottom': '2px solid #f59e0b',
+              'padding-bottom': '2px',
+              'cursor': 'pointer'
+            }
+          )
+        }
+
+        // Show idea input
+        setBubble(prev => ({
+          ...prev,
+          type: 'idea',
+          underlineId: newUnderline.id
+        }))
+        setIdeaText('')
+      }
+    } catch (err) {
+      console.error('Failed to create underline:', err)
+      closeBubble()
+    }
+  }
+
+  const handleSaveIdea = async () => {
+    if (!bubble.underlineId || !ideaText.trim() || !token) {
+      closeBubble()
+      return
+    }
+
+    try {
+      await fetch(`/api/ebook-underlines/${bubble.underlineId}/ideas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: ideaText.trim() })
+      })
+
+      setUnderlines(prev =>
+        prev.map(u => u.id === bubble.underlineId ? { ...u, idea_count: u.idea_count + 1 } : u)
+      )
+    } catch (err) {
+      console.error('Failed to save idea:', err)
+    }
+
+    closeBubble()
+  }
+
+  const handleSkipIdea = () => {
+    closeBubble()
+  }
+
+  const handleGetMeaning = async () => {
+    if (!bubble.selectedText || !token) return
+
+    setMeaningPopup({
+      visible: true,
+      x: bubble.x,
+      y: bubble.y + 60,
+      text: bubble.selectedText,
+      meaning: '',
+      loading: true
+    })
+    closeBubble()
+
+    try {
+      const res = await fetch('/api/ai/meaning', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: bubble.selectedText,
+          paragraph: bubble.selectedText,
+          targetLanguage: locale === 'zh' ? 'en' : 'zh'
+        })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setMeaningPopup(prev => ({
+          ...prev,
+          meaning: data.meaning,
+          loading: false
+        }))
+      } else {
+        setMeaningPopup(prev => ({
+          ...prev,
+          meaning: 'Failed to get meaning',
+          loading: false
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to get meaning:', err)
+      setMeaningPopup(prev => ({
+        ...prev,
+        meaning: 'Error getting meaning',
+        loading: false
+      }))
+    }
+  }
+
+  const closeMeaningPopup = () => {
+    setMeaningPopup({ visible: false, x: 0, y: 0, text: '', meaning: '', loading: false })
+  }
+
+  // Switch to idea input mode from existing underline popup
+  const handleShowIdeaInput = () => {
+    setBubble(prev => ({ ...prev, type: 'idea' }))
+    setIdeaText('')
+  }
+
+  // Delete an existing underline
+  const handleDeleteUnderline = async () => {
+    if (!bubble.underlineId || !token) return
+
+    try {
+      const res = await fetch(`/api/ebook-underlines/${bubble.underlineId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (res.ok) {
+        // Remove from state
+        setUnderlines(prev => prev.filter(u => u.id !== bubble.underlineId))
+
+        // Remove visual annotation
+        if (renditionRef.current && bubble.cfiRange) {
+          renditionRef.current.annotations.remove(bubble.cfiRange, 'highlight')
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete underline:', err)
+    }
+
+    closeBubble()
+  }
+
+  // Close image popup
+  const closeImagePopup = () => {
+    setImagePopup({ visible: false, x: 0, y: 0, imageUrl: '', explanation: '', loading: false })
+  }
+
+  // Handle image click for AI explanation
+  const handleImageClick = async (imageUrl: string, x: number, y: number) => {
+    if (!token) return
+
+    setImagePopup({
+      visible: true,
+      x,
+      y,
+      imageUrl,
+      explanation: '',
+      loading: true
+    })
+
+    try {
+      const res = await fetch('/api/ai/explain-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          imageUrl,
+          targetLanguage: locale === 'zh' ? 'zh' : 'en'
+        })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setImagePopup(prev => ({
+          ...prev,
+          explanation: data.explanation,
+          loading: false
+        }))
+      } else {
+        setImagePopup(prev => ({
+          ...prev,
+          explanation: 'Failed to analyze image',
+          loading: false
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to analyze image:', err)
+      setImagePopup(prev => ({
+        ...prev,
+        explanation: 'Error analyzing image',
+        loading: false
+      }))
+    }
+  }
 
   // Keyboard navigation
   useEffect(() => {
@@ -692,6 +1175,144 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
           className="progress-slider"
         />
       </footer>
+
+      {/* Underline bubble */}
+      {bubble.visible && (
+        <div
+          className="underline-bubble"
+          style={{
+            position: 'absolute',
+            left: `${bubble.x}px`,
+            top: `${bubble.y}px`,
+            transform: 'translateX(-50%) translateY(-100%)',
+            zIndex: 1000
+          }}
+        >
+          {bubble.type === 'confirm' ? (
+            <div className="bubble-confirm">
+              <button className="bubble-btn confirm" onClick={handleConfirmUnderline}>
+                Underline
+              </button>
+              <button className="bubble-btn meaning" onClick={handleGetMeaning}>
+                Meaning
+              </button>
+              <button className="bubble-btn cancel" onClick={closeBubble}>
+                &times;
+              </button>
+            </div>
+          ) : bubble.type === 'existing' ? (
+            <div className="bubble-confirm">
+              <button className="bubble-btn confirm" onClick={handleShowIdeaInput}>
+                Add Idea
+              </button>
+              <button className="bubble-btn meaning" onClick={handleGetMeaning}>
+                Meaning
+              </button>
+              <button className="bubble-btn delete" onClick={handleDeleteUnderline}>
+                Delete
+              </button>
+              <button className="bubble-btn cancel" onClick={closeBubble}>
+                &times;
+              </button>
+            </div>
+          ) : (
+            <div className="bubble-idea">
+              <input
+                type="text"
+                placeholder="Add your idea..."
+                value={ideaText}
+                onChange={e => setIdeaText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleSaveIdea()
+                  if (e.key === 'Escape') handleSkipIdea()
+                }}
+                autoFocus
+              />
+              <div className="bubble-actions">
+                <button className="bubble-btn save" onClick={handleSaveIdea}>
+                  Save
+                </button>
+                <button className="bubble-btn skip" onClick={handleSkipIdea}>
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Meaning popup */}
+      {meaningPopup.visible && (
+        <div
+          className="meaning-popup"
+          style={{
+            position: 'absolute',
+            left: `${meaningPopup.x}px`,
+            top: `${meaningPopup.y}px`,
+            transform: 'translateX(-50%)',
+            zIndex: 1000
+          }}
+        >
+          <div className="meaning-popup-header">
+            <span>Meaning</span>
+            <button className="popup-close" onClick={closeMeaningPopup}>&times;</button>
+          </div>
+          <div className="meaning-popup-text">
+            "{meaningPopup.text}"
+          </div>
+          <div className="meaning-popup-content">
+            {meaningPopup.loading ? (
+              <div className="meaning-loading">
+                <span className="loading-spinner"></span>
+                <span>Analyzing...</span>
+              </div>
+            ) : (
+              <div className="meaning-result" dangerouslySetInnerHTML={{
+                __html: meaningPopup.meaning
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\n/g, '<br/>')
+              }} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Image explanation popup */}
+      {imagePopup.visible && (
+        <div
+          className="meaning-popup image-popup"
+          style={{
+            position: 'absolute',
+            left: `${imagePopup.x}px`,
+            top: `${imagePopup.y}px`,
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            maxWidth: '400px'
+          }}
+        >
+          <div className="meaning-popup-header">
+            <span>Image Analysis</span>
+            <button className="popup-close" onClick={closeImagePopup}>&times;</button>
+          </div>
+          <div className="image-popup-preview">
+            <img src={imagePopup.imageUrl} alt="Selected" style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }} />
+          </div>
+          <div className="meaning-popup-content">
+            {imagePopup.loading ? (
+              <div className="meaning-loading">
+                <span className="loading-spinner"></span>
+                <span>Analyzing image...</span>
+              </div>
+            ) : (
+              <div className="meaning-result" dangerouslySetInnerHTML={{
+                __html: imagePopup.explanation
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\n/g, '<br/>')
+              }} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

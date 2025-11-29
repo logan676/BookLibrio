@@ -520,6 +520,32 @@ db.exec(`
     FOREIGN KEY (category_id) REFERENCES ebook_categories(id) ON DELETE CASCADE
   );
 
+  CREATE TABLE IF NOT EXISTS ebook_underlines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ebook_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    paragraph TEXT,
+    chapter_index INTEGER NOT NULL DEFAULT 0,
+    paragraph_index INTEGER NOT NULL,
+    start_offset INTEGER NOT NULL,
+    end_offset INTEGER NOT NULL,
+    cfi_range TEXT,
+    user_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ebook_id) REFERENCES ebooks(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS ebook_ideas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    underline_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    user_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (underline_id) REFERENCES ebook_underlines(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
   CREATE TABLE IF NOT EXISTS notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -823,6 +849,9 @@ try {
 } catch (err) {}
 try {
   db.exec(`ALTER TABLE notes ADD COLUMN slug TEXT`)
+} catch (err) {}
+try {
+  db.exec(`ALTER TABLE ebook_underlines ADD COLUMN cfi_range TEXT`)
 } catch (err) {}
 
 // Auth helper functions
@@ -3289,6 +3318,280 @@ app.get('/api/ebooks/:id/info', async (req, res) => {
   } catch (error) {
     console.error('Get ebook info error:', error)
     res.status(500).json({ error: 'Failed to get ebook info' })
+  }
+})
+
+// ==================================
+// Ebook Underlines and Ideas API
+// ==================================
+
+// Get all underlines for an ebook (with idea counts)
+app.get('/api/ebooks/:id/underlines', requireAuth, (req, res) => {
+  try {
+    const underlines = db.prepare(`
+      SELECT eu.*, COUNT(ei.id) as idea_count
+      FROM ebook_underlines eu
+      LEFT JOIN ebook_ideas ei ON ei.underline_id = eu.id
+      WHERE eu.ebook_id = ? AND eu.user_id = ?
+      GROUP BY eu.id
+      ORDER BY eu.chapter_index, eu.paragraph_index, eu.start_offset
+    `).all(req.params.id, req.user.id)
+    res.json(underlines)
+  } catch (error) {
+    console.error('Get ebook underlines error:', error)
+    res.status(500).json({ error: 'Failed to fetch underlines' })
+  }
+})
+
+// Create underline for an ebook
+app.post('/api/ebooks/:id/underlines', requireAuth, (req, res) => {
+  try {
+    const { text, paragraph, chapter_index, paragraph_index, start_offset, end_offset, cfi_range } = req.body
+    const result = db.prepare(`
+      INSERT INTO ebook_underlines (ebook_id, text, paragraph, chapter_index, paragraph_index, start_offset, end_offset, cfi_range, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(req.params.id, text, paragraph || null, chapter_index || 0, paragraph_index, start_offset, end_offset, cfi_range || null, req.user.id)
+
+    const newUnderline = db.prepare('SELECT * FROM ebook_underlines WHERE id = ?').get(result.lastInsertRowid)
+    res.status(201).json({ ...newUnderline, idea_count: 0 })
+  } catch (error) {
+    console.error('Create ebook underline error:', error)
+    res.status(500).json({ error: 'Failed to create underline' })
+  }
+})
+
+// Delete an ebook underline
+app.delete('/api/ebook-underlines/:id', requireAuth, (req, res) => {
+  try {
+    const underline = db.prepare('SELECT * FROM ebook_underlines WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id)
+    if (!underline) {
+      return res.status(404).json({ error: 'Underline not found' })
+    }
+    db.prepare('DELETE FROM ebook_underlines WHERE id = ?').run(req.params.id)
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Delete ebook underline error:', error)
+    res.status(500).json({ error: 'Failed to delete underline' })
+  }
+})
+
+// Get ideas for an ebook underline
+app.get('/api/ebook-underlines/:id/ideas', requireAuth, (req, res) => {
+  try {
+    const ideas = db.prepare(`
+      SELECT * FROM ebook_ideas WHERE underline_id = ? ORDER BY created_at DESC
+    `).all(req.params.id)
+    res.json(ideas)
+  } catch (error) {
+    console.error('Get ebook ideas error:', error)
+    res.status(500).json({ error: 'Failed to fetch ideas' })
+  }
+})
+
+// Add idea to an ebook underline
+app.post('/api/ebook-underlines/:id/ideas', requireAuth, (req, res) => {
+  try {
+    const { content } = req.body
+    const result = db.prepare(`
+      INSERT INTO ebook_ideas (underline_id, content, user_id)
+      VALUES (?, ?, ?)
+    `).run(req.params.id, content, req.user.id)
+
+    const newIdea = db.prepare('SELECT * FROM ebook_ideas WHERE id = ?').get(result.lastInsertRowid)
+    res.status(201).json(newIdea)
+  } catch (error) {
+    console.error('Create ebook idea error:', error)
+    res.status(500).json({ error: 'Failed to create idea' })
+  }
+})
+
+// Update an ebook idea
+app.patch('/api/ebook-ideas/:id', requireAuth, (req, res) => {
+  try {
+    const { content } = req.body
+    const idea = db.prepare(`
+      SELECT ei.* FROM ebook_ideas ei
+      JOIN ebook_underlines eu ON ei.underline_id = eu.id
+      WHERE ei.id = ? AND eu.user_id = ?
+    `).get(req.params.id, req.user.id)
+
+    if (!idea) {
+      return res.status(404).json({ error: 'Idea not found' })
+    }
+
+    db.prepare('UPDATE ebook_ideas SET content = ? WHERE id = ?').run(content, req.params.id)
+    const updatedIdea = db.prepare('SELECT * FROM ebook_ideas WHERE id = ?').get(req.params.id)
+    res.json(updatedIdea)
+  } catch (error) {
+    console.error('Update ebook idea error:', error)
+    res.status(500).json({ error: 'Failed to update idea' })
+  }
+})
+
+// Delete an ebook idea
+app.delete('/api/ebook-ideas/:id', requireAuth, (req, res) => {
+  try {
+    const idea = db.prepare(`
+      SELECT ei.* FROM ebook_ideas ei
+      JOIN ebook_underlines eu ON ei.underline_id = eu.id
+      WHERE ei.id = ? AND eu.user_id = ?
+    `).get(req.params.id, req.user.id)
+
+    if (!idea) {
+      return res.status(404).json({ error: 'Idea not found' })
+    }
+
+    db.prepare('DELETE FROM ebook_ideas WHERE id = ?').run(req.params.id)
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Delete ebook idea error:', error)
+    res.status(500).json({ error: 'Failed to delete idea' })
+  }
+})
+
+// AI-powered meaning endpoint - uses OpenAI GPT-4o to explain text in context
+app.post('/api/ai/meaning', requireAuth, async (req, res) => {
+  try {
+    const { text, paragraph, targetLanguage = 'zh' } = req.body
+
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required' })
+    }
+
+    // Use OpenAI API for intelligent meaning extraction
+    const openaiApiKey = process.env.OPENAI_API_KEY
+    if (!openaiApiKey) {
+      return res.status(500).json({ error: 'AI service not configured. Please add OPENAI_API_KEY to .env' })
+    }
+
+    const systemPrompt = targetLanguage === 'zh'
+      ? `You are a helpful assistant that explains text meanings in context. When given a selected text and its surrounding paragraph, you should:
+1. Provide the Chinese translation of the selected text
+2. Explain what it means in this specific context (not just dictionary meaning)
+3. If there are any idioms, cultural references, or nuanced expressions, explain them
+4. Keep the response concise but informative
+
+Format your response as:
+**Translation:** [Chinese translation]
+**Context Meaning:** [What it means in this context]
+**Notes:** [Any additional insights, idioms, cultural context - if applicable]`
+      : `You are a helpful assistant that explains text meanings in context. When given a selected text and its surrounding paragraph, you should:
+1. Explain what the text means in this specific context
+2. If there are any idioms, cultural references, or nuanced expressions, explain them
+3. Keep the response concise but informative`
+
+    const userMessage = paragraph
+      ? `Selected text: "${text}"\n\nFull paragraph for context:\n"${paragraph}"\n\nPlease explain the meaning of the selected text within this context.`
+      : `Text: "${text}"\n\nPlease explain the meaning of this text.`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 1024,
+        temperature: 0.7
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('OpenAI API error:', errorData)
+      return res.status(500).json({ error: 'AI service error' })
+    }
+
+    const data = await response.json()
+    const meaning = data.choices?.[0]?.message?.content || 'Unable to generate meaning'
+
+    res.json({
+      text,
+      meaning,
+      targetLanguage
+    })
+  } catch (error) {
+    console.error('AI meaning error:', error)
+    res.status(500).json({ error: 'Failed to get meaning' })
+  }
+})
+
+// AI-powered image explanation endpoint - uses OpenAI GPT-4o vision to analyze images
+app.post('/api/ai/explain-image', requireAuth, async (req, res) => {
+  try {
+    const { imageUrl, targetLanguage = 'en' } = req.body
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'Image URL is required' })
+    }
+
+    // Use OpenAI API for image analysis
+    const openaiApiKey = process.env.OPENAI_API_KEY
+    if (!openaiApiKey) {
+      return res.status(500).json({ error: 'AI service not configured. Please add OPENAI_API_KEY to .env' })
+    }
+
+    const systemPrompt = targetLanguage === 'zh'
+      ? `You are a helpful assistant that analyzes and explains images. When shown an image, you should:
+1. Describe what you see in the image
+2. Explain any text, diagrams, charts, or visual elements
+3. Provide context about the image's purpose or meaning
+4. If it's a book cover, describe the cover art and provide any relevant information about the book
+
+Keep your response concise but informative. Respond in Chinese.`
+      : `You are a helpful assistant that analyzes and explains images. When shown an image, you should:
+1. Describe what you see in the image
+2. Explain any text, diagrams, charts, or visual elements
+3. Provide context about the image's purpose or meaning
+4. If it's a book cover, describe the cover art and provide any relevant information about the book
+
+Keep your response concise but informative. Respond in English.`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Please analyze and explain this image.' },
+              { type: 'image_url', image_url: { url: imageUrl } }
+            ]
+          }
+        ],
+        max_tokens: 1024,
+        temperature: 0.7
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('OpenAI API error:', errorData)
+      return res.status(500).json({ error: 'AI service error' })
+    }
+
+    const data = await response.json()
+    const explanation = data.choices?.[0]?.message?.content || 'Unable to analyze image'
+
+    res.json({
+      imageUrl,
+      explanation,
+      targetLanguage
+    })
+  } catch (error) {
+    console.error('AI image explanation error:', error)
+    res.status(500).json({ error: 'Failed to analyze image' })
   }
 })
 

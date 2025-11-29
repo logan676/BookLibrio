@@ -123,6 +123,34 @@ export interface Ebook {
   created_at: string
 }
 
+export interface EbookUnderline {
+  id: number
+  ebook_id: number
+  text: string
+  paragraph?: string
+  chapter_index: number
+  paragraph_index: number
+  start_offset: number
+  end_offset: number
+  idea_count: number
+  user_id?: number
+  created_at: string
+}
+
+export interface EbookIdea {
+  id: number
+  underline_id: number
+  content: string
+  user_id?: number
+  created_at: string
+}
+
+export interface AIMeaningResponse {
+  text: string
+  meaning: string
+  targetLanguage: string
+}
+
 // Note types (Thinking feature)
 export interface Note {
   id: number
