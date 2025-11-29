@@ -1427,9 +1427,6 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
               <button className="bubble-btn meaning" onClick={handleGetMeaning}>
                 Meaning
               </button>
-              <button className="bubble-btn cancel" onClick={closeBubble}>
-                &times;
-              </button>
             </div>
           ) : bubble.type === 'existing' ? (
             <div className="bubble-confirm">
@@ -1450,9 +1447,6 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
               </button>
               <button className="bubble-btn delete" onClick={handleDeleteUnderline}>
                 Delete
-              </button>
-              <button className="bubble-btn cancel" onClick={closeBubble}>
-                &times;
               </button>
             </div>
           ) : (
