@@ -104,6 +104,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
   const renditionRef = useRef<Rendition | null>(null)
   const selectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ideaPopupRef = useRef<HTMLDivElement>(null)
+  const bubbleRef = useRef<HTMLDivElement>(null)
 
   // Theme configurations
   const themes = {
@@ -725,6 +726,43 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
     setIdeaText('')
   }
 
+  // Close bubble when clicking outside (including clicks inside iframe)
+  useEffect(() => {
+    if (!bubble.visible) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (bubbleRef.current && !bubbleRef.current.contains(event.target as Node)) {
+        closeBubble()
+      }
+    }
+
+    // For clicks inside the iframe - close bubble on any click
+    const handleIframeClick = () => {
+      closeBubble()
+    }
+
+    // Add listener with a small delay to prevent immediate close
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+
+      // Also add listener to iframe document
+      const iframe = viewerRef.current?.querySelector('iframe')
+      if (iframe?.contentDocument) {
+        iframe.contentDocument.addEventListener('mousedown', handleIframeClick)
+      }
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+
+      const iframe = viewerRef.current?.querySelector('iframe')
+      if (iframe?.contentDocument) {
+        iframe.contentDocument.removeEventListener('mousedown', handleIframeClick)
+      }
+    }
+  }, [bubble.visible])
+
   const handleConfirmUnderline = async () => {
     if (!bubble.selectedText || !bubble.cfiRange || !token) return
 
@@ -1020,7 +1058,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
     setIdeaPopup({ visible: false, underlineId: null, ideas: [], x: 0, y: 0 })
   }
 
-  // Close idea popup when clicking outside
+  // Close idea popup when clicking outside (including clicks inside iframe)
   useEffect(() => {
     if (!ideaPopup.visible) return
 
@@ -1030,14 +1068,30 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
       }
     }
 
+    // For clicks inside the iframe - close popup on any click
+    const handleIframeClick = () => {
+      closeIdeaPopup()
+    }
+
     // Add listener with a small delay to prevent immediate close
     const timeoutId = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside)
+
+      // Also add listener to iframe document
+      const iframe = viewerRef.current?.querySelector('iframe')
+      if (iframe?.contentDocument) {
+        iframe.contentDocument.addEventListener('mousedown', handleIframeClick)
+      }
     }, 100)
 
     return () => {
       clearTimeout(timeoutId)
       document.removeEventListener('mousedown', handleClickOutside)
+
+      const iframe = viewerRef.current?.querySelector('iframe')
+      if (iframe?.contentDocument) {
+        iframe.contentDocument.removeEventListener('mousedown', handleIframeClick)
+      }
     }
   }, [ideaPopup.visible])
 
@@ -1355,6 +1409,7 @@ export default function EpubReader({ ebook, onBack, initialCfi }: Props) {
       {/* Underline bubble */}
       {bubble.visible && (
         <div
+          ref={bubbleRef}
           className="underline-bubble"
           style={{
             position: 'absolute',
