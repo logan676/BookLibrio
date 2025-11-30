@@ -21,6 +21,7 @@ import r2Routes from './r2.js'
 import aiRoutes from './ai.js'
 import searchRoutes from './search.js'
 import userRoutes from './user.js'
+import tasksRoutes from './tasks.js'
 
 // Export all routes
 export {
@@ -46,7 +47,8 @@ export {
   r2Routes,
   aiRoutes,
   searchRoutes,
-  userRoutes
+  userRoutes,
+  tasksRoutes
 }
 
 // Mount all routes to an app
@@ -177,4 +179,7 @@ export function mountRoutes(app) {
 
   // Search routes
   app.use('/api/search', searchRoutes)
+
+  // Background tasks status routes
+  app.use('/api/tasks', tasksRoutes)
 }
