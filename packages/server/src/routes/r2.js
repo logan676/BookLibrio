@@ -1,13 +1,15 @@
 import { Router } from 'express'
 import { existsSync, createReadStream } from 'fs'
 import { stat } from 'fs/promises'
-import { join, extname } from 'path'
+import { join, extname, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import db from '../config/database.js'
 import { authMiddleware, requireAdmin } from '../middleware/auth.js'
 import {
   listStorageObjects,
   checkStorageObjectExists,
   streamFromStorageWithRange,
+  streamFromStorage,
   uploadLargeFileToStorage,
   localPathToStorageKey,
   storageClient,
@@ -17,7 +19,54 @@ import {
   useS3Storage
 } from '../config/storage.js'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 const router = Router()
+
+// Serve R2 cloud cover images
+router.get('/covers/:type/:filename', async (req, res) => {
+  try {
+    const { type, filename } = req.params
+
+    if (!['magazines', 'ebooks'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid type' })
+    }
+
+    const r2Key = `covers/${type}/${filename}`
+
+    // Try R2 storage
+    if (storageClient) {
+      try {
+        const exists = await checkStorageObjectExists(r2Key)
+        if (exists) {
+          const stream = await streamFromStorage(r2Key)
+          res.set('Content-Type', 'image/jpeg')
+          res.set('Cache-Control', 'public, max-age=86400') // Cache for 1 day
+          stream.pipe(res)
+          return
+        }
+      } catch (r2Error) {
+        console.error(`[Cover] R2 error for ${r2Key}:`, r2Error.message)
+      }
+    }
+
+    // Fallback to local covers directory
+    const localCoversDir = join(__dirname, '../../covers')
+    const localPath = join(localCoversDir, type, filename)
+    if (existsSync(localPath)) {
+      res.set('Content-Type', 'image/jpeg')
+      res.set('Cache-Control', 'public, max-age=86400')
+      createReadStream(localPath).pipe(res)
+      return
+    }
+
+    res.status(404).json({ error: 'Cover not found' })
+  } catch (error) {
+    console.error('Serve cover error:', error)
+    res.status(500).json({ error: 'Failed to serve cover' })
+  }
+})
 
 // Get R2 status
 router.get('/status', authMiddleware, requireAdmin, async (req, res) => {

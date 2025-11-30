@@ -81,6 +81,47 @@ app.use('/api/covers', express.static(join(__dirname, '../covers')))
 app.use('/api/magazine-covers', express.static(join(__dirname, '../covers/magazines')))
 app.use('/api/ebook-covers', express.static(join(__dirname, '../covers/ebooks')))
 
+// Serve R2 cloud cover images (for legacy URLs stored in database)
+app.get('/api/r2-covers/:type/:filename', async (req, res) => {
+  try {
+    const { type, filename } = req.params
+
+    if (!['magazines', 'ebooks'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid type' })
+    }
+
+    const r2Key = `covers/${type}/${filename}`
+
+    // Try R2 storage first
+    try {
+      const stream = await streamFromStorage(r2Key)
+      if (stream) {
+        res.set('Content-Type', 'image/jpeg')
+        res.set('Cache-Control', 'public, max-age=86400')
+        stream.pipe(res)
+        return
+      }
+    } catch (r2Error) {
+      // R2 not available or file not found, try local
+    }
+
+    // Fallback to local covers directory
+    const localPath = join(__dirname, '../covers', type, filename)
+    const { existsSync, createReadStream } = await import('fs')
+    if (existsSync(localPath)) {
+      res.set('Content-Type', 'image/jpeg')
+      res.set('Cache-Control', 'public, max-age=86400')
+      createReadStream(localPath).pipe(res)
+      return
+    }
+
+    res.status(404).json({ error: 'Cover not found' })
+  } catch (error) {
+    console.error('Serve R2 cover error:', error)
+    res.status(500).json({ error: 'Failed to serve cover' })
+  }
+})
+
 // R2 storage stream proxy endpoint
 app.get('/api/r2-stream/:key(*)', async (req, res) => {
   try {
