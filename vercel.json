@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd packages/web && npm run build",
+  "outputDirectory": "packages/web/dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://bookpost-api-production.up.railway.app/api/:path*"
+    }
+  ]
+}
