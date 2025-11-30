@@ -1,21 +1,28 @@
-import jwt from 'jsonwebtoken'
 import db from '../config/database.js'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key-change-in-production'
-
-// Parse JWT from Authorization header (doesn't require auth)
+// Parse token from Authorization header and validate against sessions (doesn't require auth)
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7)
     try {
-      const decoded = jwt.verify(token, JWT_SECRET)
-      const user = db.prepare('SELECT id, email, is_admin FROM users WHERE id = ?').get(decoded.userId)
-      if (user) {
-        req.user = user
+      // Look up the token in the sessions table
+      const session = db.prepare(`
+        SELECT s.*, u.id as user_id, u.email, u.is_admin
+        FROM sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.token = ? AND s.expires_at > datetime('now')
+      `).get(token)
+
+      if (session) {
+        req.user = {
+          id: session.user_id,
+          email: session.email,
+          is_admin: session.is_admin
+        }
       }
     } catch (err) {
-      // Invalid token, continue without user
+      // Invalid token or database error, continue without user
     }
   }
   next()
@@ -39,5 +46,3 @@ export function requireAdmin(req, res, next) {
   }
   next()
 }
-
-export { JWT_SECRET }
