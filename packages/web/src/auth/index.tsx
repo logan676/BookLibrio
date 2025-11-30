@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 
 interface User {
   id: number
@@ -13,6 +13,14 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
+}
+
+// Error codes from backend
+const ErrorCode = {
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  TOKEN_INVALID: 'TOKEN_INVALID',
+  UNAUTHORIZED: 'UNAUTHORIZED',
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -20,31 +28,88 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'))
+  const [refreshToken, setRefreshToken] = useState<string | null>(() => localStorage.getItem('refreshToken'))
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (token) {
-      fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
+  // Refresh the access token using refresh token
+  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+    const storedRefreshToken = localStorage.getItem('refreshToken')
+    if (!storedRefreshToken) return false
+
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: storedRefreshToken })
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) {
-            setUser(data.user)
-          } else {
-            localStorage.removeItem('token')
-            setToken(null)
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem('token')
-          setToken(null)
-        })
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.data) {
+          localStorage.setItem('token', data.data.token)
+          localStorage.setItem('refreshToken', data.data.refreshToken)
+          setToken(data.data.token)
+          setRefreshToken(data.data.refreshToken)
+          setUser(data.data.user)
+          return true
+        }
+      }
+
+      // Refresh failed, clear auth state
+      clearAuth()
+      return false
+    } catch {
+      clearAuth()
+      return false
     }
-  }, [token])
+  }, [])
+
+  // Clear all auth state
+  const clearAuth = useCallback(() => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    setToken(null)
+    setRefreshToken(null)
+    setUser(null)
+  }, [])
+
+  // Check current auth status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+
+        // Handle new API response format
+        const userData = data.data?.user || data.user
+
+        if (userData) {
+          setUser(userData)
+        } else if (data.error?.code === ErrorCode.TOKEN_EXPIRED || data.error?.code === ErrorCode.TOKEN_INVALID) {
+          // Try to refresh the token
+          const refreshed = await refreshAccessToken()
+          if (!refreshed) {
+            clearAuth()
+          }
+        } else {
+          clearAuth()
+        }
+      } catch {
+        clearAuth()
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [token, refreshAccessToken, clearAuth])
 
   const login = async (email: string, password: string) => {
     try {
@@ -54,13 +119,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password })
       })
       const data = await res.json()
+
       if (res.ok) {
-        localStorage.setItem('token', data.token)
-        setToken(data.token)
-        setUser(data.user)
+        // Handle both old and new API response formats
+        const tokenValue = data.data?.token || data.token
+        const refreshTokenValue = data.data?.refreshToken || data.refreshToken
+        const userData = data.data?.user || data.user
+
+        if (tokenValue) {
+          localStorage.setItem('token', tokenValue)
+          setToken(tokenValue)
+        }
+        if (refreshTokenValue) {
+          localStorage.setItem('refreshToken', refreshTokenValue)
+          setRefreshToken(refreshTokenValue)
+        }
+        if (userData) {
+          setUser(userData)
+        }
         return { success: true }
       }
-      return { success: false, error: data.error }
+
+      const errorMessage = data.error?.message || data.error || 'Login failed'
+      return { success: false, error: errorMessage }
     } catch {
       return { success: false, error: 'Network error' }
     }
@@ -74,13 +155,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password })
       })
       const data = await res.json()
+
       if (res.ok) {
-        localStorage.setItem('token', data.token)
-        setToken(data.token)
-        setUser(data.user)
+        // Handle both old and new API response formats
+        const tokenValue = data.data?.token || data.token
+        const refreshTokenValue = data.data?.refreshToken || data.refreshToken
+        const userData = data.data?.user || data.user
+
+        if (tokenValue) {
+          localStorage.setItem('token', tokenValue)
+          setToken(tokenValue)
+        }
+        if (refreshTokenValue) {
+          localStorage.setItem('refreshToken', refreshTokenValue)
+          setRefreshToken(refreshTokenValue)
+        }
+        if (userData) {
+          setUser(userData)
+        }
         return { success: true }
       }
-      return { success: false, error: data.error }
+
+      const errorMessage = data.error?.message || data.error || 'Registration failed'
+      return { success: false, error: errorMessage }
     } catch {
       return { success: false, error: 'Network error' }
     }
@@ -93,13 +190,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${token}` }
       })
     }
-    localStorage.removeItem('token')
-    setToken(null)
-    setUser(null)
+    clearAuth()
+  }
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        return { success: true }
+      }
+
+      const errorMessage = data.error?.message || data.error || 'Password change failed'
+      return { success: false, error: errorMessage }
+    } catch {
+      return { success: false, error: 'Network error' }
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, changePassword }}>
       {children}
     </AuthContext.Provider>
   )

@@ -80,7 +80,7 @@ export default function PhysicalBooksDashboard({ onBookClick }: Props) {
 
   return (
     <div className="magazines-dashboard no-header">
-      <div className="filters">
+      <div className="filters" style={{ justifyContent: 'flex-end' }}>
         <button className="add-btn" onClick={handleAddBookClick}>
           {t.addBook}
         </button>
