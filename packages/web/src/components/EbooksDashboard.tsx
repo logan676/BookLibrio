@@ -6,7 +6,6 @@ import type { EbookCategory, Ebook } from '../types'
 
 // Helper to get file type from ebook
 const getFileType = (ebook: Ebook): 'epub' | 'pdf' => {
-  // Use file_type field if available, otherwise detect from path
   if (ebook.file_type) {
     return ebook.file_type as 'epub' | 'pdf'
   }
@@ -21,7 +20,7 @@ const isEpubFile = (ebook: Ebook): boolean => {
 export default function EbooksDashboard() {
   const { t, formatCount } = useI18n()
   const [categories, setCategories] = useState<EbookCategory[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<EbookCategory | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
   const [ebooks, setEbooks] = useState<Ebook[]>([])
   const [selectedEbook, setSelectedEbook] = useState<Ebook | null>(null)
   const [loading, setLoading] = useState(true)
@@ -29,7 +28,12 @@ export default function EbooksDashboard() {
 
   useEffect(() => {
     fetchCategories()
+    fetchEbooks()
   }, [])
+
+  useEffect(() => {
+    fetchEbooks(selectedCategoryId, searchTerm)
+  }, [selectedCategoryId])
 
   const fetchCategories = async () => {
     try {
@@ -40,15 +44,14 @@ export default function EbooksDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch ebook categories:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
-  const fetchEbooks = async (categoryId: number, search?: string) => {
+  const fetchEbooks = async (categoryId?: number | null, search?: string) => {
+    setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.set('category_id', categoryId.toString())
+      if (categoryId) params.set('category_id', categoryId.toString())
       if (search) params.set('search', search)
 
       const response = await fetch(`/api/ebooks?${params}`)
@@ -58,19 +61,13 @@ export default function EbooksDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch ebooks:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleCategoryClick = (category: EbookCategory) => {
-    setSelectedCategory(category)
-    setSearchTerm('')
-    fetchEbooks(category.id)
-  }
-
-  const handleBackToCategories = () => {
-    setSelectedCategory(null)
-    setEbooks([])
-    setSearchTerm('')
+  const handleCategoryChange = (categoryId: number | null) => {
+    setSelectedCategoryId(categoryId)
   }
 
   const handleEbookClick = (ebook: Ebook) => {
@@ -83,9 +80,7 @@ export default function EbooksDashboard() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term)
-    if (selectedCategory) {
-      fetchEbooks(selectedCategory.id, term)
-    }
+    fetchEbooks(selectedCategoryId, term)
   }
 
   const formatFileSize = (bytes?: number) => {
@@ -94,7 +89,7 @@ export default function EbooksDashboard() {
     return `${mb.toFixed(1)} MB`
   }
 
-  // Show ebook reader - use EpubReader for EPUB files, EbookReader for PDFs
+  // Show ebook reader
   if (selectedEbook) {
     if (isEpubFile(selectedEbook)) {
       return <EpubReader ebook={selectedEbook} onBack={handleBackFromReader} />
@@ -102,33 +97,45 @@ export default function EbooksDashboard() {
     return <EbookReader ebook={selectedEbook} onBack={handleBackFromReader} />
   }
 
-  // Show ebooks for selected category
-  if (selectedCategory) {
-    return (
-      <div className="magazines-dashboard">
-        <div className="sub-view-header">
-          <h1 className="sub-view-title">{selectedCategory.name}</h1>
-          <div className="sub-view-nav">
-            <button className="back-btn" onClick={handleBackToCategories}>
-              {t.back}
-            </button>
-            <span className="item-count">{formatCount(t.ebooksCount, ebooks.length)}</span>
-          </div>
-        </div>
+  return (
+    <div className="magazines-dashboard no-header">
+      <div className="filters">
+        <input
+          type="text"
+          placeholder={t.searchEbooks}
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="search-input"
+        />
+        <select
+          value={selectedCategoryId || ''}
+          onChange={(e) => handleCategoryChange(e.target.value ? parseInt(e.target.value) : null)}
+          className="year-select"
+        >
+          <option value="">All Categories</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name} ({category.ebook_count})
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <div className="filters">
-          <input
-            type="text"
-            placeholder={t.searchEbooks}
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="search-input"
-          />
-        </div>
+      <div className="item-count-bar">
+        <span className="item-count">{formatCount(t.ebooksCount, ebooks.length)}</span>
+      </div>
 
+      {loading ? (
+        <div className="loading">{t.loadingCategories}</div>
+      ) : ebooks.length === 0 ? (
+        <div className="empty-state">
+          <p>{t.noEbooksFound}</p>
+        </div>
+      ) : (
         <div className="magazine-grid">
           {ebooks.map((ebook) => {
             const fileType = getFileType(ebook)
+            const category = categories.find(c => c.id === ebook.category_id)
             return (
               <div
                 key={ebook.id}
@@ -150,49 +157,13 @@ export default function EbooksDashboard() {
                 <div className="magazine-info">
                   <h3 className="magazine-title">{ebook.title}</h3>
                   <div className="magazine-meta">
+                    {category && <span className="category">{category.name}</span>}
                     <span className="size">{formatFileSize(ebook.file_size)}</span>
                   </div>
                 </div>
               </div>
             )
           })}
-        </div>
-
-        {ebooks.length === 0 && (
-          <div className="empty-state">
-            <p>{t.noEbooksFound}</p>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Show categories list
-  return (
-    <div className="magazines-dashboard no-header">
-      {loading ? (
-        <div className="loading">{t.loadingCategories}</div>
-      ) : categories.length === 0 ? (
-        <div className="empty-state">
-          <h2>{t.noEbooksFound}</h2>
-        </div>
-      ) : (
-        <div className="publisher-grid">
-          {categories.map((category) => (
-            <div
-              key={category.id}
-              className="publisher-card"
-              onClick={() => handleCategoryClick(category)}
-            >
-              <div className="publisher-icon">
-                <span>{category.name.charAt(0).toUpperCase()}</span>
-              </div>
-              <div className="publisher-info">
-                <h3 className="publisher-name">{category.name}</h3>
-                <span className="publisher-count">{formatCount(t.ebooksCount, category.ebook_count)}</span>
-              </div>
-            </div>
-          ))}
         </div>
       )}
     </div>

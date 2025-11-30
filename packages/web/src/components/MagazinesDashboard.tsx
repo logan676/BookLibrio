@@ -3,30 +3,25 @@ import { useI18n } from '../i18n'
 import type { Publisher, Magazine } from '../types'
 import MagazineReader from './MagazineReader'
 
-interface YearInfo {
-  year: number
-  count: number
-}
-
-// Publishers that should show year subcategories first
-const YEAR_CATEGORIZED_PUBLISHERS = ['The Economist']
-
 export default function MagazinesDashboard() {
   const { t, formatCount } = useI18n()
   const [publishers, setPublishers] = useState<Publisher[]>([])
-  const [selectedPublisher, setSelectedPublisher] = useState<Publisher | null>(null)
+  const [selectedPublisherId, setSelectedPublisherId] = useState<number | null>(null)
   const [magazines, setMagazines] = useState<Magazine[]>([])
   const [selectedMagazine, setSelectedMagazine] = useState<Magazine | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [years, setYears] = useState<number[]>([])
-  const [yearInfos, setYearInfos] = useState<YearInfo[]>([])
-  const [showYearSelection, setShowYearSelection] = useState(false)
 
   useEffect(() => {
     fetchPublishers()
+    fetchMagazines()
   }, [])
+
+  useEffect(() => {
+    fetchMagazines(selectedPublisherId, selectedYear, searchTerm)
+  }, [selectedPublisherId, selectedYear])
 
   const fetchPublishers = async () => {
     try {
@@ -37,19 +32,15 @@ export default function MagazinesDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch publishers:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
-  const fetchMagazines = async (publisherId: number, year?: number | null, search?: string) => {
+  const fetchMagazines = async (publisherId?: number | null, year?: number | null, search?: string) => {
+    setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.set('publisher_id', publisherId.toString())
-      // year=0 means "Other" (items without valid year), pass as special value
-      if (year !== null && year !== undefined) {
-        params.set('year', year.toString())
-      }
+      if (publisherId) params.set('publisher_id', publisherId.toString())
+      if (year !== null && year !== undefined) params.set('year', year.toString())
       if (search) params.set('search', search)
 
       const response = await fetch(`/api/magazines?${params}`)
@@ -57,99 +48,28 @@ export default function MagazinesDashboard() {
         const data = await response.json()
         setMagazines(data)
 
-        // Extract unique years
-        const uniqueYears = [...new Set(data.map((m: Magazine) => m.year).filter(Boolean))] as number[]
+        // Extract unique years for filter
+        const uniqueYears = [...new Set(data.map((m: Magazine) => m.year).filter((y: number | null | undefined) => y && y > 1900))] as number[]
         setYears(uniqueYears.sort((a, b) => b - a))
       }
     } catch (error) {
       console.error('Failed to fetch magazines:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const fetchYearInfos = async (publisherId: number) => {
-    try {
-      const response = await fetch(`/api/magazines?publisher_id=${publisherId}`)
-      if (response.ok) {
-        const data = await response.json()
-        // Count magazines per year (treat 0, null, undefined as "Other")
-        const yearCounts: { [key: number]: number } = {}
-        let otherCount = 0
-        data.forEach((m: Magazine) => {
-          if (m.year && m.year > 1900) {
-            yearCounts[m.year] = (yearCounts[m.year] || 0) + 1
-          } else {
-            otherCount++
-          }
-        })
-        // Convert to array and sort by year descending
-        const infos: YearInfo[] = Object.entries(yearCounts)
-          .map(([year, count]) => ({ year: parseInt(year), count }))
-          .sort((a, b) => b.year - a.year)
-        // Add "Other" category (year=0) if there are items without valid year
-        if (otherCount > 0) {
-          infos.push({ year: 0, count: otherCount })
-        }
-        setYearInfos(infos)
-      }
-    } catch (error) {
-      console.error('Failed to fetch year infos:', error)
-    }
-  }
-
-  const handlePublisherClick = (publisher: Publisher) => {
-    setSelectedPublisher(publisher)
-    setSelectedYear(null)
-    setSearchTerm('')
-
-    // Check if this publisher should show year selection first
-    if (YEAR_CATEGORIZED_PUBLISHERS.includes(publisher.name)) {
-      setShowYearSelection(true)
-      fetchYearInfos(publisher.id)
-    } else {
-      setShowYearSelection(false)
-      fetchMagazines(publisher.id)
-    }
-  }
-
-  const handleYearClick = (year: number) => {
-    setSelectedYear(year)
-    setShowYearSelection(false)
-    if (selectedPublisher) {
-      fetchMagazines(selectedPublisher.id, year)
-    }
-  }
-
-  const handleBackToPublishers = () => {
-    setSelectedPublisher(null)
-    setMagazines([])
-    setSelectedYear(null)
-    setSearchTerm('')
-    setShowYearSelection(false)
-    setYearInfos([])
-  }
-
-  const handleBackToYears = () => {
-    setShowYearSelection(true)
-    setSelectedYear(null)
-    setMagazines([])
-    setSearchTerm('')
-    if (selectedPublisher) {
-      fetchYearInfos(selectedPublisher.id)
-    }
+  const handlePublisherChange = (publisherId: number | null) => {
+    setSelectedPublisherId(publisherId)
   }
 
   const handleYearChange = (year: number | null) => {
     setSelectedYear(year)
-    if (selectedPublisher) {
-      fetchMagazines(selectedPublisher.id, year, searchTerm)
-    }
   }
 
   const handleSearch = (term: string) => {
     setSearchTerm(term)
-    if (selectedPublisher) {
-      fetchMagazines(selectedPublisher.id, selectedYear, term)
-    }
+    fetchMagazines(selectedPublisherId, selectedYear, term)
   }
 
   const handleMagazineClick = (magazine: Magazine) => {
@@ -166,7 +86,7 @@ export default function MagazinesDashboard() {
     return `${mb.toFixed(1)} MB`
   }
 
-  // Show magazine reader with PDF.js and underline support
+  // Show magazine reader
   if (selectedMagazine) {
     return (
       <MagazineReader
@@ -176,143 +96,80 @@ export default function MagazinesDashboard() {
     )
   }
 
-  // Show year selection for categorized publishers
-  if (selectedPublisher && showYearSelection) {
-    return (
-      <div className="magazines-dashboard">
-        <div className="sub-view-header">
-          <h1 className="sub-view-title">{selectedPublisher.name}</h1>
-          <div className="sub-view-nav">
-            <button className="back-btn" onClick={handleBackToPublishers}>
-              {t.back}
-            </button>
-            <span className="item-count">{formatCount(t.magazinesCount, selectedPublisher.magazine_count)}</span>
-          </div>
-        </div>
-
-        <div className="year-grid">
-          {yearInfos.map((info) => (
-            <div
-              key={info.year}
-              className="year-card"
-              onClick={() => handleYearClick(info.year)}
-            >
-              <div className="year-number">{info.year === 0 ? 'Other' : info.year}</div>
-              <div className="year-count">{formatCount(t.issues, info.count)}</div>
-            </div>
-          ))}
-        </div>
-
-        {yearInfos.length === 0 && (
-          <div className="empty-state">
-            <p>{t.noMagazinesFound}</p>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Show magazines for selected publisher
-  if (selectedPublisher) {
-    const isYearCategorized = YEAR_CATEGORIZED_PUBLISHERS.includes(selectedPublisher.name)
-    return (
-      <div className="magazines-dashboard">
-        <div className="sub-view-header">
-          <h1 className="sub-view-title">{selectedPublisher.name}{selectedYear !== null ? ` - ${selectedYear === 0 ? 'Other' : selectedYear}` : ''}</h1>
-          <div className="sub-view-nav">
-            <button className="back-btn" onClick={isYearCategorized ? handleBackToYears : handleBackToPublishers}>
-              {t.back}
-            </button>
-            <span className="item-count">{formatCount(t.magazinesCount, magazines.length)}</span>
-          </div>
-        </div>
-
-        <div className="filters">
-          <input
-            type="text"
-            placeholder={t.searchMagazines}
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="search-input"
-          />
-          <select
-            value={selectedYear || ''}
-            onChange={(e) => handleYearChange(e.target.value ? parseInt(e.target.value) : null)}
-            className="year-select"
-          >
-            <option value="">{t.allYears}</option>
-            {years.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="magazine-grid">
-          {magazines.map((magazine) => (
-            <div
-              key={magazine.id}
-              className="magazine-card"
-              onClick={() => handleMagazineClick(magazine)}
-            >
-              <div className="magazine-cover">
-                {magazine.cover_url ? (
-                  <img src={magazine.cover_url} alt={magazine.title} />
-                ) : (
-                  <div className="magazine-placeholder">
-                    <span>PDF</span>
-                  </div>
-                )}
-              </div>
-              <div className="magazine-info">
-                <h3 className="magazine-title">{magazine.title}</h3>
-                <div className="magazine-meta">
-                  {magazine.year && <span className="year">{magazine.year}</span>}
-                  {magazine.page_count && <span className="pages">{formatCount(t.pages, magazine.page_count)}</span>}
-                  <span className="size">{formatFileSize(magazine.file_size)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {magazines.length === 0 && (
-          <div className="empty-state">
-            <p>{t.noMagazinesFound}</p>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Show publishers list
   return (
     <div className="magazines-dashboard no-header">
+      <div className="filters">
+        <input
+          type="text"
+          placeholder={t.searchMagazines}
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="search-input"
+        />
+        <select
+          value={selectedPublisherId || ''}
+          onChange={(e) => handlePublisherChange(e.target.value ? parseInt(e.target.value) : null)}
+          className="year-select"
+        >
+          <option value="">All Publishers</option>
+          {publishers.map((publisher) => (
+            <option key={publisher.id} value={publisher.id}>
+              {publisher.name} ({publisher.magazine_count})
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedYear || ''}
+          onChange={(e) => handleYearChange(e.target.value ? parseInt(e.target.value) : null)}
+          className="year-select"
+        >
+          <option value="">{t.allYears}</option>
+          {years.map((year) => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="item-count-bar">
+        <span className="item-count">{formatCount(t.magazinesCount, magazines.length)}</span>
+      </div>
+
       {loading ? (
         <div className="loading">{t.loadingPublishers}</div>
-      ) : publishers.length === 0 ? (
+      ) : magazines.length === 0 ? (
         <div className="empty-state">
-          <h2>{t.noMagazinesFound}</h2>
+          <p>{t.noMagazinesFound}</p>
         </div>
       ) : (
-        <div className="publisher-grid">
-          {publishers.map((publisher) => (
-            <div
-              key={publisher.id}
-              className="publisher-card"
-              onClick={() => handlePublisherClick(publisher)}
-            >
-              <div className="publisher-icon">
-                <span>{publisher.name.charAt(0).toUpperCase()}</span>
+        <div className="magazine-grid">
+          {magazines.map((magazine) => {
+            const publisher = publishers.find(p => p.id === magazine.publisher_id)
+            return (
+              <div
+                key={magazine.id}
+                className="magazine-card"
+                onClick={() => handleMagazineClick(magazine)}
+              >
+                <div className="magazine-cover">
+                  {magazine.cover_url ? (
+                    <img src={magazine.cover_url} alt={magazine.title} />
+                  ) : (
+                    <div className="magazine-placeholder">
+                      <span>PDF</span>
+                    </div>
+                  )}
+                </div>
+                <div className="magazine-info">
+                  <h3 className="magazine-title">{magazine.title}</h3>
+                  <div className="magazine-meta">
+                    {publisher && <span className="publisher">{publisher.name}</span>}
+                    {magazine.year && <span className="year">{magazine.year}</span>}
+                    {magazine.page_count && <span className="pages">{formatCount(t.pages, magazine.page_count)}</span>}
+                  </div>
+                </div>
               </div>
-              <div className="publisher-info">
-                <h3 className="publisher-name">{publisher.name}</h3>
-                {publisher.description && (
-                  <p className="publisher-description">{publisher.description}</p>
-                )}
-                <span className="publisher-count">{formatCount(t.magazinesCount, publisher.magazine_count)}</span>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
