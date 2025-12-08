@@ -162,12 +162,19 @@ export default function EbooksDashboard() {
               >
                 <div className="magazine-cover">
                   {ebook.cover_url ? (
-                    <img src={ebook.cover_url} alt={ebook.title} />
-                  ) : (
-                    <div className="magazine-placeholder">
-                      <span>{fileType.toUpperCase()}</span>
-                    </div>
-                  )}
+                    <img
+                      src={ebook.cover_url}
+                      alt={ebook.title}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        target.nextElementSibling?.classList.remove('hidden')
+                      }}
+                    />
+                  ) : null}
+                  <div className={`magazine-placeholder ${ebook.cover_url ? 'hidden' : ''}`}>
+                    <span>{fileType.toUpperCase()}</span>
+                  </div>
                 </div>
                 <div className="magazine-info">
                   <h3 className="magazine-title">{ebook.title}</h3>

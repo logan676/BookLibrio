@@ -25,8 +25,16 @@ export async function streamFromR2(key: string) {
     Key: key,
   })
 
-  const response = await r2Client.send(command)
-  return response.Body
+  try {
+    const response = await r2Client.send(command)
+    return response.Body
+  } catch (error: unknown) {
+    // Return null for missing keys so caller can return 404
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'NoSuchKey') {
+      return null
+    }
+    throw error
+  }
 }
 
 export function isR2Configured() {
