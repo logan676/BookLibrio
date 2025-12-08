@@ -6,6 +6,8 @@ import { authRoutes } from './routes/auth'
 import { ebooksRoutes } from './routes/ebooks'
 import { magazinesRoutes } from './routes/magazines'
 import { healthRoutes } from './routes/health'
+import { notesRoutes } from './routes/notes'
+import { booksRoutes } from './routes/books'
 import categoriesRoutes from './routes/categories'
 import readingHistoryRoutes from './routes/reading-history'
 import coversRoutes from './routes/covers'
@@ -34,9 +36,13 @@ app.route('/api/health', healthRoutes)
 app.route('/api/auth', authRoutes)
 app.route('/api/ebooks', ebooksRoutes)
 app.route('/api/magazines', magazinesRoutes)
+app.route('/api/notes', notesRoutes)
+app.route('/api/books', booksRoutes)
 app.route('/api', categoriesRoutes)
 app.route('/api', readingHistoryRoutes)
 app.route('/api/r2-covers', coversRoutes)
+// Legacy covers route - redirect old paths to new R2 covers
+app.route('/api/covers', coversRoutes)
 
 // OpenAPI documentation endpoint
 app.doc('/api/openapi.json', {
