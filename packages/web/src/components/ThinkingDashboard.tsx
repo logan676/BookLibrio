@@ -70,13 +70,13 @@ export default function ThinkingDashboard() {
     try {
       const yearsResponse = await fetch('/api/notes/years', { headers: getAuthHeaders() })
       if (yearsResponse.ok) {
-        const yearsData = await yearsResponse.json()
-        setYears(yearsData)
+        const yearsResult = await yearsResponse.json()
+        setYears(yearsResult.data || yearsResult || [])
       }
       const notesResponse = await fetch('/api/notes', { headers: getAuthHeaders() })
       if (notesResponse.ok) {
-        const notesData = await notesResponse.json()
-        setNotes(notesData)
+        const notesResult = await notesResponse.json()
+        setNotes(notesResult.data || notesResult || [])
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
@@ -93,8 +93,8 @@ export default function ThinkingDashboard() {
 
       const response = await fetch(`/api/notes?${params}`, { headers: getAuthHeaders() })
       if (response.ok) {
-        const data = await response.json()
-        setNotes(data)
+        const result = await response.json()
+        setNotes(result.data || result || [])
       }
     } catch (error) {
       console.error('Failed to fetch notes:', error)
@@ -119,8 +119,8 @@ export default function ThinkingDashboard() {
     try {
       const response = await fetch(`/api/note-underlines/${underlineId}/ideas`, { headers: getAuthHeaders() })
       if (response.ok) {
-        const data = await response.json()
-        setIdeas(data)
+        const result = await response.json()
+        setIdeas(result.data || result || [])
       }
     } catch (error) {
       console.error('Failed to fetch ideas:', error)
