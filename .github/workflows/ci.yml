@@ -7,9 +7,37 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-build:
+  # Detect which packages changed
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'packages/web/**'
+              - 'packages/shared/**'
+            api:
+              - 'packages/api/**'
+              - 'packages/shared/**'
+            mobile:
+              - 'packages/mobile/**'
+              - 'packages/shared/**'
+            shared:
+              - 'packages/shared/**'
 
+  # Lint and build web package
+  web:
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -22,23 +50,52 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint web
+        run: npm run lint --workspace=@bookpost/web
 
       - name: Build web
-        run: npm run build
+        run: npm run build --workspace=@bookpost/web
 
-  deploy-web:
-    needs: lint-and-build
+      - name: Test web
+        run: npm run test --workspace=@bookpost/web --if-present
+
+  # Lint and build API package
+  api:
+    needs: changes
+    if: ${{ needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build API
+        run: npm run build --workspace=@bookpost/api
+
+  # Type check mobile package (Expo)
+  mobile:
+    needs: changes
+    if: ${{ needs.changes.outputs.mobile == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check mobile
+        working-directory: packages/mobile
+        run: npx tsc --noEmit
