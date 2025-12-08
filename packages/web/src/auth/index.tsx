@@ -45,12 +45,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const data = await res.json()
-        if (data.success && data.data) {
-          localStorage.setItem('token', data.data.token)
-          localStorage.setItem('refreshToken', data.data.refreshToken)
-          setToken(data.data.token)
-          setRefreshToken(data.data.refreshToken)
-          setUser(data.data.user)
+        const tokenData = data.data || data
+        if (tokenData.accessToken || tokenData.token) {
+          const newToken = tokenData.accessToken || tokenData.token
+          const newRefreshToken = tokenData.refreshToken
+          localStorage.setItem('token', newToken)
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken)
+            setRefreshToken(newRefreshToken)
+          }
+          setToken(newToken)
+          if (tokenData.user) {
+            setUser({
+              id: tokenData.user.id,
+              email: tokenData.user.email,
+              is_admin: tokenData.user.isAdmin ?? tokenData.user.is_admin ?? false,
+            })
+          }
           return true
         }
       }
@@ -87,20 +98,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         const data = await res.json()
 
-        // Handle new API response format
-        const userData = data.data?.user || data.user
+        // If response is successful, extract user data
+        if (res.ok) {
+          // Handle new API response format - user data is directly in data (not data.user)
+          const userData = data.data?.user || data.data || data.user || data
 
-        if (userData) {
-          setUser(userData)
-        } else if (data.error?.code === ErrorCode.TOKEN_EXPIRED || data.error?.code === ErrorCode.TOKEN_INVALID) {
-          // Try to refresh the token
-          const refreshed = await refreshAccessToken()
-          if (!refreshed) {
-            clearAuth()
+          if (userData && userData.id) {
+            // Map isAdmin to is_admin for frontend compatibility
+            setUser({
+              id: userData.id,
+              email: userData.email,
+              is_admin: userData.isAdmin ?? userData.is_admin ?? false,
+            })
+            return
           }
-        } else {
-          clearAuth()
         }
+
+        // Auth failed - try to refresh the token
+        const refreshed = await refreshAccessToken()
+        if (refreshed) {
+          // Token refreshed, re-fetch user data
+          const retryRes = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (retryRes.ok) {
+            const retryData = await retryRes.json()
+            const userData = retryData.data?.user || retryData.data || retryData.user || retryData
+            if (userData && userData.id) {
+              setUser({
+                id: userData.id,
+                email: userData.email,
+                is_admin: userData.isAdmin ?? userData.is_admin ?? false,
+              })
+              return
+            }
+          }
+        }
+        // Refresh failed or user data invalid
+        clearAuth()
       } catch {
         clearAuth()
       } finally {
@@ -121,10 +156,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json()
 
       if (res.ok) {
-        // Handle both old and new API response formats
-        const tokenValue = data.data?.token || data.token
-        const refreshTokenValue = data.data?.refreshToken || data.refreshToken
-        const userData = data.data?.user || data.user
+        // Handle both old and new API response formats (API uses accessToken)
+        const authData = data.data || data
+        const tokenValue = authData.accessToken || authData.token
+        const refreshTokenValue = authData.refreshToken
+        const userData = authData.user
 
         if (tokenValue) {
           localStorage.setItem('token', tokenValue)
@@ -135,7 +171,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRefreshToken(refreshTokenValue)
         }
         if (userData) {
-          setUser(userData)
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            is_admin: userData.isAdmin ?? userData.is_admin ?? false,
+          })
         }
         return { success: true }
       }
@@ -157,10 +197,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json()
 
       if (res.ok) {
-        // Handle both old and new API response formats
-        const tokenValue = data.data?.token || data.token
-        const refreshTokenValue = data.data?.refreshToken || data.refreshToken
-        const userData = data.data?.user || data.user
+        // Handle both old and new API response formats (API uses accessToken)
+        const authData = data.data || data
+        const tokenValue = authData.accessToken || authData.token
+        const refreshTokenValue = authData.refreshToken
+        const userData = authData.user
 
         if (tokenValue) {
           localStorage.setItem('token', tokenValue)
@@ -171,7 +212,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRefreshToken(refreshTokenValue)
         }
         if (userData) {
-          setUser(userData)
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            is_admin: userData.isAdmin ?? userData.is_admin ?? false,
+          })
         }
         return { success: true }
       }
