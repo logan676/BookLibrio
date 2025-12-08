@@ -20,9 +20,10 @@ async function main() {
   serve({
     fetch: app.fetch,
     port: PORT,
+    hostname: '0.0.0.0',  // Listen on all interfaces for Docker/Fly.io
   }, (info) => {
-    console.log(`Server running at http://localhost:${info.port}`)
-    console.log(`OpenAPI docs at http://localhost:${info.port}/api/openapi.json`)
+    console.log(`Server running at http://0.0.0.0:${info.port}`)
+    console.log(`OpenAPI docs at http://0.0.0.0:${info.port}/api/openapi.json`)
   })
 }
 

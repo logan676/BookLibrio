@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev for tsx)
-RUN npm ci
+RUN npm install
 
 # Copy source
 COPY . .

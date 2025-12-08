@@ -1,6 +1,6 @@
 # fly.toml - Fly.io configuration for BookPost API
 
-app = 'bookpost-api'
+app = 'bookpost-api-hono'
 primary_region = 'nrt'  # Tokyo - close to user
 
 [build]

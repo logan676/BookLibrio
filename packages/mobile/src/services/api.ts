@@ -1,8 +1,8 @@
 import type { Book, Post, EbookCategory, Ebook, EbookDetail, EbookContent, Publisher, Magazine, MagazineDetail, User, AuthResponse, Note, NoteContent, NoteYear, NoteUnderline, NoteIdea } from '../types'
 import Constants from 'expo-constants'
 
-// Production API URL (Railway)
-const PRODUCTION_API_URL = 'https://bookpost-api-production.up.railway.app/api'
+// Production API URL (Fly.io)
+const PRODUCTION_API_URL = 'https://bookpost-api-hono.fly.dev/api'
 
 // Use cloud server by default, local server for development
 const getApiUrl = () => {
