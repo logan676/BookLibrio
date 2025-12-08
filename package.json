@@ -5,16 +5,13 @@
   "workspaces": [
     "packages/shared",
     "packages/web",
-    "packages/server",
     "packages/api"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@bookpost/web",
-    "dev:server": "npm run dev --workspace=@bookpost/server",
     "dev:api": "npm run dev --workspace=@bookpost/api",
-    "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
+    "dev:all": "concurrently \"npm run dev:api\" \"npm run dev\"",
     "build": "npm run build --workspace=@bookpost/web",
-    "build:server": "npm run build --workspace=@bookpost/server",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "upload:s3": "node scripts/upload-to-s3.js",
