@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BookPost</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">首页</string>
+    <string name="nav_ebooks">电子书</string>
+    <string name="nav_magazines">杂志</string>
+    <string name="nav_books">实体书</string>
+    <string name="nav_profile">我的</string>
+
+    <!-- Auth -->
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="logout">退出登录</string>
+    <string name="email">邮箱</string>
+    <string name="password">密码</string>
+    <string name="username">用户名</string>
+    <string name="confirm_password">确认密码</string>
+    <string name="forgot_password">忘记密码?</string>
+    <string name="no_account">没有账号?</string>
+    <string name="have_account">已有账号?</string>
+
+    <!-- Common -->
+    <string name="search">搜索</string>
+    <string name="loading">加载中...</string>
+    <string name="error">出错了</string>
+    <string name="retry">重试</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="empty_list">暂无内容</string>
+
+    <!-- Ebooks -->
+    <string name="all_categories">全部分类</string>
+    <string name="ebook_count">%d 本电子书</string>
+
+    <!-- Magazines -->
+    <string name="all_publishers">全部出版商</string>
+    <string name="all_years">全部年份</string>
+    <string name="magazine_count">%d 本杂志</string>
+
+    <!-- Reader -->
+    <string name="page_info">第 %1$d / %2$d 页</string>
+    <string name="continue_reading">继续阅读</string>
+    <string name="start_reading">开始阅读</string>
+
+    <!-- Profile -->
+    <string name="reading_history">阅读记录</string>
+    <string name="my_notes">我的笔记</string>
+    <string name="settings">设置</string>
+</resources>

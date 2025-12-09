@@ -1,0 +1,10 @@
+# Copy this file to local.properties and update values
+
+# Android SDK location
+sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk
+
+# API configuration
+API_BASE_URL=https://bookpost-api.fly.dev
+
+# Debug API URL (for emulator, use 10.0.2.2 to access localhost)
+API_BASE_URL_DEBUG=http://10.0.2.2:3001
