@@ -1,0 +1,69 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXGroup section */
+		MAIN /* BookPost */ = {
+			isa = PBXGroup;
+			children = (
+				APP /* App */,
+				MODELS /* Models */,
+				VIEWS /* Views */,
+				VIEWMODELS /* ViewModels */,
+				SERVICES /* Services */,
+				UTILITIES /* Utilities */,
+			);
+			path = BookPost;
+			sourceTree = "<group>";
+		};
+		APP /* App */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		MODELS /* Models */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		VIEWS /* Views */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		VIEWMODELS /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		SERVICES /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		UTILITIES /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+	};
+	rootObject = MAIN /* BookPost */;
+}
