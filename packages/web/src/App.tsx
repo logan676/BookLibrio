@@ -185,7 +185,7 @@ function MainLayout() {
     <div className="app">
       <header>
         <div className="logo-link" onClick={() => navigate('/')}>
-          <img src="/logo.jpeg" alt="BookLibrio" className="header-logo" />
+          <img src="/logo.png" alt="BookLibrio" className="header-logo" />
         </div>
         <nav className="tab-nav">
           <button
