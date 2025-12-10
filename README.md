@@ -1,6 +1,12 @@
-# BookPost
+# BookLibrio
 
-A digital library application for managing ebooks, magazines, and reading progress. Features PDF/EPUB readers, cover scanning, note-taking, and cross-device sync.
+**Your Personal Digital Library** - A comprehensive multi-platform application for managing ebooks, magazines, and reading progress. Features PDF/EPUB readers, AI-powered word lookup, cover scanning, note-taking, achievement badges, and cross-device sync.
+
+## Brand
+
+- **Primary Color (Deep Insight Blue):** `#0A2342`
+- **Accent Color (Illumination Gold):** `#F4B400`
+- **Interactive Color (Electric Azure):** `#007AFF`
 
 ## Architecture
 
@@ -42,7 +48,7 @@ A digital library application for managing ebooks, magazines, and reading progre
 ## Project Structure
 
 ```
-bookpost/
+booklibrio/
 ├── packages/
 │   ├── web/           # React frontend (Vite)
 │   ├── api/           # Hono backend
@@ -57,16 +63,30 @@ bookpost/
 
 ## Features
 
+### Core Features
+- **Read Anywhere** - Access ebooks, magazines, and PDFs with beautiful readers that sync your progress automatically
+- **Highlight & Annotate** - Mark important passages, add notes, and capture your ideas while reading
+- **Track Your Journey** - See reading stats, earn achievement badges, and maintain reading streaks to stay motivated
+- **Look Up Instantly** - Select any word for AI-powered definitions and translations (powered by DeepSeek)
+- **Stay Organized** - Categorize your library, track what you've read, and never lose your place again
+
 ### Ebooks & Magazines
 - PDF and EPUB reader with page navigation
 - Magazine collection organized by publisher
 - Ebook collection organized by category
 - Text highlighting and note-taking
 
-### Reading History
+### Reading Progress & Stats
 - Track reading progress across devices
-- Resume from last position
-- View recent reading activity
+- Reading session duration tracking
+- Daily/weekly reading statistics
+- Achievement badges and streaks
+- Weekly leaderboards
+
+### AI Features
+- Word/phrase meaning lookup (DeepSeek API)
+- Translation services
+- Text summarization
 
 ### Book Scanning
 - Scan physical book covers with camera
@@ -82,8 +102,8 @@ bookpost/
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/logan676/bookpost.git
-cd bookpost
+git clone https://github.com/logan676/booklibrio.git
+cd booklibrio
 npm install
 ```
 
@@ -106,7 +126,10 @@ DATABASE_URL=postgresql://postgres:password@db.xxx.supabase.co:5432/postgres
 R2_ENDPOINT=https://xxx.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=your_access_key
 R2_SECRET_ACCESS_KEY=your_secret_key
-R2_BUCKET_NAME=bookpost
+R2_BUCKET_NAME=booklibrio
+
+# AI Features (DeepSeek)
+DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
 ### 3. Run Development Servers
@@ -156,9 +179,16 @@ npm start
 | `/api/ebooks` | GET | List ebooks |
 | `/api/ebooks/:id` | GET | Get ebook details |
 | `/api/ebooks/:id/file` | GET | Stream ebook file |
+| `/api/ebooks/:id/underlines` | GET/POST | Ebook highlights |
 | `/api/magazines` | GET | List magazines |
 | `/api/magazines/:id/file` | GET | Stream magazine file |
 | `/api/reading-history` | GET/POST | Reading progress |
+| `/api/reading/sessions` | GET/POST | Reading sessions |
+| `/api/user/stats` | GET | Reading statistics |
+| `/api/user/badges` | GET | User badges |
+| `/api/ai/meaning` | POST | Word/phrase lookup |
+| `/api/ai/translate` | POST | Translation |
+| `/api/ai/summarize` | POST | Text summarization |
 | `/api/books` | GET | Physical books |
 
 ## Deployment
@@ -187,7 +217,7 @@ cd packages/android
 
 ```bash
 cd packages/ios
-xcodebuild -scheme BookPost -configuration Release
+xcodebuild -scheme BookLibrio -configuration Release
 ```
 
 ### Mobile (React Native)
@@ -225,6 +255,7 @@ Path-filtered workflows run only when relevant packages change:
 - Drizzle ORM (type-safe queries)
 - Zod for validation
 - OpenAPI spec generation
+- DeepSeek AI integration
 
 ### Android (`packages/android`)
 - Kotlin + Jetpack Compose
@@ -240,6 +271,7 @@ Path-filtered workflows run only when relevant packages change:
 - async/await concurrency
 - PDFKit for PDF rendering
 - URLSession for networking
+- BookLibrio brand colors extension
 
 ### Mobile (`packages/mobile`)
 - React Native 0.81 + Expo SDK 54

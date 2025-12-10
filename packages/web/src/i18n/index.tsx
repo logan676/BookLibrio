@@ -142,7 +142,7 @@ interface Translations {
 }
 
 const en: Translations = {
-  appTitle: 'BookPost',
+  appTitle: 'BookLibrio',
   ebooks: 'Ebooks',
   magazines: 'Magazines',
   bookshelf: 'Bookshelf',
@@ -264,7 +264,7 @@ const en: Translations = {
 }
 
 const zh: Translations = {
-  appTitle: 'BookPost',
+  appTitle: 'BookLibrio',
   ebooks: '电子书',
   magazines: '杂志',
   bookshelf: '书架',

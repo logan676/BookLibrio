@@ -83,7 +83,7 @@ struct HomeView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("BookPost")
+            .navigationTitle("BookLibrio")
             .refreshable {
                 await viewModel.refresh()
             }

@@ -1,8 +1,9 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import { db } from '../db/client'
-import { ebooks, ebookCategories } from '../db/schema'
-import { eq, like, desc, count } from 'drizzle-orm'
+import { ebooks, ebookCategories, ebookUnderlines, ebookIdeas } from '../db/schema'
+import { eq, like, desc, count, and } from 'drizzle-orm'
 import { streamFromR2, isR2Configured } from '../services/storage'
+import { requireAuth } from '../middleware/auth'
 
 const app = new OpenAPIHono()
 
@@ -232,6 +233,150 @@ app.openapi(listCategoriesRoute, async (c) => {
   return c.json({
     data: categoriesWithCount,
   })
+})
+
+// ============================================
+// Ebook Underlines Endpoints
+// ============================================
+
+// GET /api/ebooks/:id/underlines - Get underlines for an ebook
+app.get('/:id/underlines', async (c) => {
+  const id = parseInt(c.req.param('id'))
+
+  if (isNaN(id)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid ebook ID' } }, 400)
+  }
+
+  // Get all underlines for this ebook (public for reading, no auth required)
+  const underlines = await db
+    .select()
+    .from(ebookUnderlines)
+    .where(eq(ebookUnderlines.ebookId, id))
+
+  return c.json({
+    data: underlines.map(u => ({
+      ...u,
+      createdAt: u.createdAt?.toISOString() ?? null,
+    })),
+  })
+})
+
+// POST /api/ebooks/:id/underlines - Create underline (requires auth)
+app.post('/:id/underlines', requireAuth, async (c) => {
+  const id = parseInt(c.req.param('id'))
+  const userId = c.get('userId')
+
+  if (isNaN(id)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid ebook ID' } }, 400)
+  }
+
+  const body = await c.req.json()
+  const { text, paragraph, chapterIndex, paragraphIndex, startOffset, endOffset, cfiRange } = body
+
+  if (!text) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Text is required' } }, 400)
+  }
+
+  const [underline] = await db.insert(ebookUnderlines).values({
+    ebookId: id,
+    userId,
+    text,
+    paragraph,
+    chapterIndex,
+    paragraphIndex,
+    startOffset,
+    endOffset,
+    cfiRange,
+  }).returning()
+
+  return c.json({
+    data: {
+      ...underline,
+      createdAt: underline.createdAt?.toISOString() ?? null,
+    },
+  }, 201)
+})
+
+// DELETE /api/ebooks/:id/underlines/:underlineId - Delete underline (requires auth)
+app.delete('/:id/underlines/:underlineId', requireAuth, async (c) => {
+  const id = parseInt(c.req.param('id'))
+  const underlineId = parseInt(c.req.param('underlineId'))
+  const userId = c.get('userId')
+
+  if (isNaN(id) || isNaN(underlineId)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid ID' } }, 400)
+  }
+
+  // Check if underline exists and belongs to user
+  const [existing] = await db
+    .select()
+    .from(ebookUnderlines)
+    .where(and(eq(ebookUnderlines.id, underlineId), eq(ebookUnderlines.userId, userId)))
+
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Underline not found' } }, 404)
+  }
+
+  await db.delete(ebookUnderlines).where(eq(ebookUnderlines.id, underlineId))
+
+  return c.json({ success: true })
+})
+
+// GET /api/ebooks/:id/underlines/:underlineId/ideas - Get ideas for an underline
+app.get('/:id/underlines/:underlineId/ideas', async (c) => {
+  const underlineId = parseInt(c.req.param('underlineId'))
+
+  if (isNaN(underlineId)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid underline ID' } }, 400)
+  }
+
+  const ideasList = await db
+    .select()
+    .from(ebookIdeas)
+    .where(eq(ebookIdeas.underlineId, underlineId))
+
+  return c.json({
+    data: ideasList.map(idea => ({
+      ...idea,
+      createdAt: idea.createdAt?.toISOString() ?? null,
+    })),
+  })
+})
+
+// POST /api/ebooks/:id/underlines/:underlineId/ideas - Add idea to underline (requires auth)
+app.post('/:id/underlines/:underlineId/ideas', requireAuth, async (c) => {
+  const underlineId = parseInt(c.req.param('underlineId'))
+  const userId = c.get('userId')
+
+  if (isNaN(underlineId)) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Invalid underline ID' } }, 400)
+  }
+
+  const body = await c.req.json()
+  const { content } = body
+
+  if (!content) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: 'Content is required' } }, 400)
+  }
+
+  const [idea] = await db.insert(ebookIdeas).values({
+    underlineId,
+    userId,
+    content,
+  }).returning()
+
+  // Update idea count on underline
+  await db
+    .update(ebookUnderlines)
+    .set({ ideaCount: (await db.select({ count: count() }).from(ebookIdeas).where(eq(ebookIdeas.underlineId, underlineId)))[0].count })
+    .where(eq(ebookUnderlines.id, underlineId))
+
+  return c.json({
+    data: {
+      ...idea,
+      createdAt: idea.createdAt?.toISOString() ?? null,
+    },
+  }, 201)
 })
 
 export { app as ebooksRoutes }

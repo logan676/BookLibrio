@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct BookPostApp: App {
+struct BookLibrioApp: App {
     @StateObject private var authManager = AuthManager.shared
 
     var body: some Scene {

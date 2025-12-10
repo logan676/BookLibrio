@@ -14,7 +14,7 @@ async function main() {
   }
 
   // Start server
-  console.log(`Starting BookPost API server...`)
+  console.log(`Starting BookLibrio API server...`)
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
 
   serve({

@@ -1,7 +1,8 @@
 {
-  "name": "@bookpost/api",
+  "name": "@booklibrio/api",
   "version": "1.0.0",
   "type": "module",
+  "description": "BookLibrio API Server - Your Personal Digital Library",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

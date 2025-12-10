@@ -58,20 +58,20 @@ app.route('/api/covers', coversRoutes)
 app.doc('/api/openapi.json', {
   openapi: '3.1.0',
   info: {
-    title: 'BookPost API',
+    title: 'BookLibrio API',
     version: '2.0.0',
-    description: 'API for BookPost - Personal Content Library',
+    description: 'API for BookLibrio - Your Personal Digital Library',
   },
   servers: [
     { url: 'http://localhost:3001', description: 'Development' },
-    { url: 'https://bookpost-api.fly.dev', description: 'Production' },
+    { url: 'https://booklibrio-api.fly.dev', description: 'Production' },
   ],
 })
 
 // Root endpoint
 app.get('/', (c) => {
   return c.json({
-    name: 'BookPost API',
+    name: 'BookLibrio API',
     version: '2.0.0',
     docs: '/api/openapi.json',
   })
