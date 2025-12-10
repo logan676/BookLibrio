@@ -8,9 +8,13 @@ import { magazinesRoutes } from './routes/magazines'
 import { healthRoutes } from './routes/health'
 import { notesRoutes } from './routes/notes'
 import { booksRoutes } from './routes/books'
+import { aiRoutes } from './routes/ai'
 import categoriesRoutes from './routes/categories'
 import readingHistoryRoutes from './routes/reading-history'
 import coversRoutes from './routes/covers'
+import readingSessionsRoutes from './routes/reading-sessions'
+import readingStatsRoutes from './routes/reading-stats'
+import badgesRoutes from './routes/badges'
 
 // Create OpenAPI-enabled Hono app
 const app = new OpenAPIHono()
@@ -36,10 +40,16 @@ app.route('/api/health', healthRoutes)
 app.route('/api/auth', authRoutes)
 app.route('/api/ebooks', ebooksRoutes)
 app.route('/api/magazines', magazinesRoutes)
+app.route('/api/ai', aiRoutes)  // Must be before routes mounted at /api that use global auth middleware
 app.route('/api/notes', notesRoutes)
 app.route('/api/books', booksRoutes)
 app.route('/api', categoriesRoutes)
 app.route('/api', readingHistoryRoutes)
+app.route('/api/reading', readingSessionsRoutes)
+app.route('/api/user', readingStatsRoutes)
+app.route('/api/user', badgesRoutes)
+app.route('/api/badges', badgesRoutes)
+app.route('/api/social', readingStatsRoutes)
 app.route('/api/r2-covers', coversRoutes)
 // Legacy covers route - redirect old paths to new R2 covers
 app.route('/api/covers', coversRoutes)
