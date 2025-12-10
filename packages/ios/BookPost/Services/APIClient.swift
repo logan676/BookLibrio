@@ -7,6 +7,7 @@ enum APIError: LocalizedError {
     case serverError(Int, String?)
     case unauthorized
     case unknown
+    case invalidResponse
 
     var errorDescription: String? {
         switch self {
@@ -22,8 +23,17 @@ enum APIError: LocalizedError {
             return "未授权，请重新登录"
         case .unknown:
             return "未知错误"
+        case .invalidResponse:
+            return "无效的响应"
         }
     }
+}
+
+// MARK: - API Response Wrapper
+struct APIResponse<T: Decodable>: Decodable {
+    let success: Bool?
+    let data: T?
+    let error: String?
 }
 
 class APIClient {
@@ -263,5 +273,24 @@ class APIClient {
         let body = try JSONEncoder().encode(payload)
         let request = try buildRequest(path: "/api/reading-history", method: "POST", body: body, requiresAuth: true)
         let _: ReadingHistoryResponse = try await perform(request)
+    }
+
+    // MARK: - Generic API Methods
+
+    func get<T: Decodable>(_ path: String, queryItems: [URLQueryItem]? = nil, requiresAuth: Bool = true) async throws -> APIResponse<T> {
+        let request = try buildRequest(path: "/api" + path, queryItems: queryItems, requiresAuth: requiresAuth)
+        return try await perform(request)
+    }
+
+    func get<T: Decodable>(_ path: String, queryParams: [String: String], requiresAuth: Bool = true) async throws -> APIResponse<T> {
+        let queryItems = queryParams.map { URLQueryItem(name: $0.key, value: $0.value) }
+        let request = try buildRequest(path: "/api" + path, queryItems: queryItems, requiresAuth: requiresAuth)
+        return try await perform(request)
+    }
+
+    func post<T: Decodable, B: Encodable>(_ path: String, body: B, requiresAuth: Bool = true) async throws -> APIResponse<T> {
+        let bodyData = try JSONEncoder().encode(body)
+        let request = try buildRequest(path: "/api" + path, method: "POST", body: bodyData, requiresAuth: requiresAuth)
+        return try await perform(request)
     }
 }

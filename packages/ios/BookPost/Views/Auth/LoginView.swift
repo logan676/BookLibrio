@@ -13,11 +13,17 @@ struct LoginView: View {
                 Spacer()
 
                 // Logo and title
-                VStack(spacing: 8) {
-                    Text("BookPost")
+                VStack(spacing: 16) {
+                    Image("Logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .cornerRadius(24)
+
+                    Text("BookLibrio")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.brandBlue)
 
                     Text("登录您的账号")
                         .font(.subheadline)
@@ -84,7 +90,7 @@ struct LoginView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color.blue)
+                .background(Color.brandBlue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
                 .disabled(authManager.isLoading || email.isEmpty || password.isEmpty)

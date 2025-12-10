@@ -66,7 +66,7 @@ class ReadingSessionManager: ObservableObject {
         )
 
         guard let data = response.data else {
-            throw APIError.invalidResponse
+            throw ReadingSessionError.invalidResponse
         }
 
         currentSession = ReadingSession(
@@ -236,8 +236,8 @@ extension Notification.Name {
     static let milestonesAchieved = Notification.Name("milestonesAchieved")
 }
 
-// MARK: - API Error
-enum APIError: Error {
+// MARK: - Reading Session API Error (used internally)
+enum ReadingSessionError: Error {
     case invalidResponse
     case networkError(Error)
     case serverError(String)

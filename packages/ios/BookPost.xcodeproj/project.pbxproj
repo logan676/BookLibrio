@@ -6,7 +6,110 @@
 	objectVersion = 56;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F001 /* BookPostApp.swift */ = {isa = PBXBuildFile; fileRef = S001; };
+		F002 /* ContentView.swift */ = {isa = PBXBuildFile; fileRef = S002; };
+		F003 /* MainTabView.swift */ = {isa = PBXBuildFile; fileRef = S003; };
+		F004 /* Badge.swift */ = {isa = PBXBuildFile; fileRef = S004; };
+		F005 /* Book.swift */ = {isa = PBXBuildFile; fileRef = S005; };
+		F006 /* Ebook.swift */ = {isa = PBXBuildFile; fileRef = S006; };
+		F007 /* Magazine.swift */ = {isa = PBXBuildFile; fileRef = S007; };
+		F008 /* ReadingHistory.swift */ = {isa = PBXBuildFile; fileRef = S008; };
+		F009 /* ReadingSession.swift */ = {isa = PBXBuildFile; fileRef = S009; };
+		F010 /* ReadingStats.swift */ = {isa = PBXBuildFile; fileRef = S010; };
+		F011 /* User.swift */ = {isa = PBXBuildFile; fileRef = S011; };
+		F012 /* APIClient.swift */ = {isa = PBXBuildFile; fileRef = S012; };
+		F013 /* AuthManager.swift */ = {isa = PBXBuildFile; fileRef = S013; };
+		F014 /* ReadingSessionManager.swift */ = {isa = PBXBuildFile; fileRef = S014; };
+		F015 /* Extensions.swift */ = {isa = PBXBuildFile; fileRef = S015; };
+		F016 /* BadgesViewModel.swift */ = {isa = PBXBuildFile; fileRef = S016; };
+		F017 /* EbooksViewModel.swift */ = {isa = PBXBuildFile; fileRef = S017; };
+		F018 /* HomeViewModel.swift */ = {isa = PBXBuildFile; fileRef = S018; };
+		F019 /* ReadingStatsViewModel.swift */ = {isa = PBXBuildFile; fileRef = S019; };
+		F020 /* LoginView.swift */ = {isa = PBXBuildFile; fileRef = S020; };
+		F021 /* RegisterView.swift */ = {isa = PBXBuildFile; fileRef = S021; };
+		F022 /* BooksView.swift */ = {isa = PBXBuildFile; fileRef = S022; };
+		F023 /* BookCoverView.swift */ = {isa = PBXBuildFile; fileRef = S023; };
+		F024 /* LoadingView.swift */ = {isa = PBXBuildFile; fileRef = S024; };
+		F025 /* SearchBarView.swift */ = {isa = PBXBuildFile; fileRef = S025; };
+		F026 /* EbookDetailView.swift */ = {isa = PBXBuildFile; fileRef = S026; };
+		F027 /* EbooksView.swift */ = {isa = PBXBuildFile; fileRef = S027; };
+		F028 /* HomeView.swift */ = {isa = PBXBuildFile; fileRef = S028; };
+		F029 /* MagazineDetailView.swift */ = {isa = PBXBuildFile; fileRef = S029; };
+		F030 /* MagazinesView.swift */ = {isa = PBXBuildFile; fileRef = S030; };
+		F031 /* BadgesView.swift */ = {isa = PBXBuildFile; fileRef = S031; };
+		F032 /* ProfileView.swift */ = {isa = PBXBuildFile; fileRef = S032; };
+		F033 /* ReadingStatsView.swift */ = {isa = PBXBuildFile; fileRef = S033; };
+		F034 /* PDFReaderView.swift */ = {isa = PBXBuildFile; fileRef = S034; };
+		F035 /* Assets.xcassets */ = {isa = PBXBuildFile; fileRef = A001; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		PRODUCT /* BookLibrio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BookLibrio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		S001 /* BookPostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookPostApp.swift; sourceTree = "<group>"; };
+		S002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		S003 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		S004 /* Badge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Badge.swift; sourceTree = "<group>"; };
+		S005 /* Book.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Book.swift; sourceTree = "<group>"; };
+		S006 /* Ebook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ebook.swift; sourceTree = "<group>"; };
+		S007 /* Magazine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Magazine.swift; sourceTree = "<group>"; };
+		S008 /* ReadingHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingHistory.swift; sourceTree = "<group>"; };
+		S009 /* ReadingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSession.swift; sourceTree = "<group>"; };
+		S010 /* ReadingStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStats.swift; sourceTree = "<group>"; };
+		S011 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		S012 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		S013 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		S014 /* ReadingSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSessionManager.swift; sourceTree = "<group>"; };
+		S015 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		S016 /* BadgesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesViewModel.swift; sourceTree = "<group>"; };
+		S017 /* EbooksViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbooksViewModel.swift; sourceTree = "<group>"; };
+		S018 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		S019 /* ReadingStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsViewModel.swift; sourceTree = "<group>"; };
+		S020 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		S021 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		S022 /* BooksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BooksView.swift; sourceTree = "<group>"; };
+		S023 /* BookCoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookCoverView.swift; sourceTree = "<group>"; };
+		S024 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		S025 /* SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBarView.swift; sourceTree = "<group>"; };
+		S026 /* EbookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbookDetailView.swift; sourceTree = "<group>"; };
+		S027 /* EbooksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbooksView.swift; sourceTree = "<group>"; };
+		S028 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		S029 /* MagazineDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagazineDetailView.swift; sourceTree = "<group>"; };
+		S030 /* MagazinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagazinesView.swift; sourceTree = "<group>"; };
+		S031 /* BadgesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesView.swift; sourceTree = "<group>"; };
+		S032 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		S033 /* ReadingStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsView.swift; sourceTree = "<group>"; };
+		S034 /* PDFReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFReaderView.swift; sourceTree = "<group>"; };
+		A001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FRAMEWORKS = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
+		ROOT = {
+			isa = PBXGroup;
+			children = (
+				MAIN /* BookPost */,
+				PRODUCTS /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		PRODUCTS /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				PRODUCT /* BookLibrio.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		MAIN /* BookPost */ = {
 			isa = PBXGroup;
 			children = (
@@ -16,6 +119,7 @@
 				VIEWMODELS /* ViewModels */,
 				SERVICES /* Services */,
 				UTILITIES /* Utilities */,
+				A001 /* Assets.xcassets */,
 			);
 			path = BookPost;
 			sourceTree = "<group>";
@@ -23,6 +127,9 @@
 		APP /* App */ = {
 			isa = PBXGroup;
 			children = (
+				S001 /* BookPostApp.swift */,
+				S002 /* ContentView.swift */,
+				S003 /* MainTabView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -30,6 +137,14 @@
 		MODELS /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				S004 /* Badge.swift */,
+				S005 /* Book.swift */,
+				S006 /* Ebook.swift */,
+				S007 /* Magazine.swift */,
+				S008 /* ReadingHistory.swift */,
+				S009 /* ReadingSession.swift */,
+				S010 /* ReadingStats.swift */,
+				S011 /* User.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -37,13 +152,96 @@
 		VIEWS /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				VIEWS_AUTH /* Auth */,
+				VIEWS_BOOKS /* Books */,
+				VIEWS_COMPONENTS /* Components */,
+				VIEWS_EBOOKS /* Ebooks */,
+				VIEWS_HOME /* Home */,
+				VIEWS_MAGAZINES /* Magazines */,
+				VIEWS_PROFILE /* Profile */,
+				VIEWS_READER /* Reader */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		VIEWS_AUTH /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				S020 /* LoginView.swift */,
+				S021 /* RegisterView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		VIEWS_BOOKS /* Books */ = {
+			isa = PBXGroup;
+			children = (
+				S022 /* BooksView.swift */,
+			);
+			path = Books;
+			sourceTree = "<group>";
+		};
+		VIEWS_COMPONENTS /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				S023 /* BookCoverView.swift */,
+				S024 /* LoadingView.swift */,
+				S025 /* SearchBarView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		VIEWS_EBOOKS /* Ebooks */ = {
+			isa = PBXGroup;
+			children = (
+				S026 /* EbookDetailView.swift */,
+				S027 /* EbooksView.swift */,
+			);
+			path = Ebooks;
+			sourceTree = "<group>";
+		};
+		VIEWS_HOME /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				S028 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		VIEWS_MAGAZINES /* Magazines */ = {
+			isa = PBXGroup;
+			children = (
+				S029 /* MagazineDetailView.swift */,
+				S030 /* MagazinesView.swift */,
+			);
+			path = Magazines;
+			sourceTree = "<group>";
+		};
+		VIEWS_PROFILE /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				S031 /* BadgesView.swift */,
+				S032 /* ProfileView.swift */,
+				S033 /* ReadingStatsView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		VIEWS_READER /* Reader */ = {
+			isa = PBXGroup;
+			children = (
+				S034 /* PDFReaderView.swift */,
+			);
+			path = Reader;
 			sourceTree = "<group>";
 		};
 		VIEWMODELS /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				S016 /* BadgesViewModel.swift */,
+				S017 /* EbooksViewModel.swift */,
+				S018 /* HomeViewModel.swift */,
+				S019 /* ReadingStatsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -51,6 +249,9 @@
 		SERVICES /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				S012 /* APIClient.swift */,
+				S013 /* AuthManager.swift */,
+				S014 /* ReadingSessionManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -58,12 +259,321 @@
 		UTILITIES /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				S015 /* Extensions.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
+/* Begin PBXNativeTarget section */
+		TARGET /* BookLibrio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CONFIGLIST_TARGET;
+			buildPhases = (
+				SOURCES,
+				FRAMEWORKS,
+				RESOURCES,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BookLibrio;
+			productName = BookLibrio;
+			productReference = PRODUCT /* BookLibrio.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		PROJECT = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					TARGET = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = CONFIGLIST_PROJECT;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = ROOT;
+			productRefGroup = PRODUCTS /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				TARGET /* BookLibrio */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		RESOURCES = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F035 /* Assets.xcassets */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		SOURCES = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F001 /* BookPostApp.swift */,
+				F002 /* ContentView.swift */,
+				F003 /* MainTabView.swift */,
+				F004 /* Badge.swift */,
+				F005 /* Book.swift */,
+				F006 /* Ebook.swift */,
+				F007 /* Magazine.swift */,
+				F008 /* ReadingHistory.swift */,
+				F009 /* ReadingSession.swift */,
+				F010 /* ReadingStats.swift */,
+				F011 /* User.swift */,
+				F012 /* APIClient.swift */,
+				F013 /* AuthManager.swift */,
+				F014 /* ReadingSessionManager.swift */,
+				F015 /* Extensions.swift */,
+				F016 /* BadgesViewModel.swift */,
+				F017 /* EbooksViewModel.swift */,
+				F018 /* HomeViewModel.swift */,
+				F019 /* ReadingStatsViewModel.swift */,
+				F020 /* LoginView.swift */,
+				F021 /* RegisterView.swift */,
+				F022 /* BooksView.swift */,
+				F023 /* BookCoverView.swift */,
+				F024 /* LoadingView.swift */,
+				F025 /* SearchBarView.swift */,
+				F026 /* EbookDetailView.swift */,
+				F027 /* EbooksView.swift */,
+				F028 /* HomeView.swift */,
+				F029 /* MagazineDetailView.swift */,
+				F030 /* MagazinesView.swift */,
+				F031 /* BadgesView.swift */,
+				F032 /* ProfileView.swift */,
+				F033 /* ReadingStatsView.swift */,
+				F034 /* PDFReaderView.swift */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		CONFIG_DEBUG_PROJECT = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CONFIG_RELEASE_PROJECT = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CONFIG_DEBUG_TARGET = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = BookLibrio;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.booklibrio.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CONFIG_RELEASE_TARGET = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = BookLibrio;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.booklibrio.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CONFIGLIST_PROJECT = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CONFIG_DEBUG_PROJECT,
+				CONFIG_RELEASE_PROJECT,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CONFIGLIST_TARGET = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CONFIG_DEBUG_TARGET,
+				CONFIG_RELEASE_TARGET,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
 	};
-	rootObject = MAIN /* BookPost */;
+	rootObject = PROJECT;
 }

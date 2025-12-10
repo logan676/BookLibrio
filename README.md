@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="brand-assets/banner.jpeg" alt="BookLibrio Banner" width="100%">
+</p>
+
 # BookLibrio
 
 **Your Personal Digital Library** - A comprehensive multi-platform application for managing ebooks, magazines, and reading progress. Features PDF/EPUB readers, AI-powered word lookup, cover scanning, note-taking, achievement badges, and cross-device sync.
