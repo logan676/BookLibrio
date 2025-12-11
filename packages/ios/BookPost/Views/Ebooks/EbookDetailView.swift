@@ -45,7 +45,7 @@ struct EbookDetailView: View {
                         .padding(.horizontal)
 
                         Button(action: { showReader = true }) {
-                            Text("开始阅读")
+                            Text(L10n.Ebooks.startReading)
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
@@ -57,7 +57,7 @@ struct EbookDetailView: View {
                 }
             }
         }
-        .navigationTitle(ebook?.title ?? "电子书")
+        .navigationTitle(ebook?.title ?? L10n.Ebooks.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadEbook()

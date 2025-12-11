@@ -23,7 +23,7 @@ struct EbooksView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             CategoryChip(
-                                title: "全部",
+                                title: L10n.Common.all,
                                 isSelected: viewModel.selectedCategoryId == nil
                             ) {
                                 viewModel.selectCategory(nil)
@@ -45,7 +45,7 @@ struct EbooksView: View {
 
                 // Total count
                 HStack {
-                    Text("\(viewModel.total) 本电子书")
+                    Text(L10n.Ebooks.count(viewModel.total))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
@@ -62,7 +62,7 @@ struct EbooksView: View {
                             Task { await viewModel.loadEbooks() }
                         }
                     } else if viewModel.ebooks.isEmpty {
-                        EmptyView(message: "暂无电子书")
+                        EmptyView(message: L10n.Ebooks.noEbooks)
                     } else {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 16) {
@@ -81,7 +81,7 @@ struct EbooksView: View {
                     }
                 }
             }
-            .navigationTitle("电子书")
+            .navigationTitle(L10n.Ebooks.title)
             .refreshable {
                 await viewModel.refresh()
             }

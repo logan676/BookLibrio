@@ -1,0 +1,74 @@
+/*
+  Localizable.strings (Simplified Chinese)
+  BookLibrio
+*/
+
+// MARK: - Common
+"app.name" = "BookLibrio";
+"common.loading" = "加载中...";
+"common.retry" = "重试";
+"common.cancel" = "取消";
+"common.confirm" = "确定";
+"common.ok" = "好的";
+"common.error" = "错误";
+"common.success" = "成功";
+"common.search" = "搜索";
+"common.all" = "全部";
+"common.noContent" = "暂无内容";
+"common.unknownTitle" = "未知标题";
+"common.user" = "用户";
+
+// MARK: - Tab Bar
+"tab.home" = "首页";
+"tab.ebooks" = "电子书";
+"tab.magazines" = "杂志";
+"tab.books" = "实体书";
+"tab.profile" = "我的";
+
+// MARK: - Auth
+"auth.login" = "登录";
+"auth.register" = "注册";
+"auth.logout" = "退出登录";
+"auth.email" = "邮箱";
+"auth.password" = "密码";
+"auth.loginToAccount" = "登录您的账号";
+"auth.createAccount" = "创建新账号";
+"auth.noAccount" = "没有账号? 注册";
+"auth.hasAccount" = "已有账号? 登录";
+"auth.passwordMinLength" = "密码长度至少6位";
+"auth.logoutConfirm" = "确认退出";
+"auth.logoutMessage" = "确定要退出登录吗?";
+
+// MARK: - Home
+"home.continueReading" = "继续阅读";
+"home.quickAccess" = "快速入口";
+"home.noReadingHistory" = "暂无阅读记录\n开始探索您的书架吧";
+"home.page" = "第 %d 页";
+
+// MARK: - Ebooks
+"ebooks.title" = "电子书";
+"ebooks.count" = "%d 本电子书";
+"ebooks.noEbooks" = "暂无电子书";
+"ebooks.startReading" = "开始阅读";
+
+// MARK: - Magazines
+"magazines.title" = "杂志";
+"magazines.count" = "%d 本杂志";
+"magazines.noMagazines" = "暂无杂志";
+"magazines.allPublishers" = "全部出版商";
+"magazines.year" = "年份: %d";
+"magazines.pageCount" = "页数: %d";
+
+// MARK: - Books
+"books.title" = "实体书";
+"books.noBooks" = "暂无实体书\n可以添加您收藏的书籍";
+
+// MARK: - Profile
+"profile.title" = "我的";
+"profile.readingHistory" = "阅读记录";
+"profile.settings" = "设置";
+
+// MARK: - Reader
+"reader.close" = "关闭";
+"reader.downloadFailed" = "下载失败";
+"reader.openFailed" = "无法打开文件";

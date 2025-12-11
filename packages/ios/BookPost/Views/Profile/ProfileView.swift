@@ -15,7 +15,7 @@ struct ProfileView: View {
                             .foregroundColor(.blue)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(authManager.currentUser?.username ?? "用户")
+                            Text(authManager.currentUser?.username ?? L10n.Common.user)
                                 .font(.title2)
                                 .fontWeight(.semibold)
 
@@ -29,12 +29,12 @@ struct ProfileView: View {
 
                 // Menu section
                 Section {
-                    NavigationLink(destination: Text("阅读记录")) {
-                        Label("阅读记录", systemImage: "clock")
+                    NavigationLink(destination: Text(L10n.Profile.readingHistory)) {
+                        Label(L10n.Profile.readingHistory, systemImage: "clock")
                     }
 
-                    NavigationLink(destination: Text("设置")) {
-                        Label("设置", systemImage: "gear")
+                    NavigationLink(destination: Text(L10n.Profile.settings)) {
+                        Label(L10n.Profile.settings, systemImage: "gear")
                     }
                 }
 
@@ -43,18 +43,18 @@ struct ProfileView: View {
                     Button(role: .destructive) {
                         showLogoutAlert = true
                     } label: {
-                        Label("退出登录", systemImage: "rectangle.portrait.and.arrow.right")
+                        Label(L10n.Auth.logout, systemImage: "rectangle.portrait.and.arrow.right")
                     }
                 }
             }
-            .navigationTitle("我的")
-            .alert("确认退出", isPresented: $showLogoutAlert) {
-                Button("取消", role: .cancel) {}
-                Button("确定", role: .destructive) {
+            .navigationTitle(L10n.Profile.title)
+            .alert(L10n.Auth.logoutConfirm, isPresented: $showLogoutAlert) {
+                Button(L10n.Common.cancel, role: .cancel) {}
+                Button(L10n.Common.confirm, role: .destructive) {
                     authManager.logout()
                 }
             } message: {
-                Text("确定要退出登录吗?")
+                Text(L10n.Auth.logoutMessage)
             }
         }
     }

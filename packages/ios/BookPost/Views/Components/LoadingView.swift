@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LoadingView: View {
-    var message: String = "加载中..."
+    var message: String = L10n.Common.loading
 
     var body: some View {
         VStack(spacing: 16) {
@@ -34,7 +34,7 @@ struct ErrorView: View {
 
             if let retryAction = retryAction {
                 Button(action: retryAction) {
-                    Text("重试")
+                    Text(L10n.Common.retry)
                         .fontWeight(.medium)
                 }
                 .buttonStyle(.bordered)
@@ -45,7 +45,7 @@ struct ErrorView: View {
 }
 
 struct EmptyView: View {
-    var message: String = "暂无内容"
+    var message: String = L10n.Common.noContent
 
     var body: some View {
         VStack(spacing: 16) {
@@ -65,7 +65,7 @@ struct EmptyView: View {
 #Preview {
     VStack {
         LoadingView()
-        ErrorView(message: "加载失败", retryAction: {})
+        ErrorView(message: L10n.Common.error, retryAction: {})
         EmptyView()
     }
 }

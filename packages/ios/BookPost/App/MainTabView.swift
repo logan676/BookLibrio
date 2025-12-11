@@ -7,31 +7,31 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Label("首页", systemImage: "house")
+                    Label(L10n.Tab.home, systemImage: "house")
                 }
                 .tag(0)
 
             EbooksView()
                 .tabItem {
-                    Label("电子书", systemImage: "book")
+                    Label(L10n.Tab.ebooks, systemImage: "book")
                 }
                 .tag(1)
 
             MagazinesView()
                 .tabItem {
-                    Label("杂志", systemImage: "newspaper")
+                    Label(L10n.Tab.magazines, systemImage: "newspaper")
                 }
                 .tag(2)
 
             BooksView()
                 .tabItem {
-                    Label("实体书", systemImage: "books.vertical")
+                    Label(L10n.Tab.books, systemImage: "books.vertical")
                 }
                 .tag(3)
 
             ProfileView()
                 .tabItem {
-                    Label("我的", systemImage: "person")
+                    Label(L10n.Tab.profile, systemImage: "person")
                 }
                 .tag(4)
         }

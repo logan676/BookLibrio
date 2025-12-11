@@ -1,0 +1,74 @@
+/*
+  Localizable.strings (English)
+  BookLibrio
+*/
+
+// MARK: - Common
+"app.name" = "BookLibrio";
+"common.loading" = "Loading...";
+"common.retry" = "Retry";
+"common.cancel" = "Cancel";
+"common.confirm" = "Confirm";
+"common.ok" = "OK";
+"common.error" = "Error";
+"common.success" = "Success";
+"common.search" = "Search";
+"common.all" = "All";
+"common.noContent" = "No content";
+"common.unknownTitle" = "Unknown title";
+"common.user" = "User";
+
+// MARK: - Tab Bar
+"tab.home" = "Home";
+"tab.ebooks" = "Ebooks";
+"tab.magazines" = "Magazines";
+"tab.books" = "Books";
+"tab.profile" = "Profile";
+
+// MARK: - Auth
+"auth.login" = "Login";
+"auth.register" = "Register";
+"auth.logout" = "Logout";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.loginToAccount" = "Login to your account";
+"auth.createAccount" = "Create new account";
+"auth.noAccount" = "Don't have an account? Register";
+"auth.hasAccount" = "Already have an account? Login";
+"auth.passwordMinLength" = "Password must be at least 6 characters";
+"auth.logoutConfirm" = "Confirm Logout";
+"auth.logoutMessage" = "Are you sure you want to logout?";
+
+// MARK: - Home
+"home.continueReading" = "Continue Reading";
+"home.quickAccess" = "Quick Access";
+"home.noReadingHistory" = "No reading history\nStart exploring your bookshelf";
+"home.page" = "Page %d";
+
+// MARK: - Ebooks
+"ebooks.title" = "Ebooks";
+"ebooks.count" = "%d ebooks";
+"ebooks.noEbooks" = "No ebooks";
+"ebooks.startReading" = "Start Reading";
+
+// MARK: - Magazines
+"magazines.title" = "Magazines";
+"magazines.count" = "%d magazines";
+"magazines.noMagazines" = "No magazines";
+"magazines.allPublishers" = "All Publishers";
+"magazines.year" = "Year: %d";
+"magazines.pageCount" = "Pages: %d";
+
+// MARK: - Books
+"books.title" = "Books";
+"books.noBooks" = "No books\nYou can add your book collection";
+
+// MARK: - Profile
+"profile.title" = "Profile";
+"profile.readingHistory" = "Reading History";
+"profile.settings" = "Settings";
+
+// MARK: - Reader
+"reader.close" = "Close";
+"reader.downloadFailed" = "Download Failed";
+"reader.openFailed" = "Failed to open file";

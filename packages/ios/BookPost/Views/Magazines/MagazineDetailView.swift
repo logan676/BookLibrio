@@ -30,13 +30,13 @@ struct MagazineDetailView: View {
                                     .fontWeight(.bold)
 
                                 if let year = magazine.year {
-                                    Label("年份: \(year)", systemImage: "calendar")
+                                    Label(L10n.Magazines.year(year), systemImage: "calendar")
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
 
                                 if let pageCount = magazine.pageCount {
-                                    Label("页数: \(pageCount)", systemImage: "doc.text")
+                                    Label(L10n.Magazines.pageCount(pageCount), systemImage: "doc.text")
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
@@ -51,7 +51,7 @@ struct MagazineDetailView: View {
                         .padding(.horizontal)
 
                         Button(action: { showReader = true }) {
-                            Text("开始阅读")
+                            Text(L10n.Ebooks.startReading)
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
@@ -63,7 +63,7 @@ struct MagazineDetailView: View {
                 }
             }
         }
-        .navigationTitle(magazine?.title ?? "杂志")
+        .navigationTitle(magazine?.title ?? L10n.Magazines.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadMagazine()

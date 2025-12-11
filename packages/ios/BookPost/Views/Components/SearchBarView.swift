@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SearchBarView: View {
     @Binding var text: String
-    var placeholder: String = "搜索"
+    var placeholder: String = L10n.Common.search
     var onSearch: (() -> Void)?
 
     var body: some View {

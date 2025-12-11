@@ -59,7 +59,7 @@ struct BooksView: View {
                             Task { await viewModel.loadBooks() }
                         }
                     } else if viewModel.books.isEmpty {
-                        EmptyView(message: "暂无实体书\n可以添加您收藏的书籍")
+                        EmptyView(message: L10n.Books.noBooks)
                     } else {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 16) {
@@ -78,7 +78,7 @@ struct BooksView: View {
                     }
                 }
             }
-            .navigationTitle("实体书")
+            .navigationTitle(L10n.Books.title)
             .refreshable {
                 await viewModel.refresh()
             }

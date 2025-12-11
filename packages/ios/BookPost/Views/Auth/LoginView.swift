@@ -20,12 +20,12 @@ struct LoginView: View {
                         .frame(width: 120, height: 120)
                         .cornerRadius(24)
 
-                    Text("BookLibrio")
+                    Text(L10n.Common.appName)
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.brandBlue)
 
-                    Text("登录您的账号")
+                    Text(L10n.Auth.loginToAccount)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -37,7 +37,7 @@ struct LoginView: View {
                     HStack {
                         Image(systemName: "envelope")
                             .foregroundColor(.secondary)
-                        TextField("邮箱", text: $email)
+                        TextField(L10n.Auth.email, text: $email)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
@@ -51,9 +51,9 @@ struct LoginView: View {
                             .foregroundColor(.secondary)
 
                         if showPassword {
-                            TextField("密码", text: $password)
+                            TextField(L10n.Auth.password, text: $password)
                         } else {
-                            SecureField("密码", text: $password)
+                            SecureField(L10n.Auth.password, text: $password)
                         }
 
                         Button(action: { showPassword.toggle() }) {
@@ -84,7 +84,7 @@ struct LoginView: View {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
-                        Text("登录")
+                        Text(L10n.Auth.login)
                             .fontWeight(.semibold)
                     }
                 }
@@ -97,7 +97,7 @@ struct LoginView: View {
 
                 // Register link
                 Button(action: { showRegister = true }) {
-                    Text("没有账号? 注册")
+                    Text(L10n.Auth.noAccount)
                         .font(.subheadline)
                 }
 

@@ -11,7 +11,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     if !viewModel.readingHistory.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("继续阅读")
+                            Text(L10n.Home.continueReading)
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .padding(.horizontal)
@@ -38,26 +38,26 @@ struct HomeView: View {
 
                     // Quick access section
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("快速入口")
+                        Text(L10n.Home.quickAccess)
                             .font(.title2)
                             .fontWeight(.bold)
                             .padding(.horizontal)
 
                         HStack(spacing: 12) {
                             QuickAccessCard(
-                                title: "电子书",
+                                title: L10n.Tab.ebooks,
                                 icon: "book",
                                 color: .blue
                             )
 
                             QuickAccessCard(
-                                title: "杂志",
+                                title: L10n.Tab.magazines,
                                 icon: "newspaper",
                                 color: .green
                             )
 
                             QuickAccessCard(
-                                title: "实体书",
+                                title: L10n.Tab.books,
                                 icon: "books.vertical",
                                 color: .orange
                             )
@@ -72,7 +72,7 @@ struct HomeView: View {
                                 .font(.system(size: 50))
                                 .foregroundColor(.secondary)
 
-                            Text("暂无阅读记录\n开始探索您的书架吧")
+                            Text(L10n.Home.noReadingHistory)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -83,7 +83,7 @@ struct HomeView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("BookLibrio")
+            .navigationTitle(L10n.Common.appName)
             .refreshable {
                 await viewModel.refresh()
             }
@@ -113,14 +113,14 @@ struct ReadingHistoryCard: View {
                     .shadow(radius: 2)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.title ?? "未知标题")
+                    Text(entry.title ?? L10n.Common.unknownTitle)
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                         .lineLimit(2)
 
                     if let lastPage = entry.lastPage {
-                        Text("第 \(lastPage) 页")
+                        Text(L10n.Home.page(lastPage))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }

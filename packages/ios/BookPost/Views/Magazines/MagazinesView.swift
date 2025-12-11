@@ -77,7 +77,7 @@ struct MagazinesView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             CategoryChip(
-                                title: "全部出版商",
+                                title: L10n.Magazines.allPublishers,
                                 isSelected: viewModel.selectedPublisherId == nil
                             ) {
                                 viewModel.selectPublisher(nil)
@@ -98,7 +98,7 @@ struct MagazinesView: View {
                 }
 
                 HStack {
-                    Text("\(viewModel.total) 本杂志")
+                    Text(L10n.Magazines.count(viewModel.total))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
@@ -114,7 +114,7 @@ struct MagazinesView: View {
                             Task { await viewModel.loadMagazines() }
                         }
                     } else if viewModel.magazines.isEmpty {
-                        EmptyView(message: "暂无杂志")
+                        EmptyView(message: L10n.Magazines.noMagazines)
                     } else {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 16) {
@@ -133,7 +133,7 @@ struct MagazinesView: View {
                     }
                 }
             }
-            .navigationTitle("杂志")
+            .navigationTitle(L10n.Magazines.title)
             .refreshable {
                 await viewModel.refresh()
             }
