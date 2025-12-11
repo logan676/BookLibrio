@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F36EA14C54965AFEAB0C367 /* CachedAsyncImage.swift */; };
+		AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7B638A54971E152540E95 /* ImageCache.swift */; };
 		F001 /* BookPostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = S001 /* BookPostApp.swift */; };
 		F002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S002 /* ContentView.swift */; };
 		F003 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S003 /* MainTabView.swift */; };
@@ -48,8 +50,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4F36EA14C54965AFEAB0C367 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		A001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D2F7B638A54971E152540E95 /* ImageCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		PRODUCT /* BookLibrio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BookLibrio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		R002 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		R003 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		S001 /* BookPostApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookPostApp.swift; sourceTree = "<group>"; };
 		S002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		S003 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
@@ -88,23 +94,6 @@
 		S037 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXVariantGroup section */
-		R001 /* Localizable.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				R002 /* en */,
-				R003 /* zh-Hans */,
-			);
-			name = Localizable.strings;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
-
-/* Begin PBXFileReference (Resources) section */
-		R002 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		R003 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-/* End PBXFileReference (Resources) section */
-
 /* Begin PBXFrameworksBuildPhase section */
 		FRAMEWORKS /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -141,14 +130,6 @@
 			path = BookPost;
 			sourceTree = "<group>";
 		};
-		RESOURCES /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				R001 /* Localizable.strings */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
 		MODELS /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -172,6 +153,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		RESOURCES /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				R001 /* Localizable.strings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		ROOT = {
 			isa = PBXGroup;
 			children = (
@@ -186,6 +175,7 @@
 				S012 /* APIClient.swift */,
 				S013 /* AuthManager.swift */,
 				S014 /* ReadingSessionManager.swift */,
+				D2F7B638A54971E152540E95 /* ImageCache.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -249,6 +239,7 @@
 				S023 /* BookCoverView.swift */,
 				S024 /* LoadingView.swift */,
 				S025 /* SearchBarView.swift */,
+				4F36EA14C54965AFEAB0C367 /* CachedAsyncImage.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -404,10 +395,24 @@
 				F034 /* PDFReaderView.swift in Sources */,
 				F036 /* Logger.swift in Sources */,
 				F037 /* L10n.swift in Sources */,
+				AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */,
+				5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		R001 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				R002 /* en */,
+				R003 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		CONFIG_DEBUG_PROJECT /* Debug */ = {

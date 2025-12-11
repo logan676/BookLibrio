@@ -4,21 +4,35 @@ struct BookCoverView: View {
     let coverUrl: String?
     let title: String
 
+    // Base URL for the API - relative paths need this prefix
+    private static let baseURL = "https://bookpost-api-hono.fly.dev"
+
+    /// Converts a cover URL to an absolute URL if needed
+    private var absoluteURL: URL? {
+        guard let urlString = coverUrl, !urlString.isEmpty else { return nil }
+
+        // If it's already an absolute URL, use it directly
+        if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
+            return URL(string: urlString)
+        }
+
+        // If it's a relative path, prepend the base URL
+        if urlString.hasPrefix("/") {
+            return URL(string: Self.baseURL + urlString)
+        }
+
+        // Try as-is (shouldn't happen but fallback)
+        return URL(string: urlString)
+    }
+
     var body: some View {
-        if let urlString = coverUrl, let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .empty:
-                    PlaceholderCover(title: title)
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    PlaceholderCover(title: title)
-                @unknown default:
-                    PlaceholderCover(title: title)
-                }
+        if let url = absoluteURL {
+            CachedAsyncImage(url: url) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                PlaceholderCover(title: title)
             }
         } else {
             PlaceholderCover(title: title)
