@@ -3,7 +3,9 @@ import { db } from '../db/client'
 import { users, sessions } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { randomBytes, pbkdf2Sync } from 'crypto'
+import { log } from '../utils/logger'
 
+const authLog = log.child('Auth')
 const app = new OpenAPIHono()
 
 // Helper: Hash password
@@ -14,8 +16,16 @@ function hashPassword(password: string): string {
 }
 
 // Helper: Verify password
-function verifyPassword(password: string, storedHash: string): boolean {
+function verifyPassword(password: string, storedHash: string | null): boolean {
+  if (!storedHash || !storedHash.includes(':')) {
+    authLog.e(`Invalid password hash format for verification`)
+    return false
+  }
   const [salt, hash] = storedHash.split(':')
+  if (!salt || !hash) {
+    authLog.e(`Missing salt or hash in stored password`)
+    return false
+  }
   const verifyHash = pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex')
   return hash === verifyHash
 }
@@ -380,6 +390,94 @@ app.openapi(meRoute, async (c) => {
       email: user.email,
       isAdmin: user.isAdmin,
       createdAt: user.createdAt?.toISOString() ?? null,
+    },
+  })
+})
+
+// POST /api/auth/reset-password (temporary for fixing accounts)
+const resetPasswordRoute = createRoute({
+  method: 'post',
+  path: '/reset-password',
+  tags: ['Auth'],
+  summary: 'Reset password for existing account',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            email: z.string().email(),
+            newPassword: z.string().min(6),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Password reset successful',
+      content: {
+        'application/json': {
+          schema: z.object({ data: AuthResponseSchema }),
+        },
+      },
+    },
+    404: {
+      description: 'User not found',
+      content: {
+        'application/json': {
+          schema: ErrorSchema,
+        },
+      },
+    },
+  },
+})
+
+app.openapi(resetPasswordRoute, async (c) => {
+  const { email, newPassword } = c.req.valid('json')
+
+  authLog.i(`Password reset attempt for email: ${email}`)
+
+  // Find user
+  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
+  if (!user) {
+    return c.json({
+      error: { code: 'USER_NOT_FOUND', message: 'User not found' },
+    }, 404)
+  }
+
+  // Update password
+  const passwordHash = hashPassword(newPassword)
+  await db.update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, user.id))
+
+  authLog.i(`Password reset successful for user: ${user.id} (${email})`)
+
+  // Create session
+  const accessToken = generateToken()
+  const refreshToken = generateToken()
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+  await db.insert(sessions).values({
+    userId: user.id,
+    token: accessToken,
+    refreshToken,
+    expiresAt,
+    refreshExpiresAt,
+  })
+
+  return c.json({
+    data: {
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt?.toISOString() ?? null,
+      },
+      accessToken,
+      refreshToken,
     },
   })
 })
