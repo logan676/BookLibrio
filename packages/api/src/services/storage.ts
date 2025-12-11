@@ -40,3 +40,63 @@ export async function streamFromR2(key: string) {
 export function isR2Configured() {
   return !!r2Client
 }
+
+/**
+ * Stream a file from R2 with optional Range header support
+ * Essential for audio/video seeking
+ */
+export async function streamFromR2WithRange(key: string, range?: string) {
+  if (!r2Client) {
+    throw new Error('R2 storage not configured')
+  }
+
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    Range: range,
+  })
+
+  try {
+    const response = await r2Client.send(command)
+    return {
+      body: response.Body,
+      contentLength: response.ContentLength,
+      contentRange: response.ContentRange,
+      contentType: response.ContentType,
+      acceptRanges: response.AcceptRanges,
+    }
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'NoSuchKey') {
+      return null
+    }
+    throw error
+  }
+}
+
+/**
+ * Get file metadata from R2 without downloading content
+ */
+export async function getR2ObjectMetadata(key: string) {
+  if (!r2Client) {
+    throw new Error('R2 storage not configured')
+  }
+
+  const { HeadObjectCommand } = await import('@aws-sdk/client-s3')
+  const command = new HeadObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  })
+
+  try {
+    const response = await r2Client.send(command)
+    return {
+      contentLength: response.ContentLength,
+      contentType: response.ContentType,
+    }
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'NotFound') {
+      return null
+    }
+    throw error
+  }
+}

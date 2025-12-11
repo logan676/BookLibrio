@@ -1,10 +1,11 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
+import { log } from './utils/logger'
 import { authRoutes } from './routes/auth'
 import { ebooksRoutes } from './routes/ebooks'
 import { magazinesRoutes } from './routes/magazines'
+import { audioRoutes } from './routes/audio'
 import { healthRoutes } from './routes/health'
 import { notesRoutes } from './routes/notes'
 import { booksRoutes } from './routes/books'
@@ -19,8 +20,23 @@ import badgesRoutes from './routes/badges'
 // Create OpenAPI-enabled Hono app
 const app = new OpenAPIHono()
 
+// Custom logging middleware using our unified logger
+app.use('*', async (c, next) => {
+  const start = Date.now()
+  const method = c.req.method
+  const path = c.req.path
+
+  // Log request
+  log.request(method, path)
+
+  await next()
+
+  // Log response
+  const duration = Date.now() - start
+  log.response(method, path, c.res.status, duration)
+})
+
 // Global middleware
-app.use('*', logger())
 app.use('*', secureHeaders())
 app.use('*', cors({
   origin: [
@@ -40,6 +56,8 @@ app.route('/api/health', healthRoutes)
 app.route('/api/auth', authRoutes)
 app.route('/api/ebooks', ebooksRoutes)
 app.route('/api/magazines', magazinesRoutes)
+app.route('/api/audio-series', audioRoutes)
+app.route('/api/audio', audioRoutes)
 app.route('/api/ai', aiRoutes)  // Must be before routes mounted at /api that use global auth middleware
 app.route('/api/notes', notesRoutes)
 app.route('/api/books', booksRoutes)
@@ -89,7 +107,7 @@ app.notFound((c) => {
 
 // Error handler
 app.onError((err, c) => {
-  console.error('Server error:', err)
+  log.e(`Server error on ${c.req.method} ${c.req.path}`, err)
   return c.json({
     error: {
       code: 'INTERNAL_ERROR',

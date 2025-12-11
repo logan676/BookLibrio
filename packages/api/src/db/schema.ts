@@ -135,6 +135,33 @@ export const magazines = pgTable('magazines', {
 })
 
 // ============================================
+// Audio Tables
+// ============================================
+
+export const audioSeries = pgTable('audio_series', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  coverUrl: text('cover_url'),
+  audioCount: integer('audio_count').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
+export const audioFiles = pgTable('audio_files', {
+  id: serial('id').primaryKey(),
+  seriesId: integer('series_id').references(() => audioSeries.id),
+  title: text('title').notNull(),
+  s3Key: text('s3_key'),
+  fileSize: bigint('file_size', { mode: 'number' }),
+  duration: integer('duration'),
+  fileType: text('file_type'),
+  trackNumber: integer('track_number'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  seriesIdx: index('idx_audio_files_series').on(table.seriesId),
+}))
+
+// ============================================
 // Notes Tables
 // ============================================
 
@@ -488,3 +515,7 @@ export type Badge = typeof badges.$inferSelect
 export type UserBadge = typeof userBadges.$inferSelect
 export type ReadingChallenge = typeof readingChallenges.$inferSelect
 export type UserChallengeProgress = typeof userChallengeProgress.$inferSelect
+export type AudioSeries = typeof audioSeries.$inferSelect
+export type NewAudioSeries = typeof audioSeries.$inferInsert
+export type AudioFile = typeof audioFiles.$inferSelect
+export type NewAudioFile = typeof audioFiles.$inferInsert
