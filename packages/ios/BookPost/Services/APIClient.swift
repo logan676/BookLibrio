@@ -16,6 +16,21 @@ enum APIError: LocalizedError {
         case .networkError(let error):
             return "网络错误: \(error.localizedDescription)"
         case .decodingError(let error):
+            // Show more detailed decoding error for debugging
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, _):
+                    return "数据解析错误: 缺少字段 '\(key.stringValue)'"
+                case .typeMismatch(let type, let context):
+                    return "数据解析错误: 类型不匹配 \(type) at \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
+                case .valueNotFound(let type, let context):
+                    return "数据解析错误: 缺少值 \(type) at \(context.codingPath.map { $0.stringValue }.joined(separator: "."))"
+                case .dataCorrupted(let context):
+                    return "数据解析错误: \(context.debugDescription)"
+                @unknown default:
+                    return "数据解析错误: \(error.localizedDescription)"
+                }
+            }
             return "数据解析错误: \(error.localizedDescription)"
         case .serverError(let code, let message):
             return message ?? "服务器错误 (\(code))"
@@ -36,14 +51,22 @@ struct APIResponse<T: Decodable>: Decodable {
     let error: String?
 }
 
+// MARK: - Error Response
+struct ErrorResponse: Decodable {
+    let error: ErrorDetail?
+    let message: String?
+
+    struct ErrorDetail: Decodable {
+        let code: String?
+        let message: String?
+    }
+}
+
 class APIClient {
     static let shared = APIClient()
 
-    #if DEBUG
-    private let baseURL = "http://localhost:3001"
-    #else
-    private let baseURL = "https://bookpost-api.fly.dev"
-    #endif
+    // Production API (Fly.io)
+    private let baseURL = "https://bookpost-api-hono.fly.dev"
 
     private let session: URLSession
     private let decoder: JSONDecoder
@@ -89,28 +112,59 @@ class APIClient {
     }
 
     private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let url = request.url?.absoluteString ?? ""
+
         do {
+            Log.request(request.httpMethod ?? "GET", url: url, body: request.httpBody)
+
             let (data, response) = try await session.data(for: request)
+            let duration = CFAbsoluteTimeGetCurrent() - startTime
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw APIError.unknown
             }
 
-            if httpResponse.statusCode == 401 {
-                throw APIError.unauthorized
-            }
+            Log.response(httpResponse.statusCode, url: url, data: data, duration: duration)
 
             guard (200...299).contains(httpResponse.statusCode) else {
-                let message = String(data: data, encoding: .utf8)
-                throw APIError.serverError(httpResponse.statusCode, message)
+                // Try to parse error message from JSON response
+                var errorMessage: String?
+                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                    errorMessage = errorResponse.error?.message ?? errorResponse.message
+                    Log.e("Server error \(httpResponse.statusCode): \(errorMessage ?? "unknown")")
+                } else {
+                    errorMessage = String(data: data, encoding: .utf8)
+                    Log.e("Server error \(httpResponse.statusCode): \(errorMessage ?? "unknown")")
+                }
+                throw APIError.serverError(httpResponse.statusCode, errorMessage)
+            }
+
+            // Log raw response for debugging
+            if let rawResponse = String(data: data, encoding: .utf8) {
+                Log.d("Raw response for \(url): \(rawResponse)")
             }
 
             return try decoder.decode(T.self, from: data)
         } catch let error as APIError {
             throw error
         } catch let error as DecodingError {
+            // Log detailed decoding error information
+            switch error {
+            case .typeMismatch(let type, let context):
+                Log.e("Decoding typeMismatch for \(url): expected \(type), path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", error: error)
+            case .valueNotFound(let type, let context):
+                Log.e("Decoding valueNotFound for \(url): expected \(type), path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", error: error)
+            case .keyNotFound(let key, let context):
+                Log.e("Decoding keyNotFound for \(url): key '\(key.stringValue)' not found, path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", error: error)
+            case .dataCorrupted(let context):
+                Log.e("Decoding dataCorrupted for \(url): \(context.debugDescription), path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", error: error)
+            @unknown default:
+                Log.e("Decoding failed for \(url)", error: error)
+            }
             throw APIError.decodingError(error)
         } catch {
+            Log.e("Network request failed for \(url)", error: error)
             throw APIError.networkError(error)
         }
     }

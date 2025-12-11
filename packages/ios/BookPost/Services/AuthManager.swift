@@ -60,15 +60,22 @@ class AuthManager: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        Log.i("Login attempt for email: \(email)")
+
         do {
             let response = try await APIClient.shared.login(email: email, password: password)
+            Log.i("Login successful for user ID: \(response.data.user.id)")
             saveAuth(
                 user: response.data.user,
                 accessToken: response.data.accessToken,
                 refreshToken: response.data.refreshToken
             )
-        } catch {
+        } catch let error as APIError {
+            Log.e("Login failed with APIError", error: error)
             errorMessage = error.localizedDescription
+        } catch {
+            Log.e("Login failed with error: \(String(describing: error))", error: error)
+            errorMessage = "Login failed: \(error.localizedDescription)"
         }
 
         isLoading = false
@@ -79,14 +86,21 @@ class AuthManager: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        Log.i("Registering user: \(email)")
+
         do {
             let response = try await APIClient.shared.register(username: username, email: email, password: password)
+            Log.i("Registration successful for user ID: \(response.data.user.id)")
             saveAuth(
                 user: response.data.user,
                 accessToken: response.data.accessToken,
                 refreshToken: response.data.refreshToken
             )
+        } catch let error as APIError {
+            Log.e("Registration failed", error: error)
+            errorMessage = error.localizedDescription
         } catch {
+            Log.e("Registration failed", error: error)
             errorMessage = error.localizedDescription
         }
 
