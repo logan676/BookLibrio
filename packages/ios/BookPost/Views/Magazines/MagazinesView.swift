@@ -141,7 +141,7 @@ struct MagazinesView: View {
                 await viewModel.refresh()
             }
             .navigationDestination(item: $selectedMagazineId) { id in
-                MagazineDetailView(magazineId: id)
+                BookDetailView(bookType: .magazine, bookId: id)
             }
         }
     }

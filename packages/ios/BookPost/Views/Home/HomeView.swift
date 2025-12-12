@@ -91,10 +91,10 @@ struct HomeView: View {
                 await viewModel.loadReadingHistory()
             }
             .navigationDestination(item: $selectedEbookId) { id in
-                EbookDetailView(ebookId: id)
+                BookDetailView(bookType: .ebook, bookId: id)
             }
             .navigationDestination(item: $selectedMagazineId) { id in
-                MagazineDetailView(magazineId: id)
+                BookDetailView(bookType: .magazine, bookId: id)
             }
         }
     }

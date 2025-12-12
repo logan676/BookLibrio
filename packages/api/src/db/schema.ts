@@ -106,8 +106,23 @@ export const ebooks = pgTable('ebooks', {
   normalizedTitle: text('normalized_title'),
   coverUrl: text('cover_url'),
   s3Key: text('s3_key'),
+  // Extended metadata fields for book detail
+  author: text('author'),
+  translator: text('translator'),
+  description: text('description'),
+  wordCount: integer('word_count'),
+  pageCount: integer('page_count'),
+  publicationDate: date('publication_date'),
+  publisher: text('publisher'),
+  isbn: text('isbn'),
+  language: text('language').default('zh'),
+  doubanId: text('douban_id'),
+  goodreadsId: text('goodreads_id'),
   createdAt: timestamp('created_at').defaultNow(),
-})
+}, (table) => ({
+  isbnIdx: index('idx_ebooks_isbn').on(table.isbn),
+  authorIdx: index('idx_ebooks_author').on(table.author),
+}))
 
 // ============================================
 // Magazines Tables
@@ -131,6 +146,12 @@ export const magazines = pgTable('magazines', {
   coverUrl: text('cover_url'),
   preprocessed: boolean('preprocessed').default(false),
   s3Key: text('s3_key'),
+  // Extended metadata fields for magazine detail
+  description: text('description'),
+  issueNumber: text('issue_number'),
+  publicationDate: date('publication_date'),
+  language: text('language').default('zh'),
+  issn: text('issn'),
   createdAt: timestamp('created_at').defaultNow(),
 })
 
@@ -495,6 +516,105 @@ export const userChallengeProgress = pgTable('user_challenge_progress', {
 }))
 
 // ============================================
+// Book Detail Feature Tables
+// ============================================
+
+export const bookStats = pgTable('book_stats', {
+  id: serial('id').primaryKey(),
+  // Book reference (polymorphic - ebook or magazine)
+  bookType: text('book_type').notNull(), // 'ebook' | 'magazine'
+  bookId: integer('book_id').notNull(),
+  // Reader counts
+  totalReaders: integer('total_readers').default(0),
+  currentReaders: integer('current_readers').default(0),
+  finishedReaders: integer('finished_readers').default(0),
+  // Content engagement
+  totalHighlights: integer('total_highlights').default(0),
+  totalReviews: integer('total_reviews').default(0),
+  totalNotes: integer('total_notes').default(0),
+  // Rating aggregates
+  averageRating: decimal('average_rating', { precision: 3, scale: 2 }),
+  ratingCount: integer('rating_count').default(0),
+  recommendCount: integer('recommend_count').default(0),
+  neutralCount: integer('neutral_count').default(0),
+  notRecommendCount: integer('not_recommend_count').default(0),
+  // Computed metrics
+  recommendPercent: decimal('recommend_percent', { precision: 5, scale: 2 }),
+  popularityScore: decimal('popularity_score', { precision: 10, scale: 4 }),
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  bookUnique: unique().on(table.bookType, table.bookId),
+  popularityIdx: index('idx_book_stats_popularity').on(table.popularityScore),
+  bookIdx: index('idx_book_stats_book').on(table.bookType, table.bookId),
+}))
+
+export const bookReviews = pgTable('book_reviews', {
+  id: serial('id').primaryKey(),
+  // Relationships
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  bookType: text('book_type').notNull(), // 'ebook' | 'magazine'
+  bookId: integer('book_id').notNull(),
+  // Review content
+  rating: integer('rating'), // 1-5
+  recommendType: text('recommend_type'), // 'recommend' | 'neutral' | 'not_recommend'
+  title: text('title'),
+  content: text('content').notNull(),
+  // Engagement
+  likesCount: integer('likes_count').default(0),
+  repliesCount: integer('replies_count').default(0),
+  // Moderation
+  isFeatured: boolean('is_featured').default(false),
+  isHidden: boolean('is_hidden').default(false),
+  // Metadata
+  readingProgress: decimal('reading_progress', { precision: 5, scale: 4 }),
+  deviceType: text('device_type'),
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  userBookUnique: unique().on(table.userId, table.bookType, table.bookId),
+  bookIdx: index('idx_book_reviews_book').on(table.bookType, table.bookId),
+  userIdx: index('idx_book_reviews_user').on(table.userId),
+}))
+
+export const reviewLikes = pgTable('review_likes', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  reviewId: integer('review_id').notNull().references(() => bookReviews.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  userReviewUnique: unique().on(table.userId, table.reviewId),
+  reviewIdx: index('idx_review_likes_review').on(table.reviewId),
+}))
+
+export const userBookshelves = pgTable('user_bookshelves', {
+  id: serial('id').primaryKey(),
+  // Relationships
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  bookType: text('book_type').notNull(), // 'ebook' | 'magazine'
+  bookId: integer('book_id').notNull(),
+  // Status
+  status: text('status').notNull().default('want_to_read'), // 'want_to_read' | 'reading' | 'finished' | 'abandoned'
+  // Reading progress snapshot
+  progress: decimal('progress', { precision: 5, scale: 4 }).default('0'),
+  currentPage: integer('current_page'),
+  currentPosition: text('current_position'),
+  // User notes
+  privateNotes: text('private_notes'),
+  // Timestamps
+  addedAt: timestamp('added_at').defaultNow(),
+  startedAt: timestamp('started_at'),
+  finishedAt: timestamp('finished_at'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  userBookUnique: unique().on(table.userId, table.bookType, table.bookId),
+  userStatusIdx: index('idx_user_bookshelves_user_status').on(table.userId, table.status),
+  bookIdx: index('idx_user_bookshelves_book').on(table.bookType, table.bookId),
+}))
+
+// ============================================
 // Type Exports
 // ============================================
 
@@ -519,3 +639,11 @@ export type AudioSeries = typeof audioSeries.$inferSelect
 export type NewAudioSeries = typeof audioSeries.$inferInsert
 export type AudioFile = typeof audioFiles.$inferSelect
 export type NewAudioFile = typeof audioFiles.$inferInsert
+// Book Detail Feature Types
+export type BookStats = typeof bookStats.$inferSelect
+export type NewBookStats = typeof bookStats.$inferInsert
+export type BookReview = typeof bookReviews.$inferSelect
+export type NewBookReview = typeof bookReviews.$inferInsert
+export type ReviewLike = typeof reviewLikes.$inferSelect
+export type UserBookshelf = typeof userBookshelves.$inferSelect
+export type NewUserBookshelf = typeof userBookshelves.$inferInsert

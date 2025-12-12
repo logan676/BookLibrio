@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F36EA14C54965AFEAB0C367 /* CachedAsyncImage.swift */; };
 		AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7B638A54971E152540E95 /* ImageCache.swift */; };
+		F039 /* BookDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = S038 /* BookDetail.swift */; };
+		F040 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S039 /* BookDetailView.swift */; };
 		F001 /* BookPostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = S001 /* BookPostApp.swift */; };
 		F002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S002 /* ContentView.swift */; };
 		F003 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S003 /* MainTabView.swift */; };
@@ -92,6 +94,8 @@
 		S034 /* PDFReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFReaderView.swift; sourceTree = "<group>"; };
 		S036 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		S037 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		S038 /* BookDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetail.swift; sourceTree = "<group>"; };
+		S039 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -135,6 +139,7 @@
 			children = (
 				S004 /* Badge.swift */,
 				S005 /* Book.swift */,
+				S038 /* BookDetail.swift */,
 				S006 /* Ebook.swift */,
 				S007 /* Magazine.swift */,
 				S008 /* ReadingHistory.swift */,
@@ -212,6 +217,7 @@
 				VIEWS_MAGAZINES /* Magazines */,
 				VIEWS_PROFILE /* Profile */,
 				VIEWS_READER /* Reader */,
+				VIEWS_SHARED /* Shared */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -286,6 +292,14 @@
 				S034 /* PDFReaderView.swift */,
 			);
 			path = Reader;
+			sourceTree = "<group>";
+		};
+		VIEWS_SHARED /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				S039 /* BookDetailView.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -395,6 +409,8 @@
 				F034 /* PDFReaderView.swift in Sources */,
 				F036 /* Logger.swift in Sources */,
 				F037 /* L10n.swift in Sources */,
+				F039 /* BookDetail.swift in Sources */,
+				F040 /* BookDetailView.swift in Sources */,
 				AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */,
 				5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */,
 			);

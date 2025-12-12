@@ -10,6 +10,7 @@ import { healthRoutes } from './routes/health'
 import { notesRoutes } from './routes/notes'
 import { booksRoutes } from './routes/books'
 import { aiRoutes } from './routes/ai'
+import { bookDetailRoutes } from './routes/book-detail'
 import categoriesRoutes from './routes/categories'
 import readingHistoryRoutes from './routes/reading-history'
 import coversRoutes from './routes/covers'
@@ -60,6 +61,7 @@ app.route('/api/covers', coversRoutes)  // Legacy covers route
 app.route('/api/auth', authRoutes)
 app.route('/api/ebooks', ebooksRoutes)
 app.route('/api/magazines', magazinesRoutes)
+app.route('/api/book-detail', bookDetailRoutes)
 app.route('/api/audio-series', audioRoutes)
 app.route('/api/audio', audioRoutes)
 app.route('/api/ai', aiRoutes)  // Must be before routes mounted at /api that use global auth middleware

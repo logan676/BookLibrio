@@ -329,6 +329,30 @@ class APIClient {
         let _: ReadingHistoryResponse = try await perform(request)
     }
 
+    // MARK: - Book Detail API
+
+    func getBookDetail(type: BookType, id: Int) async throws -> BookDetailResponse {
+        let request = try buildRequest(
+            path: "/api/book-detail/\(type.rawValue)/\(id)",
+            requiresAuth: AuthManager.shared.isLoggedIn
+        )
+        return try await perform(request)
+    }
+
+    func getBookReviews(type: BookType, id: Int, limit: Int = 20, offset: Int = 0, sort: String = "newest") async throws -> BookReviewsResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "sort", value: sort)
+        ]
+        let request = try buildRequest(
+            path: "/api/book-detail/\(type.rawValue)/\(id)/reviews",
+            queryItems: queryItems,
+            requiresAuth: AuthManager.shared.isLoggedIn
+        )
+        return try await perform(request)
+    }
+
     // MARK: - Generic API Methods
 
     func get<T: Decodable>(_ path: String, queryItems: [URLQueryItem]? = nil, requiresAuth: Bool = true) async throws -> APIResponse<T> {

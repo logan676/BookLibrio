@@ -89,7 +89,7 @@ struct EbooksView: View {
                 await viewModel.refresh()
             }
             .navigationDestination(item: $selectedEbookId) { id in
-                EbookDetailView(ebookId: id)
+                BookDetailView(bookType: .ebook, bookId: id)
             }
         }
     }
