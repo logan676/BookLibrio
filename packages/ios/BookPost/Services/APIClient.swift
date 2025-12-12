@@ -329,6 +329,24 @@ class APIClient {
         let _: ReadingHistoryResponse = try await perform(request)
     }
 
+    // MARK: - Reading Goals API
+
+    func getReadingGoal() async throws -> APIResponse<ReadingGoalData> {
+        let request = try buildRequest(path: "/api/reading-sessions/goals", requiresAuth: true)
+        return try await perform(request)
+    }
+
+    func getTodayDuration() async throws -> TodayDurationResponse {
+        let request = try buildRequest(path: "/api/reading-sessions/today", requiresAuth: true)
+        return try await perform(request)
+    }
+
+    func setReadingGoal(dailyMinutes: Int) async throws -> SetGoalResponse {
+        let body = try JSONEncoder().encode(["dailyMinutes": dailyMinutes])
+        let request = try buildRequest(path: "/api/reading-sessions/goals", method: "PUT", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
     // MARK: - Book Detail API
 
     func getBookDetail(type: BookType, id: Int) async throws -> BookDetailResponse {
@@ -593,6 +611,91 @@ class APIClient {
             method: "POST",
             requiresAuth: true
         )
+        return try await perform(request)
+    }
+
+    // MARK: - Notes API
+
+    func getNotes(year: Int? = nil, search: String? = nil, limit: Int = 50, offset: Int = 0) async throws -> NotesListResponse {
+        var queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        if let year = year { queryItems.append(URLQueryItem(name: "year", value: "\(year)")) }
+        if let search = search, !search.isEmpty { queryItems.append(URLQueryItem(name: "search", value: search)) }
+
+        let request = try buildRequest(
+            path: "/api/notes",
+            queryItems: queryItems,
+            requiresAuth: true
+        )
+        return try await perform(request)
+    }
+
+    func getNoteYears() async throws -> NoteYearsResponse {
+        let request = try buildRequest(
+            path: "/api/notes/years",
+            requiresAuth: true
+        )
+        return try await perform(request)
+    }
+
+    func getNote(id: Int) async throws -> NoteDetailResponse {
+        let request = try buildRequest(
+            path: "/api/notes/\(id)",
+            requiresAuth: true
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Underlines (Highlights) API
+
+    func getEbookUnderlines(ebookId: Int) async throws -> UnderlineListResponse {
+        let request = try buildRequest(path: "/api/ebooks/\(ebookId)/underlines")
+        return try await perform(request)
+    }
+
+    func createEbookUnderline(ebookId: Int, text: String, pageNumber: Int?, chapterIndex: Int?, paragraphIndex: Int?, startOffset: Int?, endOffset: Int?, cfiRange: String?, color: String? = nil, note: String? = nil) async throws -> UnderlineResponse {
+        var params: [String: Any] = ["text": text]
+        if let pageNumber = pageNumber { params["paragraph"] = pageNumber } // Using paragraph field for page number in PDFs
+        if let chapterIndex = chapterIndex { params["chapterIndex"] = chapterIndex }
+        if let paragraphIndex = paragraphIndex { params["paragraphIndex"] = paragraphIndex }
+        if let startOffset = startOffset { params["startOffset"] = startOffset }
+        if let endOffset = endOffset { params["endOffset"] = endOffset }
+        if let cfiRange = cfiRange { params["cfiRange"] = cfiRange }
+        if let color = color { params["color"] = color }
+        if let note = note { params["note"] = note }
+
+        let body = try JSONSerialization.data(withJSONObject: params)
+        let request = try buildRequest(path: "/api/ebooks/\(ebookId)/underlines", method: "POST", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
+    func deleteEbookUnderline(ebookId: Int, underlineId: Int) async throws -> DeleteResponse {
+        let request = try buildRequest(path: "/api/ebooks/\(ebookId)/underlines/\(underlineId)", method: "DELETE", requiresAuth: true)
+        return try await perform(request)
+    }
+
+    func getMagazineUnderlines(magazineId: Int) async throws -> UnderlineListResponse {
+        let request = try buildRequest(path: "/api/magazines/\(magazineId)/underlines")
+        return try await perform(request)
+    }
+
+    func createMagazineUnderline(magazineId: Int, text: String, pageNumber: Int?, startOffset: Int?, endOffset: Int?, color: String? = nil, note: String? = nil) async throws -> UnderlineResponse {
+        var params: [String: Any] = ["text": text]
+        if let pageNumber = pageNumber { params["pageNumber"] = pageNumber }
+        if let startOffset = startOffset { params["startOffset"] = startOffset }
+        if let endOffset = endOffset { params["endOffset"] = endOffset }
+        if let color = color { params["color"] = color }
+        if let note = note { params["note"] = note }
+
+        let body = try JSONSerialization.data(withJSONObject: params)
+        let request = try buildRequest(path: "/api/magazines/\(magazineId)/underlines", method: "POST", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
+    func deleteMagazineUnderline(magazineId: Int, underlineId: Int) async throws -> DeleteResponse {
+        let request = try buildRequest(path: "/api/magazines/\(magazineId)/underlines/\(underlineId)", method: "DELETE", requiresAuth: true)
         return try await perform(request)
     }
 

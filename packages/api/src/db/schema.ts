@@ -619,6 +619,117 @@ export const userBookshelves = pgTable('user_bookshelves', {
 }))
 
 // ============================================
+// Book Lists (User-curated book collections)
+// ============================================
+
+export const bookLists = pgTable('book_lists', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // List info
+  title: text('title').notNull(),
+  description: text('description'),
+  coverUrl: text('cover_url'),
+  // Counts (denormalized for performance)
+  bookCount: integer('book_count').default(0),
+  followerCount: integer('follower_count').default(0),
+  // Visibility
+  isPublic: boolean('is_public').default(true),
+  isFeatured: boolean('is_featured').default(false),
+  // Categorization
+  tags: text('tags'), // JSON array stored as text
+  category: text('category'),
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  userIdx: index('idx_book_lists_user').on(table.userId),
+  publicIdx: index('idx_book_lists_public').on(table.isPublic, table.followerCount),
+}))
+
+export const bookListItems = pgTable('book_list_items', {
+  id: serial('id').primaryKey(),
+  listId: integer('list_id').notNull().references(() => bookLists.id, { onDelete: 'cascade' }),
+  bookType: text('book_type').notNull(), // 'ebook' | 'magazine'
+  bookId: integer('book_id').notNull(),
+  // Ordering
+  position: integer('position').notNull(),
+  // Optional annotation
+  note: text('note'),
+  // Timestamps
+  addedAt: timestamp('added_at').defaultNow(),
+}, (table) => ({
+  listBookUnique: unique().on(table.listId, table.bookType, table.bookId),
+  listPositionIdx: index('idx_book_list_items_position').on(table.listId, table.position),
+  bookIdx: index('idx_book_list_items_book').on(table.bookType, table.bookId),
+}))
+
+export const bookListFollowers = pgTable('book_list_followers', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  listId: integer('list_id').notNull().references(() => bookLists.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  userListUnique: unique().on(table.userId, table.listId),
+  listIdx: index('idx_book_list_followers_list').on(table.listId),
+}))
+
+// ============================================
+// Related Books (Pre-computed relationships)
+// ============================================
+
+export const relatedBooks = pgTable('related_books', {
+  id: serial('id').primaryKey(),
+  // Source book
+  sourceBookType: text('source_book_type').notNull(),
+  sourceBookId: integer('source_book_id').notNull(),
+  // Related book
+  relatedBookType: text('related_book_type').notNull(),
+  relatedBookId: integer('related_book_id').notNull(),
+  // Relation metadata
+  relationType: text('relation_type').notNull(), // 'same_author' | 'same_publisher' | 'same_category' | 'similar_content' | 'readers_also_read'
+  // Scoring
+  similarityScore: decimal('similarity_score', { precision: 5, scale: 4 }).default('0'),
+  confidence: decimal('confidence', { precision: 5, scale: 4 }).default('1'),
+  // Metadata
+  computedAt: timestamp('computed_at').defaultNow(),
+  isActive: boolean('is_active').default(true),
+}, (table) => ({
+  sourceIdx: index('idx_related_books_source').on(table.sourceBookType, table.sourceBookId),
+  relatedUnique: unique().on(table.sourceBookType, table.sourceBookId, table.relatedBookType, table.relatedBookId),
+}))
+
+// ============================================
+// AI Book Summaries (Cached AI-generated content)
+// ============================================
+
+export const aiBookSummaries = pgTable('ai_book_summaries', {
+  id: serial('id').primaryKey(),
+  // Book reference
+  bookType: text('book_type').notNull(),
+  bookId: integer('book_id').notNull(),
+  // Summary type: 'overview' | 'key_points' | 'topics' | 'chapter_summaries' | 'reading_guide' | 'vocabulary'
+  summaryType: text('summary_type').notNull(),
+  // Content (JSONB for flexibility)
+  content: jsonb('content').notNull(),
+  // Generation metadata
+  modelUsed: text('model_used'),
+  promptVersion: text('prompt_version'),
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  generationCostUsd: decimal('generation_cost_usd', { precision: 10, scale: 6 }),
+  // Quality metrics
+  qualityScore: decimal('quality_score', { precision: 3, scale: 2 }),
+  userFeedbackPositive: integer('user_feedback_positive').default(0),
+  userFeedbackNegative: integer('user_feedback_negative').default(0),
+  // Timestamps
+  generatedAt: timestamp('generated_at').defaultNow(),
+  expiresAt: timestamp('expires_at'),
+}, (table) => ({
+  bookSummaryUnique: unique().on(table.bookType, table.bookId, table.summaryType),
+  bookIdx: index('idx_ai_summaries_book').on(table.bookType, table.bookId),
+}))
+
+// ============================================
 // Social Features - Following System
 // ============================================
 
@@ -714,3 +825,15 @@ export type NewUserFollowing = typeof userFollowing.$inferInsert
 export type ActivityFeedEntry = typeof activityFeed.$inferSelect
 export type NewActivityFeedEntry = typeof activityFeed.$inferInsert
 export type ActivityLike = typeof activityLikes.$inferSelect
+// Book Lists Types
+export type BookList = typeof bookLists.$inferSelect
+export type NewBookList = typeof bookLists.$inferInsert
+export type BookListItem = typeof bookListItems.$inferSelect
+export type NewBookListItem = typeof bookListItems.$inferInsert
+export type BookListFollower = typeof bookListFollowers.$inferSelect
+// Related Books Types
+export type RelatedBook = typeof relatedBooks.$inferSelect
+export type NewRelatedBook = typeof relatedBooks.$inferInsert
+// AI Summaries Types
+export type AIBookSummary = typeof aiBookSummaries.$inferSelect
+export type NewAIBookSummary = typeof aiBookSummaries.$inferInsert

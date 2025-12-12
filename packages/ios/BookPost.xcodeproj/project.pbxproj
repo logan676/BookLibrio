@@ -9,15 +9,9 @@
 /* Begin PBXBuildFile section */
 		5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F36EA14C54965AFEAB0C367 /* CachedAsyncImage.swift */; };
 		AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7B638A54971E152540E95 /* ImageCache.swift */; };
-		F039 /* BookDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = S038 /* BookDetail.swift */; };
-		F040 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S039 /* BookDetailView.swift */; };
-		F041 /* ReviewFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S040 /* ReviewFormView.swift */; };
-		F042 /* Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = S042 /* Social.swift */; };
-		F043 /* MyBookshelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S043 /* MyBookshelfView.swift */; };
-		F044 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S044 /* LeaderboardView.swift */; };
-		F045 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S045 /* UserProfileView.swift */; };
-		F046 /* FollowListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S046 /* FollowListView.swift */; };
-		F047 /* ActivityFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S047 /* ActivityFeedView.swift */; };
+		E89A441F2EEC5614009B078F /* ReadiumNavigator in Frameworks */ = {isa = PBXBuildFile; productRef = E89A441E2EEC5614009B078F /* ReadiumNavigator */; };
+		E89A44212EEC5614009B078F /* ReadiumShared in Frameworks */ = {isa = PBXBuildFile; productRef = E89A44202EEC5614009B078F /* ReadiumShared */; };
+		E89A44232EEC5614009B078F /* ReadiumStreamer in Frameworks */ = {isa = PBXBuildFile; productRef = E89A44222EEC5614009B078F /* ReadiumStreamer */; };
 		F001 /* BookPostApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = S001 /* BookPostApp.swift */; };
 		F002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S002 /* ContentView.swift */; };
 		F003 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S003 /* MainTabView.swift */; };
@@ -56,9 +50,55 @@
 		F036 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = S036 /* Logger.swift */; };
 		F037 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = S037 /* L10n.swift */; };
 		F038 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = R001 /* Localizable.strings */; };
+		F039 /* BookDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = S038 /* BookDetail.swift */; };
+		F040 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S039 /* BookDetailView.swift */; };
+		F041 /* ReviewFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S040 /* ReviewFormView.swift */; };
+		F042 /* Social.swift in Sources */ = {isa = PBXBuildFile; fileRef = S042 /* Social.swift */; };
+		F043 /* MyBookshelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S043 /* MyBookshelfView.swift */; };
+		F044 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S044 /* LeaderboardView.swift */; };
+		F045 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S045 /* UserProfileView.swift */; };
+		F046 /* FollowListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S046 /* FollowListView.swift */; };
+		F047 /* ActivityFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S047 /* ActivityFeedView.swift */; };
 		F048 /* ReadingGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = S048 /* ReadingGoal.swift */; };
 		F049 /* DailyGoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S049 /* DailyGoalsView.swift */; };
 		F050 /* StreakView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S050 /* StreakView.swift */; };
+		F051 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = S051 /* Note.swift */; };
+		F052 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S052 /* NotesListView.swift */; };
+		F053 /* NoteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = S053 /* NoteCard.swift */; };
+		F054 /* NoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S054 /* NoteDetailView.swift */; };
+		F055 /* ReaderModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = S055 /* ReaderModels.swift */; };
+		F056 /* ReaderContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S056 /* ReaderContainerView.swift */; };
+		F057 /* EnhancedPDFReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S057 /* EnhancedPDFReaderView.swift */; };
+		F058 /* ReaderSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = S058 /* ReaderSettingsSheet.swift */; };
+		F059 /* EPUBReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S059 /* EPUBReaderView.swift */; };
+		F060 /* EPUBReaderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = S060 /* EPUBReaderViewModel.swift */; };
+		F061 /* StoreHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S061 /* StoreHomeView.swift */; };
+		F062 /* StoreCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S062 /* StoreCategoryView.swift */; };
+		F063 /* StoreRankingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S063 /* StoreRankingView.swift */; };
+		F064 /* StoreSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S064 /* StoreSearchView.swift */; };
+		F065 /* StoreViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = S065 /* StoreViewModel.swift */; };
+		F066 /* TextSelectionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = S066 /* TextSelectionMenu.swift */; };
+		F067 /* ReadingTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S067 /* ReadingTabView.swift */; };
+		F068 /* FriendsTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S068 /* FriendsTabView.swift */; };
+		F069 /* AudioPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S069 /* AudioPlayerView.swift */; };
+		F070 /* MiniPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S070 /* MiniPlayerView.swift */; };
+		F071 /* AIQuestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S071 /* AIQuestionView.swift */; };
+		F072 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = S072 /* ShareSheet.swift */; };
+		F073 /* TopicSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S073 /* TopicSelectionView.swift */; };
+		F074 /* MembershipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S074 /* MembershipView.swift */; };
+		F075 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S075 /* SettingsView.swift */; };
+		F076 /* BadgeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S076 /* BadgeDetailView.swift */; };
+		F077 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S077 /* OnboardingView.swift */; };
+		F078 /* MessageInboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S078 /* MessageInboxView.swift */; };
+		F079 /* AILookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S079 /* AILookupView.swift */; };
+		F080 /* VoiceSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S080 /* VoiceSelectionView.swift */; };
+		F081 /* SleepTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S081 /* SleepTimerView.swift */; };
+		F082 /* PopularHighlightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S082 /* PopularHighlightsView.swift */; };
+		F083 /* AIGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S083 /* AIGuideView.swift */; };
+		F084 /* AIOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S084 /* AIOutlineView.swift */; };
+		F085 /* RelatedBooksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S085 /* RelatedBooksView.swift */; };
+		F086 /* RedeemCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S086 /* RedeemCodeView.swift */; };
+		F087 /* PublishThoughtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S087 /* PublishThoughtView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -116,6 +156,43 @@
 		S048 /* ReadingGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingGoal.swift; sourceTree = "<group>"; };
 		S049 /* DailyGoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyGoalsView.swift; sourceTree = "<group>"; };
 		S050 /* StreakView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakView.swift; sourceTree = "<group>"; };
+		S051 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
+		S052 /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
+		S053 /* NoteCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteCard.swift; sourceTree = "<group>"; };
+		S054 /* NoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteDetailView.swift; sourceTree = "<group>"; };
+		S055 /* ReaderModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderModels.swift; sourceTree = "<group>"; };
+		S056 /* ReaderContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderContainerView.swift; sourceTree = "<group>"; };
+		S057 /* EnhancedPDFReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedPDFReaderView.swift; sourceTree = "<group>"; };
+		S058 /* ReaderSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderSettingsSheet.swift; sourceTree = "<group>"; };
+		S059 /* EPUBReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBReaderView.swift; sourceTree = "<group>"; };
+		S060 /* EPUBReaderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBReaderViewModel.swift; sourceTree = "<group>"; };
+		S061 /* StoreHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreHomeView.swift; sourceTree = "<group>"; };
+		S062 /* StoreCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCategoryView.swift; sourceTree = "<group>"; };
+		S063 /* StoreRankingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreRankingView.swift; sourceTree = "<group>"; };
+		S064 /* StoreSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreSearchView.swift; sourceTree = "<group>"; };
+		S065 /* StoreViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreViewModel.swift; sourceTree = "<group>"; };
+		S066 /* TextSelectionMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextSelectionMenu.swift; sourceTree = "<group>"; };
+		S067 /* ReadingTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingTabView.swift; sourceTree = "<group>"; };
+		S068 /* FriendsTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsTabView.swift; sourceTree = "<group>"; };
+		S069 /* AudioPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerView.swift; sourceTree = "<group>"; };
+		S070 /* MiniPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerView.swift; sourceTree = "<group>"; };
+		S071 /* AIQuestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuestionView.swift; sourceTree = "<group>"; };
+		S072 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		S073 /* TopicSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicSelectionView.swift; sourceTree = "<group>"; };
+		S074 /* MembershipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MembershipView.swift; sourceTree = "<group>"; };
+		S075 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		S076 /* BadgeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeDetailView.swift; sourceTree = "<group>"; };
+		S077 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		S078 /* MessageInboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInboxView.swift; sourceTree = "<group>"; };
+		S079 /* AILookupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupView.swift; sourceTree = "<group>"; };
+		S080 /* VoiceSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSelectionView.swift; sourceTree = "<group>"; };
+		S081 /* SleepTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerView.swift; sourceTree = "<group>"; };
+		S082 /* PopularHighlightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopularHighlightsView.swift; sourceTree = "<group>"; };
+		S083 /* AIGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGuideView.swift; sourceTree = "<group>"; };
+		S084 /* AIOutlineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIOutlineView.swift; sourceTree = "<group>"; };
+		S085 /* RelatedBooksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatedBooksView.swift; sourceTree = "<group>"; };
+		S086 /* RedeemCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedeemCodeView.swift; sourceTree = "<group>"; };
+		S087 /* PublishThoughtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublishThoughtView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +200,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E89A441F2EEC5614009B078F /* ReadiumNavigator in Frameworks */,
+				E89A44232EEC5614009B078F /* ReadiumStreamer in Frameworks */,
+				E89A44212EEC5614009B078F /* ReadiumShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -162,8 +242,10 @@
 				S038 /* BookDetail.swift */,
 				S006 /* Ebook.swift */,
 				S007 /* Magazine.swift */,
+				S051 /* Note.swift */,
 				S008 /* ReadingHistory.swift */,
 				S048 /* ReadingGoal.swift */,
+				S055 /* ReaderModels.swift */,
 				S009 /* ReadingSession.swift */,
 				S010 /* ReadingStats.swift */,
 				S042 /* Social.swift */,
@@ -222,8 +304,10 @@
 			children = (
 				S016 /* BadgesViewModel.swift */,
 				S017 /* EbooksViewModel.swift */,
+				S060 /* EPUBReaderViewModel.swift */,
 				S018 /* HomeViewModel.swift */,
 				S019 /* ReadingStatsViewModel.swift */,
+				S065 /* StoreViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -231,17 +315,50 @@
 		VIEWS /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				VIEWS_AI /* AI */,
+				VIEWS_AUDIOPLAYER /* AudioPlayer */,
 				VIEWS_AUTH /* Auth */,
 				VIEWS_BOOKS /* Books */,
 				VIEWS_COMPONENTS /* Components */,
 				VIEWS_EBOOKS /* Ebooks */,
+				VIEWS_FRIENDS /* Friends */,
 				VIEWS_HOME /* Home */,
 				VIEWS_MAGAZINES /* Magazines */,
+				VIEWS_MEMBERSHIP /* Membership */,
+				VIEWS_MESSAGES /* Messages */,
+				VIEWS_NOTES /* Notes */,
+				VIEWS_ONBOARDING /* Onboarding */,
 				VIEWS_PROFILE /* Profile */,
 				VIEWS_READER /* Reader */,
+				VIEWS_READING /* Reading */,
+				VIEWS_SETTINGS /* Settings */,
 				VIEWS_SHARED /* Shared */,
+				VIEWS_SOCIAL /* Social */,
+				VIEWS_STORE /* Store */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		VIEWS_AI /* AI */ = {
+			isa = PBXGroup;
+			children = (
+				S083 /* AIGuideView.swift */,
+				S079 /* AILookupView.swift */,
+				S084 /* AIOutlineView.swift */,
+				S071 /* AIQuestionView.swift */,
+			);
+			path = AI;
+			sourceTree = "<group>";
+		};
+		VIEWS_AUDIOPLAYER /* AudioPlayer */ = {
+			isa = PBXGroup;
+			children = (
+				S069 /* AudioPlayerView.swift */,
+				S070 /* MiniPlayerView.swift */,
+				S080 /* VoiceSelectionView.swift */,
+				S081 /* SleepTimerView.swift */,
+			);
+			path = AudioPlayer;
 			sourceTree = "<group>";
 		};
 		VIEWS_AUTH /* Auth */ = {
@@ -257,6 +374,7 @@
 			isa = PBXGroup;
 			children = (
 				S022 /* BooksView.swift */,
+				S085 /* RelatedBooksView.swift */,
 			);
 			path = Books;
 			sourceTree = "<group>";
@@ -281,6 +399,14 @@
 			path = Ebooks;
 			sourceTree = "<group>";
 		};
+		VIEWS_FRIENDS /* Friends */ = {
+			isa = PBXGroup;
+			children = (
+				S068 /* FriendsTabView.swift */,
+			);
+			path = Friends;
+			sourceTree = "<group>";
+		};
 		VIEWS_HOME /* Home */ = {
 			isa = PBXGroup;
 			children = (
@@ -298,10 +424,46 @@
 			path = Magazines;
 			sourceTree = "<group>";
 		};
+		VIEWS_MEMBERSHIP /* Membership */ = {
+			isa = PBXGroup;
+			children = (
+				S074 /* MembershipView.swift */,
+				S086 /* RedeemCodeView.swift */,
+			);
+			path = Membership;
+			sourceTree = "<group>";
+		};
+		VIEWS_MESSAGES /* Messages */ = {
+			isa = PBXGroup;
+			children = (
+				S078 /* MessageInboxView.swift */,
+			);
+			path = Messages;
+			sourceTree = "<group>";
+		};
+		VIEWS_NOTES /* Notes */ = {
+			isa = PBXGroup;
+			children = (
+				S053 /* NoteCard.swift */,
+				S054 /* NoteDetailView.swift */,
+				S052 /* NotesListView.swift */,
+			);
+			path = Notes;
+			sourceTree = "<group>";
+		};
+		VIEWS_ONBOARDING /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				S077 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
 		VIEWS_PROFILE /* Profile */ = {
 			isa = PBXGroup;
 			children = (
 				S047 /* ActivityFeedView.swift */,
+				S076 /* BadgeDetailView.swift */,
 				S031 /* BadgesView.swift */,
 				S049 /* DailyGoalsView.swift */,
 				S046 /* FollowListView.swift */,
@@ -318,9 +480,30 @@
 		VIEWS_READER /* Reader */ = {
 			isa = PBXGroup;
 			children = (
+				S057 /* EnhancedPDFReaderView.swift */,
+				S059 /* EPUBReaderView.swift */,
 				S034 /* PDFReaderView.swift */,
+				S056 /* ReaderContainerView.swift */,
+				S058 /* ReaderSettingsSheet.swift */,
+				S066 /* TextSelectionMenu.swift */,
 			);
 			path = Reader;
+			sourceTree = "<group>";
+		};
+		VIEWS_READING /* Reading */ = {
+			isa = PBXGroup;
+			children = (
+				S067 /* ReadingTabView.swift */,
+			);
+			path = Reading;
+			sourceTree = "<group>";
+		};
+		VIEWS_SETTINGS /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				S075 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		VIEWS_SHARED /* Shared */ = {
@@ -330,6 +513,28 @@
 				S040 /* ReviewFormView.swift */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		VIEWS_SOCIAL /* Social */ = {
+			isa = PBXGroup;
+			children = (
+				S082 /* PopularHighlightsView.swift */,
+				S087 /* PublishThoughtView.swift */,
+				S072 /* ShareSheet.swift */,
+				S073 /* TopicSelectionView.swift */,
+			);
+			path = Social;
+			sourceTree = "<group>";
+		};
+		VIEWS_STORE /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				S062 /* StoreCategoryView.swift */,
+				S061 /* StoreHomeView.swift */,
+				S063 /* StoreRankingView.swift */,
+				S064 /* StoreSearchView.swift */,
+			);
+			path = Store;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -377,6 +582,9 @@
 				"zh-Hans",
 			);
 			mainGroup = ROOT;
+			packageReferences = (
+				E89A441D2EEC5614009B078F /* XCRemoteSwiftPackageReference "swift-toolkit" */,
+			);
 			productRefGroup = PRODUCTS /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -451,6 +659,43 @@
 				F048 /* ReadingGoal.swift in Sources */,
 				F049 /* DailyGoalsView.swift in Sources */,
 				F050 /* StreakView.swift in Sources */,
+				F051 /* Note.swift in Sources */,
+				F052 /* NotesListView.swift in Sources */,
+				F053 /* NoteCard.swift in Sources */,
+				F054 /* NoteDetailView.swift in Sources */,
+				F055 /* ReaderModels.swift in Sources */,
+				F056 /* ReaderContainerView.swift in Sources */,
+				F057 /* EnhancedPDFReaderView.swift in Sources */,
+				F058 /* ReaderSettingsSheet.swift in Sources */,
+				F059 /* EPUBReaderView.swift in Sources */,
+				F060 /* EPUBReaderViewModel.swift in Sources */,
+				F061 /* StoreHomeView.swift in Sources */,
+				F062 /* StoreCategoryView.swift in Sources */,
+				F063 /* StoreRankingView.swift in Sources */,
+				F064 /* StoreSearchView.swift in Sources */,
+				F065 /* StoreViewModel.swift in Sources */,
+				F066 /* TextSelectionMenu.swift in Sources */,
+				F067 /* ReadingTabView.swift in Sources */,
+				F068 /* FriendsTabView.swift in Sources */,
+				F069 /* AudioPlayerView.swift in Sources */,
+				F070 /* MiniPlayerView.swift in Sources */,
+				F071 /* AIQuestionView.swift in Sources */,
+				F072 /* ShareSheet.swift in Sources */,
+				F073 /* TopicSelectionView.swift in Sources */,
+				F074 /* MembershipView.swift in Sources */,
+				F075 /* SettingsView.swift in Sources */,
+				F076 /* BadgeDetailView.swift in Sources */,
+				F077 /* OnboardingView.swift in Sources */,
+				F078 /* MessageInboxView.swift in Sources */,
+				F079 /* AILookupView.swift in Sources */,
+				F080 /* VoiceSelectionView.swift in Sources */,
+				F081 /* SleepTimerView.swift in Sources */,
+				F082 /* PopularHighlightsView.swift in Sources */,
+				F083 /* AIGuideView.swift in Sources */,
+				F084 /* AIOutlineView.swift in Sources */,
+				F085 /* RelatedBooksView.swift in Sources */,
+				F086 /* RedeemCodeView.swift in Sources */,
+				F087 /* PublishThoughtView.swift in Sources */,
 				AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */,
 				5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */,
 			);
@@ -672,6 +917,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E89A441D2EEC5614009B078F /* XCRemoteSwiftPackageReference "swift-toolkit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/readium/swift-toolkit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E89A441E2EEC5614009B078F /* ReadiumNavigator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E89A441D2EEC5614009B078F /* XCRemoteSwiftPackageReference "swift-toolkit" */;
+			productName = ReadiumNavigator;
+		};
+		E89A44202EEC5614009B078F /* ReadiumShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E89A441D2EEC5614009B078F /* XCRemoteSwiftPackageReference "swift-toolkit" */;
+			productName = ReadiumShared;
+		};
+		E89A44222EEC5614009B078F /* ReadiumStreamer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E89A441D2EEC5614009B078F /* XCRemoteSwiftPackageReference "swift-toolkit" */;
+			productName = ReadiumStreamer;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = PROJECT /* Project object */;
 }

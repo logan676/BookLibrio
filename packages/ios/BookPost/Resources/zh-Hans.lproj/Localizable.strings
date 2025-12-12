@@ -67,8 +67,181 @@
 "profile.title" = "我的";
 "profile.readingHistory" = "阅读记录";
 "profile.settings" = "设置";
+"profile.myBookshelf" = "我的书架";
+"profile.readingNotes" = "读书笔记";
+"profile.readingGoals" = "阅读目标";
+"profile.readingStreak" = "阅读连续";
+"profile.activity" = "动态";
+"profile.leaderboard" = "阅读排行榜";
+"profile.myBadges" = "我的徽章";
+
+// MARK: - Bookshelf
+"bookshelf.title" = "我的书架";
+"bookshelf.empty" = "书架为空";
+"bookshelf.browseBooks" = "浏览书籍并添加到书架";
+"bookshelf.noBooks" = "没有此状态的书籍";
+"bookshelf.wantToRead" = "想读";
+"bookshelf.reading" = "在读";
+"bookshelf.finished" = "已读";
+"bookshelf.abandoned" = "放弃";
+"bookshelf.ebook" = "电子书";
+"bookshelf.magazine" = "杂志";
+"bookshelf.sortByAdded" = "添加时间";
+"bookshelf.sortByUpdated" = "更新时间";
+"bookshelf.sortByTitle" = "书名";
+"bookshelf.sortByProgress" = "进度";
+"bookshelf.sort" = "排序";
+"bookshelf.type" = "类型";
+
+// MARK: - Notes
+"notes.title" = "读书笔记";
+"notes.searchPlaceholder" = "搜索笔记标题...";
+"notes.empty" = "暂无笔记";
+"notes.noNotesForYear" = "该年份暂无读书笔记";
+"notes.noSearchResults" = "未找到匹配的笔记";
+"notes.startReading" = "开始阅读并记录你的想法吧";
+"notes.loadMore" = "加载更多";
+"notes.detail" = "笔记详情";
+"notes.loadFailed" = "加载失败";
+"notes.content" = "内容";
+"notes.underlines" = "划线";
+"notes.comments" = "评论";
+"notes.year" = "%d年";
+"notes.underlineCount" = "划线 (%d)";
+"notes.commentCount" = "评论 (%d)";
+
+// MARK: - Goals
+"goals.title" = "阅读目标";
+"goals.setGoal" = "设置目标";
+"goals.selectGoal" = "选择每日阅读目标";
+"goals.completed" = "完成!";
+"goals.target" = "目标";
+"goals.read" = "已读";
+"goals.remaining" = "剩余";
+"goals.noGoalSet" = "尚未设置阅读目标";
+"goals.adjustGoal" = "调整目标";
+"goals.currentStreak" = "当前连续";
+"goals.maxStreak" = "最高记录";
+"goals.light" = "轻度";
+"goals.moderate" = "适中";
+"goals.standard" = "标准";
+"goals.intensive" = "深度";
+
+// MARK: - Stats
+"stats.title" = "阅读统计";
+"stats.overview" = "总览";
+"stats.totalReadingTime" = "总阅读时长";
+"stats.readingDays" = "阅读天数";
+"stats.booksFinished" = "已读完";
+"stats.currentStreak" = "当前连续";
+"stats.longestStreak" = "最高记录";
+"stats.days" = "天";
+"stats.less" = "少";
+"stats.more" = "多";
+"stats.booksRead" = "阅读书籍";
+"stats.underlines" = "划线";
+"stats.ideas" = "想法";
+"stats.weekday.sun" = "日";
+"stats.weekday.mon" = "一";
+"stats.weekday.tue" = "二";
+"stats.weekday.wed" = "三";
+"stats.weekday.thu" = "四";
+"stats.weekday.fri" = "五";
+"stats.weekday.sat" = "六";
+
+// MARK: - Leaderboard
+"leaderboard.title" = "阅读排行榜";
+"leaderboard.friends" = "好友";
+"leaderboard.global" = "全站";
+"leaderboard.loadFailed" = "加载失败";
+"leaderboard.weeklyRanking" = "本周排行";
+"leaderboard.settlementTime" = "结算时间";
+"leaderboard.myRanking" = "我的排名";
+"leaderboard.participants" = "人";
+"leaderboard.readingTime" = "阅读时长";
+"leaderboard.readingDays" = "阅读天数";
+"leaderboard.rankChange" = "排名变化";
+"leaderboard.fullRanking" = "完整排名";
+
+// MARK: - Activity
+"activity.title" = "动态";
+"activity.following" = "关注";
+"activity.global" = "全站";
+"activity.empty" = "暂无动态";
+"activity.followUsers" = "关注一些用户来查看他们的动态";
+"activity.noActivity" = "还没有人分享动态";
+"activity.loadMore" = "加载更多";
+
+// MARK: - User Profile
+"userProfile.title" = "用户资料";
+"userProfile.loadFailed" = "加载失败";
+"userProfile.followers" = "粉丝";
+"userProfile.following" = "关注";
+"userProfile.mutualFollow" = "互相关注";
+"userProfile.follow" = "关注";
+"userProfile.unfollow" = "取消关注";
+"userProfile.readingTime" = "阅读时长";
+"userProfile.booksFinished" = "读完书籍";
+"userProfile.streak" = "连续阅读";
+
+// MARK: - Follow
+"follow.followers" = "粉丝";
+"follow.following" = "关注";
+"follow.noFollowers" = "暂无粉丝";
+"follow.noFollowing" = "还没有人关注";
+"follow.loadMore" = "加载更多";
+
+// MARK: - Review
+"review.rating" = "评分 (可选)";
+"review.stars" = "星";
+"review.detail" = "详情";
 
 // MARK: - Reader
 "reader.close" = "关闭";
 "reader.downloadFailed" = "下载失败";
 "reader.openFailed" = "无法打开文件";
+"reader.loading" = "加载中...";
+"reader.page" = "第 %d 页";
+"reader.settings" = "阅读设置";
+"reader.tableOfContents" = "目录";
+"reader.highlights" = "划线";
+"reader.bookmarks" = "书签";
+"reader.done" = "完成";
+"reader.reset" = "重置";
+"reader.noTableOfContents" = "此文档没有目录";
+"reader.pageOf" = "第 %d / %d 页";
+"reader.totalPages" = "共 %d 页";
+
+// Reader Settings
+"reader.brightness" = "亮度";
+"reader.backgroundColor" = "背景颜色";
+"reader.fontSize" = "字号";
+"reader.fontFamily" = "字体";
+"reader.lineSpacing" = "行距";
+"reader.margins" = "边距";
+"reader.other" = "其他";
+"reader.keepScreenOn" = "保持屏幕常亮";
+"reader.previewText" = "预览文字效果";
+
+// Color Modes
+"reader.color.white" = "白色";
+"reader.color.sepia" = "米黄";
+"reader.color.green" = "浅绿";
+"reader.color.dark" = "深色";
+
+// Font Families
+"reader.font.system" = "系统字体";
+"reader.font.songti" = "宋体";
+"reader.font.kaiti" = "楷体";
+"reader.font.heiti" = "黑体";
+
+// Line Spacing
+"reader.spacing.compact" = "紧凑";
+"reader.spacing.normal" = "标准";
+"reader.spacing.relaxed" = "适中";
+"reader.spacing.loose" = "宽松";
+
+// Margin Sizes
+"reader.margin.small" = "小";
+"reader.margin.medium" = "中";
+"reader.margin.large" = "大";

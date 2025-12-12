@@ -14,8 +14,8 @@ struct LeaderboardView: View {
 
         var displayName: String {
             switch self {
-            case .friends: return "好友"
-            case .all: return "全站"
+            case .friends: return L10n.Leaderboard.friends
+            case .all: return L10n.Leaderboard.global
             }
         }
     }
@@ -23,7 +23,7 @@ struct LeaderboardView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Type selector
-            Picker("排行榜类型", selection: $selectedType) {
+            Picker(L10n.Leaderboard.title, selection: $selectedType) {
                 ForEach(LeaderboardType.allCases, id: \.self) { type in
                     Text(type.displayName).tag(type)
                 }
@@ -40,7 +40,7 @@ struct LeaderboardView: View {
                 leaderboardContent(data)
             }
         }
-        .navigationTitle("阅读排行榜")
+        .navigationTitle(L10n.Leaderboard.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadLeaderboard()
@@ -58,11 +58,11 @@ struct LeaderboardView: View {
     @ViewBuilder
     private func errorView(_ error: String) -> some View {
         ContentUnavailableView {
-            Label("加载失败", systemImage: "exclamationmark.triangle")
+            Label(L10n.Leaderboard.loadFailed, systemImage: "exclamationmark.triangle")
         } description: {
             Text(error)
         } actions: {
-            Button("重试") {
+            Button(L10n.Common.retry) {
                 Task { await loadLeaderboard() }
             }
         }
@@ -100,7 +100,7 @@ struct LeaderboardView: View {
     private func weekInfoCard(_ weekRange: WeekRange) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("本周排行")
+                Text(L10n.Leaderboard.weeklyRanking)
                     .font(.headline)
                 Text("\(formatDate(weekRange.start)) - \(formatDate(weekRange.end))")
                     .font(.caption)
@@ -110,7 +110,7 @@ struct LeaderboardView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text("结算时间")
+                Text(L10n.Leaderboard.settlementTime)
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Text(formatSettlementTime(weekRange.settlementTime))
@@ -129,7 +129,7 @@ struct LeaderboardView: View {
     private func myRankingCard(_ ranking: MyRanking, totalParticipants: Int) -> some View {
         VStack(spacing: 12) {
             HStack {
-                Text("我的排名")
+                Text(L10n.Leaderboard.myRanking)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 Spacer()
@@ -141,7 +141,7 @@ struct LeaderboardView: View {
                     Text("#\(ranking.rank)")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.accentColor)
-                    Text("/ \(totalParticipants)人")
+                    Text("/ \(totalParticipants) \(L10n.Leaderboard.participants)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -153,7 +153,7 @@ struct LeaderboardView: View {
                     Text(ranking.formattedDuration)
                         .font(.title3)
                         .fontWeight(.semibold)
-                    Text("阅读时长")
+                    Text(L10n.Leaderboard.readingTime)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -162,10 +162,10 @@ struct LeaderboardView: View {
 
                 // Reading days
                 VStack(spacing: 4) {
-                    Text("\(ranking.readingDays)天")
+                    Text("\(ranking.readingDays) \(L10n.Stats.days)")
                         .font(.title3)
                         .fontWeight(.semibold)
-                    Text("阅读天数")
+                    Text(L10n.Leaderboard.readingDays)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -178,7 +178,7 @@ struct LeaderboardView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(ranking.rankChange > 0 ? .green : (ranking.rankChange < 0 ? .red : .gray))
-                    Text("排名变化")
+                    Text(L10n.Leaderboard.rankChange)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -274,7 +274,7 @@ struct LeaderboardView: View {
     @ViewBuilder
     private func leaderboardList(_ entries: [LeaderboardEntry]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("完整排名")
+            Text(L10n.Leaderboard.fullRanking)
                 .font(.headline)
 
             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
@@ -312,7 +312,7 @@ struct LeaderboardView: View {
                     Text(entry.formattedDuration)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("\(entry.readingDays)天")
+                    Text("\(entry.readingDays) \(L10n.Stats.days)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

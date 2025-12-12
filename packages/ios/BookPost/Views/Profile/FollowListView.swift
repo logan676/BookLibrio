@@ -11,8 +11,8 @@ struct FollowListView: View {
 
         var title: String {
             switch self {
-            case .followers: return "粉丝"
-            case .following: return "关注"
+            case .followers: return L10n.Follow.followers
+            case .following: return L10n.Follow.following
             }
         }
     }
@@ -50,11 +50,11 @@ struct FollowListView: View {
     private var emptyView: some View {
         ContentUnavailableView {
             Label(
-                type == .followers ? "暂无粉丝" : "暂无关注",
+                type == .followers ? L10n.Follow.noFollowers : L10n.Follow.noFollowing,
                 systemImage: "person.2"
             )
         } description: {
-            Text(type == .followers ? "还没有人关注" : "还没有关注任何人")
+            Text(type == .followers ? L10n.Follow.noFollowers : L10n.Follow.noFollowing)
         }
     }
 
@@ -68,7 +68,7 @@ struct FollowListView: View {
             }
 
             if hasMore {
-                Button("加载更多") {
+                Button(L10n.Follow.loadMore) {
                     Task { await loadMore() }
                 }
                 .frame(maxWidth: .infinity)
@@ -116,7 +116,7 @@ struct FollowListView: View {
                 Button {
                     Task { await toggleFollow(user) }
                 } label: {
-                    Text(isFollowing(user) ? "已关注" : "关注")
+                    Text(isFollowing(user) ? L10n.UserProfile.following : L10n.UserProfile.follow)
                         .font(.caption)
                         .fontWeight(.medium)
                         .padding(.horizontal, 12)

@@ -3,26 +3,36 @@ import SwiftUI
 struct BookCoverView: View {
     let coverUrl: String?
     let title: String
+    var useThumbnail: Bool = false
 
     // Base URL for the API - relative paths need this prefix
     private static let baseURL = "https://bookpost-api-hono.fly.dev"
 
     /// Converts a cover URL to an absolute URL if needed
+    /// Appends ?thumb=1 for thumbnail requests
     private var absoluteURL: URL? {
         guard let urlString = coverUrl, !urlString.isEmpty else { return nil }
 
+        var finalUrl: String
+
         // If it's already an absolute URL, use it directly
         if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
-            return URL(string: urlString)
+            finalUrl = urlString
+        } else if urlString.hasPrefix("/") {
+            // If it's a relative path, prepend the base URL
+            finalUrl = Self.baseURL + urlString
+        } else {
+            // Try as-is (shouldn't happen but fallback)
+            finalUrl = urlString
         }
 
-        // If it's a relative path, prepend the base URL
-        if urlString.hasPrefix("/") {
-            return URL(string: Self.baseURL + urlString)
+        // Append thumbnail parameter if requested
+        if useThumbnail {
+            let separator = finalUrl.contains("?") ? "&" : "?"
+            finalUrl += "\(separator)thumb=1"
         }
 
-        // Try as-is (shouldn't happen but fallback)
-        return URL(string: urlString)
+        return URL(string: finalUrl)
     }
 
     var body: some View {
@@ -30,7 +40,7 @@ struct BookCoverView: View {
             CachedAsyncImage(url: url) { image in
                 image
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: .fit)
             } placeholder: {
                 PlaceholderCover(title: title)
             }
@@ -49,6 +59,9 @@ struct BookCoverView: View {
 struct PlaceholderCover: View {
     let title: String
 
+    // Standard book cover aspect ratio (width:height ≈ 2:3)
+    private let coverAspectRatio: CGFloat = 2.0 / 3.0
+
     var body: some View {
         ZStack {
             Color(.systemGray5)
@@ -66,6 +79,7 @@ struct PlaceholderCover: View {
                     .padding(.horizontal, 4)
             }
         }
+        .aspectRatio(coverAspectRatio, contentMode: .fit)
     }
 }
 
@@ -75,11 +89,14 @@ struct BookCoverCard: View {
     let subtitle: String?
     let action: () -> Void
 
+    // Standard book cover aspect ratio (width:height ≈ 2:3)
+    private let coverAspectRatio: CGFloat = 2.0 / 3.0
+
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
-                BookCoverView(coverUrl: coverUrl, title: title)
-                    .frame(height: 180)
+                BookCoverView(coverUrl: coverUrl, title: title, useThumbnail: true)
+                    .aspectRatio(coverAspectRatio, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .shadow(radius: 2)
 

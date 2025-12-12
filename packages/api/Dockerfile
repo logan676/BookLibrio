@@ -1,8 +1,8 @@
 # Production Dockerfile for BookPost API
 FROM node:20-alpine
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
+# Install build dependencies for native modules and sharp
+RUN apk add --no-cache python3 make g++ vips-dev
 
 WORKDIR /app
 

@@ -30,27 +30,31 @@ struct ProfileView: View {
                 // Menu section
                 Section {
                     NavigationLink(destination: MyBookshelfView()) {
-                        Label("我的书架", systemImage: "books.vertical")
+                        Label(L10n.Profile.myBookshelf, systemImage: "books.vertical")
+                    }
+
+                    NavigationLink(destination: NotesListView()) {
+                        Label(L10n.Profile.readingNotes, systemImage: "doc.text")
                     }
 
                     NavigationLink(destination: DailyGoalsView()) {
-                        Label("阅读目标", systemImage: "target")
+                        Label(L10n.Profile.readingGoals, systemImage: "target")
                     }
 
                     NavigationLink(destination: StreakView()) {
-                        Label("阅读连续", systemImage: "flame.fill")
+                        Label(L10n.Profile.readingStreak, systemImage: "flame.fill")
                     }
 
                     NavigationLink(destination: ActivityFeedView()) {
-                        Label("动态", systemImage: "bubble.left.and.bubble.right")
+                        Label(L10n.Profile.activity, systemImage: "bubble.left.and.bubble.right")
                     }
 
                     NavigationLink(destination: LeaderboardView()) {
-                        Label("阅读排行榜", systemImage: "trophy")
+                        Label(L10n.Profile.leaderboard, systemImage: "trophy")
                     }
 
                     NavigationLink(destination: BadgesView()) {
-                        Label("我的徽章", systemImage: "medal")
+                        Label(L10n.Profile.myBadges, systemImage: "medal")
                     }
 
                     NavigationLink(destination: Text(L10n.Profile.readingHistory)) {

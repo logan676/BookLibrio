@@ -43,16 +43,6 @@ struct EbooksView: View {
                     .padding(.vertical, 8)
                 }
 
-                // Total count
-                HStack {
-                    Text(L10n.Ebooks.count(viewModel.total))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-
                 // Content
                 Group {
                     if viewModel.isLoading && viewModel.ebooks.isEmpty {

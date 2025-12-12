@@ -67,8 +67,181 @@
 "profile.title" = "Profile";
 "profile.readingHistory" = "Reading History";
 "profile.settings" = "Settings";
+"profile.myBookshelf" = "My Bookshelf";
+"profile.readingNotes" = "Reading Notes";
+"profile.readingGoals" = "Reading Goals";
+"profile.readingStreak" = "Reading Streak";
+"profile.activity" = "Activity";
+"profile.leaderboard" = "Leaderboard";
+"profile.myBadges" = "My Badges";
+
+// MARK: - Bookshelf
+"bookshelf.title" = "My Bookshelf";
+"bookshelf.empty" = "Bookshelf is empty";
+"bookshelf.browseBooks" = "Browse books and add to shelf";
+"bookshelf.noBooks" = "No books with this status";
+"bookshelf.wantToRead" = "Want to Read";
+"bookshelf.reading" = "Reading";
+"bookshelf.finished" = "Finished";
+"bookshelf.abandoned" = "Abandoned";
+"bookshelf.ebook" = "Ebook";
+"bookshelf.magazine" = "Magazine";
+"bookshelf.sortByAdded" = "Date Added";
+"bookshelf.sortByUpdated" = "Date Updated";
+"bookshelf.sortByTitle" = "Title";
+"bookshelf.sortByProgress" = "Progress";
+"bookshelf.sort" = "Sort";
+"bookshelf.type" = "Type";
+
+// MARK: - Notes
+"notes.title" = "Reading Notes";
+"notes.searchPlaceholder" = "Search notes...";
+"notes.empty" = "No notes yet";
+"notes.noNotesForYear" = "No notes for this year";
+"notes.noSearchResults" = "No matching notes found";
+"notes.startReading" = "Start reading and record your thoughts";
+"notes.loadMore" = "Load More";
+"notes.detail" = "Note Detail";
+"notes.loadFailed" = "Failed to load";
+"notes.content" = "Content";
+"notes.underlines" = "Highlights";
+"notes.comments" = "Comments";
+"notes.year" = "%d";
+"notes.underlineCount" = "Highlights (%d)";
+"notes.commentCount" = "Comments (%d)";
+
+// MARK: - Goals
+"goals.title" = "Reading Goals";
+"goals.setGoal" = "Set Goal";
+"goals.selectGoal" = "Select daily reading goal";
+"goals.completed" = "Completed!";
+"goals.target" = "Target";
+"goals.read" = "Read";
+"goals.remaining" = "Remaining";
+"goals.noGoalSet" = "No reading goal set";
+"goals.adjustGoal" = "Adjust Goal";
+"goals.currentStreak" = "Current Streak";
+"goals.maxStreak" = "Best Streak";
+"goals.light" = "Light";
+"goals.moderate" = "Moderate";
+"goals.standard" = "Standard";
+"goals.intensive" = "Intensive";
+
+// MARK: - Stats
+"stats.title" = "Reading Stats";
+"stats.overview" = "Overview";
+"stats.totalReadingTime" = "Total Reading Time";
+"stats.readingDays" = "Reading Days";
+"stats.booksFinished" = "Books Finished";
+"stats.currentStreak" = "Current Streak";
+"stats.longestStreak" = "Longest Streak";
+"stats.days" = "days";
+"stats.less" = "Less";
+"stats.more" = "More";
+"stats.booksRead" = "Books Read";
+"stats.underlines" = "Highlights";
+"stats.ideas" = "Ideas";
+"stats.weekday.sun" = "Sun";
+"stats.weekday.mon" = "Mon";
+"stats.weekday.tue" = "Tue";
+"stats.weekday.wed" = "Wed";
+"stats.weekday.thu" = "Thu";
+"stats.weekday.fri" = "Fri";
+"stats.weekday.sat" = "Sat";
+
+// MARK: - Leaderboard
+"leaderboard.title" = "Leaderboard";
+"leaderboard.friends" = "Friends";
+"leaderboard.global" = "Global";
+"leaderboard.loadFailed" = "Failed to load";
+"leaderboard.weeklyRanking" = "Weekly Ranking";
+"leaderboard.settlementTime" = "Settlement Time";
+"leaderboard.myRanking" = "My Ranking";
+"leaderboard.participants" = "participants";
+"leaderboard.readingTime" = "Reading Time";
+"leaderboard.readingDays" = "Reading Days";
+"leaderboard.rankChange" = "Rank Change";
+"leaderboard.fullRanking" = "Full Ranking";
+
+// MARK: - Activity
+"activity.title" = "Activity";
+"activity.following" = "Following";
+"activity.global" = "Global";
+"activity.empty" = "No activity";
+"activity.followUsers" = "Follow users to see their activity";
+"activity.noActivity" = "No one has shared activity yet";
+"activity.loadMore" = "Load More";
+
+// MARK: - User Profile
+"userProfile.title" = "User Profile";
+"userProfile.loadFailed" = "Failed to load";
+"userProfile.followers" = "Followers";
+"userProfile.following" = "Following";
+"userProfile.mutualFollow" = "Mutual";
+"userProfile.follow" = "Follow";
+"userProfile.unfollow" = "Unfollow";
+"userProfile.readingTime" = "Reading Time";
+"userProfile.booksFinished" = "Books Finished";
+"userProfile.streak" = "Streak";
+
+// MARK: - Follow
+"follow.followers" = "Followers";
+"follow.following" = "Following";
+"follow.noFollowers" = "No followers yet";
+"follow.noFollowing" = "Not following anyone";
+"follow.loadMore" = "Load More";
+
+// MARK: - Review
+"review.rating" = "Rating (Optional)";
+"review.stars" = "stars";
+"review.detail" = "Details";
 
 // MARK: - Reader
 "reader.close" = "Close";
 "reader.downloadFailed" = "Download Failed";
 "reader.openFailed" = "Failed to open file";
+"reader.loading" = "Loading...";
+"reader.page" = "Page %d";
+"reader.settings" = "Reading Settings";
+"reader.tableOfContents" = "Contents";
+"reader.highlights" = "Highlights";
+"reader.bookmarks" = "Bookmarks";
+"reader.done" = "Done";
+"reader.reset" = "Reset";
+"reader.noTableOfContents" = "No table of contents";
+"reader.pageOf" = "Page %d of %d";
+"reader.totalPages" = "%d pages";
+
+// Reader Settings
+"reader.brightness" = "Brightness";
+"reader.backgroundColor" = "Background Color";
+"reader.fontSize" = "Font Size";
+"reader.fontFamily" = "Font";
+"reader.lineSpacing" = "Line Spacing";
+"reader.margins" = "Margins";
+"reader.other" = "Other";
+"reader.keepScreenOn" = "Keep Screen On";
+"reader.previewText" = "Preview text effect";
+
+// Color Modes
+"reader.color.white" = "White";
+"reader.color.sepia" = "Sepia";
+"reader.color.green" = "Green";
+"reader.color.dark" = "Dark";
+
+// Font Families
+"reader.font.system" = "System";
+"reader.font.songti" = "Songti";
+"reader.font.kaiti" = "Kaiti";
+"reader.font.heiti" = "Heiti";
+
+// Line Spacing
+"reader.spacing.compact" = "Compact";
+"reader.spacing.normal" = "Normal";
+"reader.spacing.relaxed" = "Relaxed";
+"reader.spacing.loose" = "Loose";
+
+// Margin Sizes
+"reader.margin.small" = "Small";
+"reader.margin.medium" = "Medium";
+"reader.margin.large" = "Large";

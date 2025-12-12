@@ -64,7 +64,13 @@ struct EbookDetailView: View {
         }
         .fullScreenCover(isPresented: $showReader) {
             if let ebook = ebook {
-                PDFReaderView(type: "ebook", id: ebook.id, title: ebook.title)
+                ReaderContainerView(
+                    bookType: "ebook",
+                    bookId: ebook.id,
+                    title: ebook.title,
+                    fileType: ebook.fileType ?? "pdf",
+                    coverUrl: ebook.coverUrl
+                )
             }
         }
     }

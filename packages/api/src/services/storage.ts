@@ -2,7 +2,7 @@
  * Cloudflare R2 Storage Service
  */
 
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const r2Client = process.env.R2_ACCOUNT_ID ? new S3Client({
   region: 'auto',
@@ -98,5 +98,45 @@ export async function getR2ObjectMetadata(key: string) {
       return null
     }
     throw error
+  }
+}
+
+/**
+ * Upload a file to R2 storage
+ */
+export async function uploadToR2(key: string, body: Buffer, contentType: string) {
+  if (!r2Client) {
+    throw new Error('R2 storage not configured')
+  }
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  })
+
+  await r2Client.send(command)
+}
+
+/**
+ * Check if a file exists in R2
+ */
+export async function existsInR2(key: string): Promise<boolean> {
+  if (!r2Client) {
+    return false
+  }
+
+  const { HeadObjectCommand } = await import('@aws-sdk/client-s3')
+  const command = new HeadObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  })
+
+  try {
+    await r2Client.send(command)
+    return true
+  } catch {
+    return false
   }
 }

@@ -28,7 +28,7 @@ struct DailyGoalsView: View {
             }
             .padding()
         }
-        .navigationTitle("阅读目标")
+        .navigationTitle(L10n.Goals.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadGoal()
@@ -36,7 +36,7 @@ struct DailyGoalsView: View {
         .refreshable {
             await loadGoal()
         }
-        .alert("设置目标", isPresented: $showGoalPicker) {
+        .alert(L10n.Goals.setGoal, isPresented: $showGoalPicker) {
             ForEach(GoalPreset.allCases) { preset in
                 Button(preset.label) {
                     Task {
@@ -44,9 +44,9 @@ struct DailyGoalsView: View {
                     }
                 }
             }
-            Button("取消", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
-            Text("选择每日阅读目标")
+            Text(L10n.Goals.selectGoal)
         }
     }
 
@@ -77,7 +77,7 @@ struct DailyGoalsView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 40))
                                 .foregroundColor(.green)
-                            Text("完成!")
+                            Text(L10n.Goals.completed)
                                 .font(.headline)
                                 .foregroundColor(.green)
                         } else {
@@ -94,7 +94,7 @@ struct DailyGoalsView: View {
                 // Goal info
                 HStack(spacing: 24) {
                     VStack(spacing: 4) {
-                        Text("目标")
+                        Text(L10n.Goals.target)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text(goal.formattedTarget)
@@ -105,7 +105,7 @@ struct DailyGoalsView: View {
                         .frame(height: 40)
 
                     VStack(spacing: 4) {
-                        Text("已读")
+                        Text(L10n.Goals.read)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text(goal.formattedCurrent)
@@ -116,7 +116,7 @@ struct DailyGoalsView: View {
                         .frame(height: 40)
 
                     VStack(spacing: 4) {
-                        Text("剩余")
+                        Text(L10n.Goals.remaining)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text("\(goal.remainingMinutes)m")
@@ -131,14 +131,14 @@ struct DailyGoalsView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.gray)
 
-                    Text("尚未设置阅读目标")
+                    Text(L10n.Goals.noGoalSet)
                         .font(.headline)
                         .foregroundColor(.secondary)
 
                     Button {
                         showGoalPicker = true
                     } label: {
-                        Text("设置目标")
+                        Text(L10n.Goals.setGoal)
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -169,7 +169,7 @@ struct DailyGoalsView: View {
                     Text("\(goalResponse?.streak.current ?? 0)")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                 }
-                Text("当前连续")
+                Text(L10n.Goals.currentStreak)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -186,7 +186,7 @@ struct DailyGoalsView: View {
                     Text("\(goalResponse?.streak.max ?? 0)")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                 }
-                Text("最高记录")
+                Text(L10n.Goals.maxStreak)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -202,7 +202,7 @@ struct DailyGoalsView: View {
 
     private var goalSettingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("调整目标")
+            Text(L10n.Goals.adjustGoal)
                 .font(.headline)
                 .padding(.leading, 4)
 

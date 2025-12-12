@@ -11,13 +11,15 @@ struct MyBookshelfView: View {
     @State private var selectedType: String = "all"
     @State private var sortOption: String = "added"
 
-    private let statusFilters: [(BookshelfStatus?, String)] = [
-        (nil, "全部"),
-        (.wantToRead, "想读"),
-        (.reading, "在读"),
-        (.finished, "已读"),
-        (.abandoned, "放弃")
-    ]
+    private var statusFilters: [(BookshelfStatus?, String)] {
+        [
+            (nil, L10n.Common.all),
+            (.wantToRead, L10n.Bookshelf.wantToRead),
+            (.reading, L10n.Bookshelf.reading),
+            (.finished, L10n.Bookshelf.finished),
+            (.abandoned, L10n.Bookshelf.abandoned)
+        ]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,7 +35,7 @@ struct MyBookshelfView: View {
                 bookshelfListView
             }
         }
-        .navigationTitle("我的书架")
+        .navigationTitle(L10n.Bookshelf.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -91,10 +93,10 @@ struct MyBookshelfView: View {
             }
 
             // Type filter
-            Picker("类型", selection: $selectedType) {
-                Text("全部").tag("all")
-                Text("电子书").tag("ebook")
-                Text("杂志").tag("magazine")
+            Picker(L10n.Bookshelf.type, selection: $selectedType) {
+                Text(L10n.Common.all).tag("all")
+                Text(L10n.Bookshelf.ebook).tag("ebook")
+                Text(L10n.Bookshelf.magazine).tag("magazine")
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
@@ -121,11 +123,11 @@ struct MyBookshelfView: View {
     @ViewBuilder
     private var sortMenu: some View {
         Menu {
-            Picker("排序", selection: $sortOption) {
-                Label("添加时间", systemImage: "calendar").tag("added")
-                Label("更新时间", systemImage: "clock").tag("updated")
-                Label("书名", systemImage: "textformat").tag("title")
-                Label("进度", systemImage: "chart.bar").tag("progress")
+            Picker(L10n.Bookshelf.sort, selection: $sortOption) {
+                Label(L10n.Bookshelf.sortByAdded, systemImage: "calendar").tag("added")
+                Label(L10n.Bookshelf.sortByUpdated, systemImage: "clock").tag("updated")
+                Label(L10n.Bookshelf.sortByTitle, systemImage: "textformat").tag("title")
+                Label(L10n.Bookshelf.sortByProgress, systemImage: "chart.bar").tag("progress")
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down")
@@ -137,9 +139,9 @@ struct MyBookshelfView: View {
     @ViewBuilder
     private var emptyStateView: some View {
         ContentUnavailableView {
-            Label("书架为空", systemImage: "books.vertical")
+            Label(L10n.Bookshelf.empty, systemImage: "books.vertical")
         } description: {
-            Text(selectedStatus == nil ? "浏览书籍并添加到书架" : "没有\(selectedStatus!.displayName)的书籍")
+            Text(selectedStatus == nil ? L10n.Bookshelf.browseBooks : L10n.Bookshelf.noBooks)
         }
     }
 
@@ -155,7 +157,7 @@ struct MyBookshelfView: View {
             }
 
             if hasMore {
-                Button("加载更多") {
+                Button(L10n.Notes.loadMore) {
                     Task { await loadMore() }
                 }
                 .frame(maxWidth: .infinity)

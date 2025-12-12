@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server'
 import { app } from './app'
 import { testConnection } from './db/client'
+import { initializeJobs, stopJobs } from './jobs'
 import 'dotenv/config'
 
 const PORT = Number(process.env.PORT) || 3001
@@ -24,6 +25,22 @@ async function main() {
   }, (info) => {
     console.log(`Server running at http://0.0.0.0:${info.port}`)
     console.log(`OpenAPI docs at http://0.0.0.0:${info.port}/api/openapi.json`)
+
+    // Initialize background jobs after server starts
+    initializeJobs()
+  })
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...')
+    stopJobs()
+    process.exit(0)
+  })
+
+  process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully...')
+    stopJobs()
+    process.exit(0)
   })
 }
 

@@ -1,0 +1,393 @@
+import SwiftUI
+
+// MARK: - Reading Settings
+
+/// User preferences for reading experience
+/// Persisted via @AppStorage for automatic sync
+struct ReadingSettings: Codable, Equatable {
+    var fontSize: CGFloat = 18
+    var fontFamily: FontFamily = .system
+    var colorMode: ColorMode = .light
+    var lineSpacing: LineSpacing = .normal
+    var marginSize: MarginSize = .medium
+    var pageFlipStyle: PageFlipStyle = .horizontal
+    var brightness: Double = 1.0
+    var keepScreenOn: Bool = true
+
+    /// Default settings instance
+    static let `default` = ReadingSettings()
+}
+
+// MARK: - Font Family
+
+enum FontFamily: String, Codable, CaseIterable, Identifiable {
+    case system = "system"
+    case songti = "songti"
+    case kaiti = "kaiti"
+    case heiti = "heiti"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .system: return "系统字体"
+        case .songti: return "宋体"
+        case .kaiti: return "楷体"
+        case .heiti: return "黑体"
+        }
+    }
+
+    var fontName: String? {
+        switch self {
+        case .system: return nil
+        case .songti: return "STSong"
+        case .kaiti: return "STKaiti"
+        case .heiti: return "STHeiti"
+        }
+    }
+}
+
+// MARK: - Color Mode
+
+enum ColorMode: String, Codable, CaseIterable, Identifiable {
+    case light = "light"
+    case sepia = "sepia"
+    case green = "green"
+    case dark = "dark"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .light: return "白色"
+        case .sepia: return "米黄"
+        case .green: return "浅绿"
+        case .dark: return "深色"
+        }
+    }
+
+    var backgroundColor: Color {
+        switch self {
+        case .light: return .white
+        case .sepia: return Color(red: 0.98, green: 0.95, blue: 0.88)
+        case .green: return Color(red: 0.88, green: 0.95, blue: 0.88)
+        case .dark: return Color(red: 0.12, green: 0.12, blue: 0.12)
+        }
+    }
+
+    var textColor: Color {
+        switch self {
+        case .light, .sepia, .green: return Color(red: 0.1, green: 0.1, blue: 0.1)
+        case .dark: return Color(red: 0.9, green: 0.9, blue: 0.9)
+        }
+    }
+
+    var secondaryTextColor: Color {
+        switch self {
+        case .light, .sepia, .green: return .secondary
+        case .dark: return Color(red: 0.6, green: 0.6, blue: 0.6)
+        }
+    }
+}
+
+// MARK: - Line Spacing
+
+enum LineSpacing: String, Codable, CaseIterable, Identifiable {
+    case compact = "compact"
+    case normal = "normal"
+    case relaxed = "relaxed"
+    case loose = "loose"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .compact: return "紧凑"
+        case .normal: return "标准"
+        case .relaxed: return "适中"
+        case .loose: return "宽松"
+        }
+    }
+
+    var multiplier: CGFloat {
+        switch self {
+        case .compact: return 1.2
+        case .normal: return 1.5
+        case .relaxed: return 1.8
+        case .loose: return 2.0
+        }
+    }
+}
+
+// MARK: - Margin Size
+
+enum MarginSize: String, Codable, CaseIterable, Identifiable {
+    case small = "small"
+    case medium = "medium"
+    case large = "large"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .small: return "小"
+        case .medium: return "中"
+        case .large: return "大"
+        }
+    }
+
+    var horizontalPadding: CGFloat {
+        switch self {
+        case .small: return 16
+        case .medium: return 24
+        case .large: return 40
+        }
+    }
+
+    var verticalPadding: CGFloat {
+        switch self {
+        case .small: return 20
+        case .medium: return 32
+        case .large: return 48
+        }
+    }
+}
+
+// MARK: - Page Flip Style
+
+enum PageFlipStyle: String, Codable, CaseIterable, Identifiable {
+    case horizontal = "horizontal"
+    case vertical = "vertical"
+    case curl = "curl"
+    case fade = "fade"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .horizontal: return "左右滑动"
+        case .vertical: return "上下滑动"
+        case .curl: return "仿真翻页"
+        case .fade: return "淡入淡出"
+        }
+    }
+}
+
+// MARK: - Highlight Color
+
+enum HighlightColor: String, Codable, CaseIterable, Identifiable {
+    case yellow = "yellow"
+    case green = "green"
+    case blue = "blue"
+    case pink = "pink"
+    case purple = "purple"
+    case orange = "orange"
+
+    var id: String { rawValue }
+
+    var color: Color {
+        switch self {
+        case .yellow: return Color(hex: "#FFEB3B")
+        case .green: return Color(hex: "#4CAF50")
+        case .blue: return Color(hex: "#2196F3")
+        case .pink: return Color(hex: "#E91E63")
+        case .purple: return Color(hex: "#9C27B0")
+        case .orange: return Color(hex: "#FF9800")
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .yellow: return "黄色"
+        case .green: return "绿色"
+        case .blue: return "蓝色"
+        case .pink: return "粉色"
+        case .purple: return "紫色"
+        case .orange: return "橙色"
+        }
+    }
+}
+
+// MARK: - Underline Model (API-compatible)
+
+/// Represents a text underline/highlight from the API
+/// Matches the backend schema for ebook_underlines and magazine_underlines
+struct Underline: Identifiable, Codable {
+    let id: Int
+    let ebookId: Int?
+    let magazineId: Int?
+    let userId: Int?
+    let text: String?
+    let paragraph: Int?         // Used for page number in PDFs
+    let chapterIndex: Int?
+    let paragraphIndex: Int?
+    let startOffset: Int?
+    let endOffset: Int?
+    let cfiRange: String?       // For EPUB positioning
+    let pageNumber: Int?        // For magazine underlines
+    let ideaCount: Int?
+    let createdAt: String?
+
+    /// Computed page number (works for both ebook and magazine)
+    var effectivePageNumber: Int? {
+        pageNumber ?? paragraph
+    }
+}
+
+// MARK: - API Response Types
+
+struct UnderlineListResponse: Codable {
+    let data: [Underline]
+}
+
+struct UnderlineResponse: Codable {
+    let data: Underline
+}
+
+struct DeleteResponse: Codable {
+    let success: Bool?
+}
+
+// MARK: - Highlight Model (Local UI representation)
+
+/// Local representation of a highlight for UI display
+/// Can be created from Underline API response
+struct Highlight: Identifiable {
+    let id: Int
+    let bookId: Int
+    let bookType: String        // "ebook" or "magazine"
+    let userId: Int
+    let text: String
+    let pageNumber: Int?
+    let chapterIndex: Int?
+    let paragraphIndex: Int?
+    let startOffset: Int?
+    let endOffset: Int?
+    let cfiRange: String?
+    var color: HighlightColor
+    var note: String?
+    let ideaCount: Int
+    let createdAt: Date?
+
+    /// Create from API Underline response
+    init(from underline: Underline, bookType: String) {
+        self.id = underline.id
+        self.bookId = underline.ebookId ?? underline.magazineId ?? 0
+        self.bookType = bookType
+        self.userId = underline.userId ?? 0
+        self.text = underline.text ?? ""
+        self.pageNumber = underline.effectivePageNumber
+        self.chapterIndex = underline.chapterIndex
+        self.paragraphIndex = underline.paragraphIndex
+        self.startOffset = underline.startOffset
+        self.endOffset = underline.endOffset
+        self.cfiRange = underline.cfiRange
+        self.color = .yellow // Default color
+        self.note = nil
+        self.ideaCount = underline.ideaCount ?? 0
+
+        if let dateStr = underline.createdAt {
+            let formatter = ISO8601DateFormatter()
+            self.createdAt = formatter.date(from: dateStr)
+        } else {
+            self.createdAt = nil
+        }
+    }
+
+    /// Create a new local highlight (before saving to API)
+    init(bookId: Int, bookType: String, userId: Int, text: String, pageNumber: Int?, color: HighlightColor = .yellow) {
+        self.id = 0 // Will be assigned by API
+        self.bookId = bookId
+        self.bookType = bookType
+        self.userId = userId
+        self.text = text
+        self.pageNumber = pageNumber
+        self.chapterIndex = nil
+        self.paragraphIndex = nil
+        self.startOffset = nil
+        self.endOffset = nil
+        self.cfiRange = nil
+        self.color = color
+        self.note = nil
+        self.ideaCount = 0
+        self.createdAt = Date()
+    }
+}
+
+// MARK: - Table of Contents
+
+/// Represents a chapter/section in book navigation
+struct TOCItem: Identifiable {
+    let id: String
+    let title: String
+    let level: Int              // Nesting level (0 = top level)
+    let pageNumber: Int?        // For PDF
+    let href: String?           // For EPUB (chapter file reference)
+    let children: [TOCItem]
+
+    init(id: String = UUID().uuidString, title: String, level: Int = 0, pageNumber: Int? = nil, href: String? = nil, children: [TOCItem] = []) {
+        self.id = id
+        self.title = title
+        self.level = level
+        self.pageNumber = pageNumber
+        self.href = href
+        self.children = children
+    }
+}
+
+// MARK: - Reading Progress
+
+/// Tracks current reading position
+struct ReadingPosition: Codable, Equatable {
+    let bookId: Int
+    let bookType: String        // "ebook" or "magazine"
+    var currentPage: Int?       // For PDF
+    var totalPages: Int?
+    var cfi: String?            // For EPUB (Canonical Fragment Identifier)
+    var chapterIndex: Int?
+    var chapterTitle: String?
+    var progress: Double        // 0.0 - 1.0
+
+    var formattedProgress: String {
+        "\(Int(progress * 100))%"
+    }
+
+    var pageDisplay: String? {
+        guard let current = currentPage, let total = totalPages else { return nil }
+        return "第 \(current) / \(total) 页"
+    }
+}
+
+// MARK: - Settings Storage Helper
+
+/// Helper class for persisting reading settings
+class ReadingSettingsStore: ObservableObject {
+    static let shared = ReadingSettingsStore()
+
+    private let key = "reading_settings"
+
+    @Published var settings: ReadingSettings {
+        didSet {
+            save()
+        }
+    }
+
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decoded = try? JSONDecoder().decode(ReadingSettings.self, from: data) {
+            settings = decoded
+        } else {
+            settings = .default
+        }
+    }
+
+    private func save() {
+        if let encoded = try? JSONEncoder().encode(settings) {
+            UserDefaults.standard.set(encoded, forKey: key)
+        }
+    }
+
+    func reset() {
+        settings = .default
+    }
+}

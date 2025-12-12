@@ -3,7 +3,7 @@
 > **Version:** 1.0
 > **Date:** 2025-12-11
 > **Status:** Draft - Pending Approval
-> **Reference:** WeChat Reading (微信读书) Book Detail UI
+> **Reference:** WeChat Reading Book Detail UI
 
 ---
 
@@ -28,7 +28,7 @@
 
 ### 1.1 Objective
 
-Transform the current minimal book detail page into a feature-rich, socially-engaging experience similar to WeChat Reading (微信读书), including:
+Transform the current minimal book detail page into a feature-rich, socially-engaging experience, including:
 
 - Rich book metadata (author, description, publisher, etc.)
 - Social features (reviews, ratings, popular highlights)

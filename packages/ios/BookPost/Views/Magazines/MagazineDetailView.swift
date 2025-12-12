@@ -70,7 +70,13 @@ struct MagazineDetailView: View {
         }
         .fullScreenCover(isPresented: $showReader) {
             if let magazine = magazine {
-                PDFReaderView(type: "magazine", id: magazine.id, title: magazine.title)
+                ReaderContainerView(
+                    bookType: "magazine",
+                    bookId: magazine.id,
+                    title: magazine.title,
+                    fileType: "pdf",  // Magazines are always PDF
+                    coverUrl: magazine.coverUrl
+                )
             }
         }
     }

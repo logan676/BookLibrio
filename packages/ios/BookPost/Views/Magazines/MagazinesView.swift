@@ -97,15 +97,6 @@ struct MagazinesView: View {
                     .padding(.vertical, 8)
                 }
 
-                HStack {
-                    Text(L10n.Magazines.count(viewModel.total))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-
                 Group {
                     if viewModel.isLoading && viewModel.magazines.isEmpty {
                         LoadingView()

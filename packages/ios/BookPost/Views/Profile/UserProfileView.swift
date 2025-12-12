@@ -24,7 +24,7 @@ struct UserProfileView: View {
                 profileContent(data)
             }
         }
-        .navigationTitle(profileData?.profile.username ?? "用户资料")
+        .navigationTitle(profileData?.profile.username ?? L10n.UserProfile.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadProfile()
@@ -39,11 +39,11 @@ struct UserProfileView: View {
     @ViewBuilder
     private func errorView(_ error: String) -> some View {
         ContentUnavailableView {
-            Label("加载失败", systemImage: "exclamationmark.triangle")
+            Label(L10n.UserProfile.loadFailed, systemImage: "exclamationmark.triangle")
         } description: {
             Text(error)
         } actions: {
-            Button("重试") {
+            Button(L10n.Common.retry) {
                 Task { await loadProfile() }
             }
         }
@@ -100,7 +100,7 @@ struct UserProfileView: View {
                     VStack(spacing: 4) {
                         Text("\(stats.followersCount)")
                             .font(.headline)
-                        Text("粉丝")
+                        Text(L10n.UserProfile.followers)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -111,7 +111,7 @@ struct UserProfileView: View {
                     VStack(spacing: 4) {
                         Text("\(stats.followingCount)")
                             .font(.headline)
-                        Text("关注")
+                        Text(L10n.UserProfile.following)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -121,7 +121,7 @@ struct UserProfileView: View {
 
             // Mutual follow badge
             if stats.isFollowedBy && !isOwnProfile {
-                Label("互相关注", systemImage: "arrow.left.arrow.right")
+                Label(L10n.UserProfile.mutualFollow, systemImage: "arrow.left.arrow.right")
                     .font(.caption)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -143,21 +143,21 @@ struct UserProfileView: View {
         ], spacing: 12) {
             statCard(
                 value: profile.formattedReadingDuration,
-                label: "阅读时长",
+                label: L10n.UserProfile.readingTime,
                 icon: "clock.fill",
                 color: .blue
             )
 
             statCard(
                 value: "\(profile.booksFinishedCount)",
-                label: "读完书籍",
+                label: L10n.UserProfile.booksFinished,
                 icon: "book.closed.fill",
                 color: .green
             )
 
             statCard(
-                value: "\(profile.currentStreakDays)天",
-                label: "连续阅读",
+                value: "\(profile.currentStreakDays) \(L10n.Stats.days)",
+                label: L10n.UserProfile.streak,
                 icon: "flame.fill",
                 color: .orange
             )
@@ -193,7 +193,7 @@ struct UserProfileView: View {
         } label: {
             HStack {
                 Image(systemName: stats.isFollowing ? "person.badge.minus" : "person.badge.plus")
-                Text(stats.isFollowing ? "取消关注" : "关注")
+                Text(stats.isFollowing ? L10n.UserProfile.unfollow : L10n.UserProfile.follow)
             }
             .fontWeight(.semibold)
             .frame(maxWidth: .infinity)
@@ -212,7 +212,7 @@ struct UserProfileView: View {
         VStack(spacing: 0) {
             NavigationLink(destination: UserActivitiesView(userId: userId)) {
                 HStack {
-                    Label("动态", systemImage: "bubble.left.and.bubble.right")
+                    Label(L10n.Activity.title, systemImage: "bubble.left.and.bubble.right")
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundColor(.secondary)

@@ -1415,4 +1415,748 @@ async function updateBookStats(bookType: string, bookId: number) {
     })
 }
 
+// ============================================
+// Popular Highlights Endpoint
+// ============================================
+
+const PopularHighlightSchema = z.object({
+  text: z.string(),
+  highlighterCount: z.number(),
+  topHighlighters: z.array(z.object({
+    username: z.string(),
+    avatar: z.string().nullable(),
+  })),
+  chapterIndex: z.number().nullable(),
+  position: z.string().nullable(),
+})
+
+const getPopularHighlightsRoute = createRoute({
+  method: 'get',
+  path: '/:type/:id/highlights/popular',
+  tags: ['Book Detail'],
+  summary: 'Get popular highlights for a book',
+  description: 'Returns highlights that multiple users have made, sorted by popularity',
+  request: {
+    params: z.object({
+      type: z.enum(['ebook', 'magazine']),
+      id: z.coerce.number(),
+    }),
+    query: z.object({
+      limit: z.coerce.number().default(10),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Popular highlights',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(PopularHighlightSchema),
+            total: z.number(),
+          }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(getPopularHighlightsRoute, async (c) => {
+  const { type, id } = c.req.valid('param')
+  const { limit } = c.req.valid('query')
+
+  // Import the underlines tables dynamically based on type
+  const { ebookUnderlines, magazineUnderlines } = await import('../db/schema')
+
+  let highlights: any[] = []
+  let total = 0
+
+  if (type === 'ebook') {
+    // Aggregate ebook highlights by text
+    const result = await db
+      .select({
+        text: ebookUnderlines.text,
+        cfiRange: ebookUnderlines.cfiRange,
+        chapterIndex: ebookUnderlines.chapterIndex,
+        count: sql<number>`count(distinct ${ebookUnderlines.userId})::int`,
+        usernames: sql<string[]>`array_agg(distinct ${users.username})`,
+      })
+      .from(ebookUnderlines)
+      .innerJoin(users, eq(ebookUnderlines.userId, users.id))
+      .where(
+        and(
+          eq(ebookUnderlines.ebookId, id),
+          sql`${ebookUnderlines.text} is not null`,
+          sql`length(${ebookUnderlines.text}) > 20`
+        )
+      )
+      .groupBy(ebookUnderlines.text, ebookUnderlines.cfiRange, ebookUnderlines.chapterIndex)
+      .having(sql`count(distinct ${ebookUnderlines.userId}) >= 2`)
+      .orderBy(desc(sql`count(distinct ${ebookUnderlines.userId})`))
+      .limit(limit)
+
+    highlights = result.map(r => ({
+      text: r.text,
+      highlighterCount: r.count,
+      topHighlighters: (r.usernames || []).slice(0, 3).map(u => ({
+        username: u,
+        avatar: null, // Would need separate query for avatars
+      })),
+      chapterIndex: r.chapterIndex,
+      position: r.cfiRange,
+    }))
+
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(
+        db
+          .select({ text: ebookUnderlines.text })
+          .from(ebookUnderlines)
+          .where(
+            and(
+              eq(ebookUnderlines.ebookId, id),
+              sql`${ebookUnderlines.text} is not null`,
+              sql`length(${ebookUnderlines.text}) > 20`
+            )
+          )
+          .groupBy(ebookUnderlines.text)
+          .having(sql`count(distinct ${ebookUnderlines.userId}) >= 2`)
+          .as('popular')
+      )
+    total = countResult?.count || 0
+
+  } else {
+    // Aggregate magazine highlights by text
+    const result = await db
+      .select({
+        text: magazineUnderlines.text,
+        pageNumber: magazineUnderlines.pageNumber,
+        count: sql<number>`count(distinct ${magazineUnderlines.userId})::int`,
+        usernames: sql<string[]>`array_agg(distinct ${users.username})`,
+      })
+      .from(magazineUnderlines)
+      .innerJoin(users, eq(magazineUnderlines.userId, users.id))
+      .where(
+        and(
+          eq(magazineUnderlines.magazineId, id),
+          sql`${magazineUnderlines.text} is not null`,
+          sql`length(${magazineUnderlines.text}) > 20`
+        )
+      )
+      .groupBy(magazineUnderlines.text, magazineUnderlines.pageNumber)
+      .having(sql`count(distinct ${magazineUnderlines.userId}) >= 2`)
+      .orderBy(desc(sql`count(distinct ${magazineUnderlines.userId})`))
+      .limit(limit)
+
+    highlights = result.map(r => ({
+      text: r.text,
+      highlighterCount: r.count,
+      topHighlighters: (r.usernames || []).slice(0, 3).map(u => ({
+        username: u,
+        avatar: null,
+      })),
+      chapterIndex: r.pageNumber,
+      position: null,
+    }))
+
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(
+        db
+          .select({ text: magazineUnderlines.text })
+          .from(magazineUnderlines)
+          .where(
+            and(
+              eq(magazineUnderlines.magazineId, id),
+              sql`${magazineUnderlines.text} is not null`,
+              sql`length(${magazineUnderlines.text}) > 20`
+            )
+          )
+          .groupBy(magazineUnderlines.text)
+          .having(sql`count(distinct ${magazineUnderlines.userId}) >= 2`)
+          .as('popular')
+      )
+    total = countResult?.count || 0
+  }
+
+  return c.json({
+    data: highlights,
+    total,
+  })
+})
+
+// ============================================
+// Related Books Endpoint
+// ============================================
+
+const RelatedBookSchema = z.object({
+  id: z.number(),
+  type: z.enum(['ebook', 'magazine']),
+  title: z.string(),
+  author: z.string().nullable(),
+  coverUrl: z.string().nullable(),
+  relationType: z.string(),
+  similarityScore: z.number().nullable(),
+})
+
+const getRelatedBooksRoute = createRoute({
+  method: 'get',
+  path: '/:type/:id/related',
+  tags: ['Book Detail'],
+  summary: 'Get related books',
+  description: 'Returns books related by author, publisher, category, or reader behavior',
+  request: {
+    params: z.object({
+      type: z.enum(['ebook', 'magazine']),
+      id: z.coerce.number(),
+    }),
+    query: z.object({
+      limit: z.coerce.number().default(8),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Related books grouped by relation type',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.object({
+              sameAuthor: z.array(RelatedBookSchema),
+              samePublisher: z.array(RelatedBookSchema),
+              sameCategory: z.array(RelatedBookSchema),
+              similarContent: z.array(RelatedBookSchema),
+              readersAlsoRead: z.array(RelatedBookSchema),
+            }),
+          }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(getRelatedBooksRoute, async (c) => {
+  const { type, id } = c.req.valid('param')
+  const { limit } = c.req.valid('query')
+
+  const { relatedBooks } = await import('../db/schema')
+
+  // First check pre-computed relations
+  const precomputed = await db
+    .select()
+    .from(relatedBooks)
+    .where(
+      and(
+        eq(relatedBooks.sourceBookType, type),
+        eq(relatedBooks.sourceBookId, id),
+        eq(relatedBooks.isActive, true)
+      )
+    )
+    .orderBy(desc(relatedBooks.similarityScore))
+    .limit(limit * 5) // Get more to group by type
+
+  // Group by relation type
+  const grouped: Record<string, typeof precomputed> = {
+    same_author: [],
+    same_publisher: [],
+    same_category: [],
+    similar_content: [],
+    readers_also_read: [],
+  }
+
+  for (const rel of precomputed) {
+    if (grouped[rel.relationType]) {
+      grouped[rel.relationType].push(rel)
+    }
+  }
+
+  // Fetch book details for each group
+  async function fetchBookDetails(relations: typeof precomputed, maxItems: number) {
+    const limited = relations.slice(0, maxItems)
+    const results: z.infer<typeof RelatedBookSchema>[] = []
+
+    for (const rel of limited) {
+      let book: any = null
+
+      if (rel.relatedBookType === 'ebook') {
+        const [result] = await db
+          .select({
+            id: ebooks.id,
+            title: ebooks.title,
+            author: ebooks.author,
+            coverUrl: ebooks.coverUrl,
+          })
+          .from(ebooks)
+          .where(eq(ebooks.id, rel.relatedBookId))
+          .limit(1)
+        book = result
+      } else {
+        const [result] = await db
+          .select({
+            id: magazines.id,
+            title: magazines.title,
+            coverUrl: magazines.coverUrl,
+          })
+          .from(magazines)
+          .where(eq(magazines.id, rel.relatedBookId))
+          .limit(1)
+        book = result ? { ...result, author: null } : null
+      }
+
+      if (book) {
+        results.push({
+          id: book.id,
+          type: rel.relatedBookType as 'ebook' | 'magazine',
+          title: book.title,
+          author: book.author || null,
+          coverUrl: book.coverUrl || null,
+          relationType: rel.relationType,
+          similarityScore: rel.similarityScore ? parseFloat(rel.similarityScore) : null,
+        })
+      }
+    }
+
+    return results
+  }
+
+  // If no precomputed relations, fall back to dynamic lookup
+  if (precomputed.length === 0 && type === 'ebook') {
+    // Get the source book details for dynamic matching
+    const [sourceBook] = await db
+      .select()
+      .from(ebooks)
+      .where(eq(ebooks.id, id))
+      .limit(1)
+
+    if (sourceBook) {
+      // Same author
+      if (sourceBook.author) {
+        const sameAuthorBooks = await db
+          .select({
+            id: ebooks.id,
+            title: ebooks.title,
+            author: ebooks.author,
+            coverUrl: ebooks.coverUrl,
+          })
+          .from(ebooks)
+          .where(
+            and(
+              eq(ebooks.author, sourceBook.author),
+              sql`${ebooks.id} != ${id}`
+            )
+          )
+          .limit(4)
+
+        grouped.same_author = sameAuthorBooks.map(b => ({
+          id: 0,
+          sourceBookType: type,
+          sourceBookId: id,
+          relatedBookType: 'ebook',
+          relatedBookId: b.id,
+          relationType: 'same_author',
+          similarityScore: '1.0000',
+          confidence: '1.0000',
+          computedAt: new Date(),
+          isActive: true,
+        })) as any
+      }
+
+      // Same category
+      if (sourceBook.categoryId) {
+        const sameCategoryBooks = await db
+          .select({
+            id: ebooks.id,
+            title: ebooks.title,
+            author: ebooks.author,
+            coverUrl: ebooks.coverUrl,
+          })
+          .from(ebooks)
+          .where(
+            and(
+              eq(ebooks.categoryId, sourceBook.categoryId),
+              sql`${ebooks.id} != ${id}`
+            )
+          )
+          .limit(4)
+
+        grouped.same_category = sameCategoryBooks.map(b => ({
+          id: 0,
+          sourceBookType: type,
+          sourceBookId: id,
+          relatedBookType: 'ebook',
+          relatedBookId: b.id,
+          relationType: 'same_category',
+          similarityScore: '0.6000',
+          confidence: '1.0000',
+          computedAt: new Date(),
+          isActive: true,
+        })) as any
+      }
+    }
+  }
+
+  // Fetch details for each group
+  const [sameAuthor, samePublisher, sameCategory, similarContent, readersAlsoRead] = await Promise.all([
+    fetchBookDetails(grouped.same_author, limit),
+    fetchBookDetails(grouped.same_publisher, limit),
+    fetchBookDetails(grouped.same_category, limit),
+    fetchBookDetails(grouped.similar_content, limit),
+    fetchBookDetails(grouped.readers_also_read, limit),
+  ])
+
+  return c.json({
+    data: {
+      sameAuthor,
+      samePublisher,
+      sameCategory,
+      similarContent,
+      readersAlsoRead,
+    },
+  })
+})
+
+// ============================================
+// AI Summary Endpoint
+// ============================================
+
+const AISummarySchema = z.object({
+  summaryType: z.string(),
+  content: z.any(),
+  generatedAt: z.string().nullable(),
+})
+
+const getAISummaryRoute = createRoute({
+  method: 'get',
+  path: '/:type/:id/ai-summary',
+  tags: ['Book Detail'],
+  summary: 'Get AI-generated book summary',
+  description: 'Returns cached AI summary or generates one if not available',
+  request: {
+    params: z.object({
+      type: z.enum(['ebook', 'magazine']),
+      id: z.coerce.number(),
+    }),
+    query: z.object({
+      summaryType: z.enum(['overview', 'key_points', 'topics', 'reading_guide', 'vocabulary']).default('topics'),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'AI-generated summary',
+      content: {
+        'application/json': {
+          schema: z.object({ data: AISummarySchema.nullable() }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(getAISummaryRoute, async (c) => {
+  const { type, id } = c.req.valid('param')
+  const { summaryType } = c.req.valid('query')
+
+  const { aiBookSummaries } = await import('../db/schema')
+
+  // Check for cached summary
+  const [cached] = await db
+    .select()
+    .from(aiBookSummaries)
+    .where(
+      and(
+        eq(aiBookSummaries.bookType, type),
+        eq(aiBookSummaries.bookId, id),
+        eq(aiBookSummaries.summaryType, summaryType)
+      )
+    )
+    .limit(1)
+
+  if (cached) {
+    // Check if expired
+    if (!cached.expiresAt || new Date(cached.expiresAt) > new Date()) {
+      return c.json({
+        data: {
+          summaryType: cached.summaryType,
+          content: cached.content,
+          generatedAt: cached.generatedAt?.toISOString() || null,
+        },
+      })
+    }
+  }
+
+  // No cached summary - check if we should generate one
+  // For now, return null and let background job handle generation
+  // In production, you might want to generate on-demand for specific types
+
+  return c.json({
+    data: null,
+  })
+})
+
+// POST endpoint to trigger AI summary generation (admin only in production)
+const generateAISummaryRoute = createRoute({
+  method: 'post',
+  path: '/:type/:id/ai-summary',
+  tags: ['Book Detail'],
+  summary: 'Generate AI summary for a book',
+  description: 'Triggers AI summary generation. May take a few seconds.',
+  request: {
+    params: z.object({
+      type: z.enum(['ebook', 'magazine']),
+      id: z.coerce.number(),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            summaryType: z.enum(['overview', 'key_points', 'topics', 'reading_guide', 'vocabulary']),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Summary generated',
+      content: {
+        'application/json': {
+          schema: z.object({ data: AISummarySchema }),
+        },
+      },
+    },
+    503: {
+      description: 'AI service unavailable',
+      content: {
+        'application/json': {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+})
+
+authApp.openapi(generateAISummaryRoute, async (c) => {
+  const { type, id } = c.req.valid('param')
+  const { summaryType } = c.req.valid('json')
+
+  const { aiBookSummaries } = await import('../db/schema')
+  const { generateSummary } = await import('../services/claudeAI')
+
+  // Get book details
+  let bookTitle = ''
+  let bookDescription: string | null = null
+
+  if (type === 'ebook') {
+    const [book] = await db.select().from(ebooks).where(eq(ebooks.id, id)).limit(1)
+    if (book) {
+      bookTitle = book.title
+      bookDescription = book.description
+    }
+  } else {
+    const [book] = await db.select().from(magazines).where(eq(magazines.id, id)).limit(1)
+    if (book) {
+      bookTitle = book.title
+      bookDescription = book.description
+    }
+  }
+
+  if (!bookTitle) {
+    return c.json({
+      error: { code: 'NOT_FOUND', message: 'Book not found' },
+    }, 404)
+  }
+
+  // Generate summary
+  const result = await generateSummary(bookTitle, bookDescription, null, summaryType)
+
+  if (!result) {
+    return c.json({
+      error: { code: 'AI_UNAVAILABLE', message: 'AI service is currently unavailable' },
+    }, 503)
+  }
+
+  // Cache the result
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + 30) // Expire in 30 days
+
+  await db
+    .insert(aiBookSummaries)
+    .values({
+      bookType: type,
+      bookId: id,
+      summaryType,
+      content: result.content,
+      modelUsed: result.modelUsed,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      generationCostUsd: result.costUsd.toFixed(6),
+      generatedAt: new Date(),
+      expiresAt,
+    })
+    .onConflictDoUpdate({
+      target: [aiBookSummaries.bookType, aiBookSummaries.bookId, aiBookSummaries.summaryType],
+      set: {
+        content: result.content,
+        modelUsed: result.modelUsed,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        generationCostUsd: result.costUsd.toFixed(6),
+        generatedAt: new Date(),
+        expiresAt,
+      },
+    })
+
+  return c.json({
+    data: {
+      summaryType,
+      content: result.content,
+      generatedAt: new Date().toISOString(),
+    },
+  })
+})
+
+// ============================================
+// Book Lists for a Book Endpoint
+// ============================================
+
+const BookListPreviewSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  curator: z.object({
+    username: z.string(),
+    avatar: z.string().nullable(),
+  }),
+  bookCount: z.number(),
+  followerCount: z.number(),
+  previewBooks: z.array(z.object({
+    id: z.number(),
+    coverUrl: z.string().nullable(),
+  })),
+})
+
+const getBookListsRoute = createRoute({
+  method: 'get',
+  path: '/:type/:id/lists',
+  tags: ['Book Detail'],
+  summary: 'Get book lists containing this book',
+  description: 'Returns user-curated lists that include this book',
+  request: {
+    params: z.object({
+      type: z.enum(['ebook', 'magazine']),
+      id: z.coerce.number(),
+    }),
+    query: z.object({
+      limit: z.coerce.number().default(5),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Book lists containing this book',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(BookListPreviewSchema),
+            total: z.number(),
+          }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(getBookListsRoute, async (c) => {
+  const { type, id } = c.req.valid('param')
+  const { limit } = c.req.valid('query')
+
+  const { bookLists, bookListItems } = await import('../db/schema')
+
+  // Find lists containing this book
+  const listsWithBook = await db
+    .select({
+      listId: bookListItems.listId,
+      list: bookLists,
+      curator: {
+        username: users.username,
+        avatar: users.avatar,
+      },
+    })
+    .from(bookListItems)
+    .innerJoin(bookLists, eq(bookListItems.listId, bookLists.id))
+    .innerJoin(users, eq(bookLists.userId, users.id))
+    .where(
+      and(
+        eq(bookListItems.bookType, type),
+        eq(bookListItems.bookId, id),
+        eq(bookLists.isPublic, true)
+      )
+    )
+    .orderBy(desc(bookLists.followerCount))
+    .limit(limit)
+
+  // Get preview books for each list
+  const results = await Promise.all(
+    listsWithBook.map(async ({ list, curator }) => {
+      // Get first 4 books from this list
+      const previewItems = await db
+        .select({
+          bookType: bookListItems.bookType,
+          bookId: bookListItems.bookId,
+        })
+        .from(bookListItems)
+        .where(eq(bookListItems.listId, list.id))
+        .orderBy(bookListItems.position)
+        .limit(4)
+
+      const previewBooks = await Promise.all(
+        previewItems.map(async (item) => {
+          if (item.bookType === 'ebook') {
+            const [book] = await db
+              .select({ id: ebooks.id, coverUrl: ebooks.coverUrl })
+              .from(ebooks)
+              .where(eq(ebooks.id, item.bookId))
+              .limit(1)
+            return book || { id: item.bookId, coverUrl: null }
+          } else {
+            const [book] = await db
+              .select({ id: magazines.id, coverUrl: magazines.coverUrl })
+              .from(magazines)
+              .where(eq(magazines.id, item.bookId))
+              .limit(1)
+            return book || { id: item.bookId, coverUrl: null }
+          }
+        })
+      )
+
+      return {
+        id: list.id,
+        title: list.title,
+        curator,
+        bookCount: list.bookCount || 0,
+        followerCount: list.followerCount || 0,
+        previewBooks,
+      }
+    })
+  )
+
+  // Get total count of lists containing this book
+  const [countResult] = await db
+    .select({ count: sql<number>`count(distinct ${bookListItems.listId})::int` })
+    .from(bookListItems)
+    .innerJoin(bookLists, eq(bookListItems.listId, bookLists.id))
+    .where(
+      and(
+        eq(bookListItems.bookType, type),
+        eq(bookListItems.bookId, id),
+        eq(bookLists.isPublic, true)
+      )
+    )
+
+  return c.json({
+    data: results,
+    total: countResult?.count || 0,
+  })
+})
+
 export { app as bookDetailRoutes }

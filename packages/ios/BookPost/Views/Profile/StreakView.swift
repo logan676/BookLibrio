@@ -70,7 +70,7 @@ struct StreakView: View {
             }
             .padding()
         }
-        .navigationTitle("阅读连续")
+        .navigationTitle(L10n.Profile.readingStreak)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadStats()
@@ -106,10 +106,10 @@ struct StreakView: View {
                 }
 
                 VStack(spacing: 2) {
-                    Text("当前连续")
+                    Text(L10n.Stats.currentStreak)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("天")
+                    Text(L10n.Stats.days)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -143,10 +143,10 @@ struct StreakView: View {
                 }
 
                 VStack(spacing: 2) {
-                    Text("最高记录")
+                    Text(L10n.Stats.longestStreak)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("天")
+                    Text(L10n.Stats.days)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -163,7 +163,7 @@ struct StreakView: View {
 
     private var readingStatsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("总览")
+            Text(L10n.Stats.overview)
                 .font(.headline)
 
             HStack {
@@ -171,7 +171,7 @@ struct StreakView: View {
                     icon: "clock.fill",
                     iconColor: .blue,
                     value: formatDuration(totalStats?.summary.totalDuration ?? 0),
-                    label: "总阅读时长"
+                    label: L10n.Stats.totalReadingTime
                 )
 
                 Divider()
@@ -181,7 +181,7 @@ struct StreakView: View {
                     icon: "calendar",
                     iconColor: .green,
                     value: "\(totalStats?.summary.totalDays ?? 0)",
-                    label: "阅读天数"
+                    label: L10n.Stats.readingDays
                 )
 
                 Divider()
@@ -191,7 +191,7 @@ struct StreakView: View {
                     icon: "book.fill",
                     iconColor: .purple,
                     value: "\(totalStats?.summary.booksFinished ?? 0)",
-                    label: "已读完"
+                    label: L10n.Stats.booksFinished
                 )
             }
         }
@@ -233,7 +233,7 @@ struct StreakView: View {
 
             // Weekday headers
             HStack(spacing: 4) {
-                ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { day in
+                ForEach([L10n.Stats.sun, L10n.Stats.mon, L10n.Stats.tue, L10n.Stats.wed, L10n.Stats.thu, L10n.Stats.fri, L10n.Stats.sat], id: \.self) { day in
                     Text(day)
                         .font(.caption2)
                         .foregroundColor(.secondary)
@@ -251,7 +251,7 @@ struct StreakView: View {
 
             // Legend
             HStack(spacing: 8) {
-                Text("少")
+                Text(L10n.Stats.less)
                     .font(.caption2)
                     .foregroundColor(.secondary)
 
@@ -261,7 +261,7 @@ struct StreakView: View {
                         .frame(width: 12, height: 12)
                 }
 
-                Text("多")
+                Text(L10n.Stats.more)
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

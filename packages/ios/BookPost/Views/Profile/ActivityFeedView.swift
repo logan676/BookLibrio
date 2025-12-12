@@ -15,8 +15,8 @@ struct ActivityFeedView: View {
 
         var displayName: String {
             switch self {
-            case .all: return "关注"
-            case .global: return "全站"
+            case .all: return L10n.Activity.following
+            case .global: return L10n.Activity.global
             }
         }
     }
@@ -24,7 +24,7 @@ struct ActivityFeedView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Type selector
-            Picker("动态类型", selection: $selectedType) {
+            Picker(L10n.Activity.title, selection: $selectedType) {
                 ForEach(FeedType.allCases, id: \.self) { type in
                     Text(type.displayName).tag(type)
                 }
@@ -41,7 +41,7 @@ struct ActivityFeedView: View {
                 activityList
             }
         }
-        .navigationTitle("动态")
+        .navigationTitle(L10n.Activity.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadActivities()
@@ -61,9 +61,9 @@ struct ActivityFeedView: View {
     @ViewBuilder
     private var emptyView: some View {
         ContentUnavailableView {
-            Label("暂无动态", systemImage: "bubble.left.and.bubble.right")
+            Label(L10n.Activity.empty, systemImage: "bubble.left.and.bubble.right")
         } description: {
-            Text(selectedType == .all ? "关注一些用户来查看他们的动态" : "还没有人分享动态")
+            Text(selectedType == .all ? L10n.Activity.followUsers : L10n.Activity.noActivity)
         }
     }
 
@@ -86,7 +86,7 @@ struct ActivityFeedView: View {
             }
 
             if hasMore {
-                Button("加载更多") {
+                Button(L10n.Activity.loadMore) {
                     Task { await loadMore() }
                 }
                 .frame(maxWidth: .infinity)
@@ -300,9 +300,9 @@ struct UserActivitiesView: View {
                 LoadingView()
             } else if activities.isEmpty {
                 ContentUnavailableView {
-                    Label("暂无动态", systemImage: "bubble.left.and.bubble.right")
+                    Label(L10n.Activity.empty, systemImage: "bubble.left.and.bubble.right")
                 } description: {
-                    Text("还没有分享任何动态")
+                    Text(L10n.Activity.noActivity)
                 }
             } else {
                 List {
@@ -318,7 +318,7 @@ struct UserActivitiesView: View {
                     }
 
                     if hasMore {
-                        Button("加载更多") {
+                        Button(L10n.Activity.loadMore) {
                             Task { await loadMore() }
                         }
                         .frame(maxWidth: .infinity)
@@ -328,7 +328,7 @@ struct UserActivitiesView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle("动态")
+        .navigationTitle(L10n.Activity.title)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadActivities()
