@@ -263,83 +263,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0332E7D71F7D9F12B59D41E6 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				946B229CF6D6A1C7643080F2 /* Profile */,
-				6EAC073184B2296BC230AED2 /* Reader */,
-				EF3F01D2DBE4F23780CBA787 /* Shared */,
-				C5E7FF8DBE4E00B7207BE4EF /* Store */,
-				EBE727A1934516DD2A8F0FB1 /* BookLists */,
-			);
-			name = Views;
-			sourceTree = "<group>";
-		};
-		2BF843644C95E4A5C4FD7FC2 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				9553999466AF980B5A4245A0 /* BookList.swift */,
-				E657812082C14524A787E310 /* Bookmark.swift */,
-			);
-			name = Models;
-			sourceTree = "<group>";
-		};
-		32402D86F55818FC5C02D1DB /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-				308D57B51EDF7734B062E2B0 /* ReaderDisplaySettingsStore.swift */,
-			);
-			name = Utilities;
-			sourceTree = "<group>";
-		};
-		3BC31F96044E6BC31C1EDB96 /* BookPost */ = {
-			isa = PBXGroup;
-			children = (
-				2BF843644C95E4A5C4FD7FC2 /* Models */,
-				32402D86F55818FC5C02D1DB /* Utilities */,
-				67974ADCC3CC8F5D0A984694 /* ViewModels */,
-				0332E7D71F7D9F12B59D41E6 /* Views */,
-			);
-			name = BookPost;
-			sourceTree = "<group>";
-		};
-		67974ADCC3CC8F5D0A984694 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				924E838E589FADB20DA16D20 /* BookListsViewModel.swift */,
-				F5E0123FEB06DD0A412C8FAF /* ProfileViewModel.swift */,
-			);
-			name = ViewModels;
-			sourceTree = "<group>";
-		};
-		6EAC073184B2296BC230AED2 /* Reader */ = {
-			isa = PBXGroup;
-			children = (
-				29296F4BACA66508F83E36D8 /* EPUBBookmarksView.swift */,
-				375ADCF9C4345084422C66BA /* EPUBNavigatorViewController.swift */,
-				0E4778EEBC3E1BF4762A56DC /* EPUBSearchView.swift */,
-				600D8DC5C1309F622ADA7022 /* FriendThoughtBubble.swift */,
-				E5C8F5067F67D13B385D6486 /* FriendThoughtsOverlay.swift */,
-				52B99FF43DB771DAD280A205 /* ReaderDisplayToggleSheet.swift */,
-				A6946993AC4359986F8BA92B /* ReaderMoreActionsSheet.swift */,
-				09D18147904048574E19F2DF /* ReaderTOCTabView.swift */,
-			);
-			name = Reader;
-			sourceTree = "<group>";
-		};
-		946B229CF6D6A1C7643080F2 /* Profile */ = {
-			isa = PBXGroup;
-			children = (
-				AE9730CF7F455F0D693F549C /* ProfileAssetsView.swift */,
-				F558D021EF8979D4D7BB2D0B /* ProfileCharts.swift */,
-				E33500B76637EEC8CF6A111E /* ReadingRecordsGridView.swift */,
-				5A5FA287476AF43000DBDE1C /* StatsShareCardView.swift */,
-				5EDFDE7A71134F5FAF808BEE /* TimelineMilestoneRow.swift */,
-				63A4F26EF330BBF6FE612D24 /* TimelineStatsView.swift */,
-			);
-			name = Profile;
-			sourceTree = "<group>";
-		};
 		APP /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -348,34 +271,6 @@
 				S003 /* MainTabView.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		C5E7FF8DBE4E00B7207BE4EF /* Store */ = {
-			isa = PBXGroup;
-			children = (
-				3A10D905C34F7450D3F983AA /* StoreSections.swift */,
-			);
-			name = Store;
-			sourceTree = "<group>";
-		};
-		EBE727A1934516DD2A8F0FB1 /* BookLists */ = {
-			isa = PBXGroup;
-			children = (
-				C9A89FFF34D1530680AEDCB8 /* AddToListSheet.swift */,
-				4E543190226CF26DFB2035E2 /* BookListCard.swift */,
-				D2654754B0E31AF7876E9C79 /* BookListDetailView.swift */,
-				89D276F13760B2798AF938E5 /* BookListsView.swift */,
-				5D4BAFE43CC065EE8A6AE0BE /* CreateBookListView.swift */,
-			);
-			name = BookLists;
-			sourceTree = "<group>";
-		};
-		EF3F01D2DBE4F23780CBA787 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				79C39C4F1E2EC2A2CB3F29B3 /* BookDetailSections.swift */,
-			);
-			name = Shared;
 			sourceTree = "<group>";
 		};
 		MAIN /* BookPost */ = {
@@ -436,7 +331,6 @@
 			children = (
 				MAIN /* BookPost */,
 				PRODUCTS /* Products */,
-				3BC31F96044E6BC31C1EDB96 /* BookPost */,
 			);
 			sourceTree = "<group>";
 		};
@@ -483,6 +377,7 @@
 				VIEWS_AI /* AI */,
 				VIEWS_AUDIOPLAYER /* AudioPlayer */,
 				VIEWS_AUTH /* Auth */,
+				VIEWS_BOOKLISTS /* BookLists */,
 				VIEWS_BOOKS /* Books */,
 				VIEWS_COMPONENTS /* Components */,
 				VIEWS_EBOOKS /* Ebooks */,
@@ -533,6 +428,18 @@
 				S021 /* RegisterView.swift */,
 			);
 			path = Auth;
+			sourceTree = "<group>";
+		};
+		VIEWS_BOOKLISTS /* BookLists */ = {
+			isa = PBXGroup;
+			children = (
+				C9A89FFF34D1530680AEDCB8 /* AddToListSheet.swift */,
+				4E543190226CF26DFB2035E2 /* BookListCard.swift */,
+				D2654754B0E31AF7876E9C79 /* BookListDetailView.swift */,
+				89D276F13760B2798AF938E5 /* BookListsView.swift */,
+				5D4BAFE43CC065EE8A6AE0BE /* CreateBookListView.swift */,
+			);
+			path = BookLists;
 			sourceTree = "<group>";
 		};
 		VIEWS_BOOKS /* Books */ = {
@@ -634,9 +541,15 @@
 				S046 /* FollowListView.swift */,
 				S044 /* LeaderboardView.swift */,
 				S043 /* MyBookshelfView.swift */,
+				AE9730CF7F455F0D693F549C /* ProfileAssetsView.swift */,
+				F558D021EF8979D4D7BB2D0B /* ProfileCharts.swift */,
 				S032 /* ProfileView.swift */,
+				E33500B76637EEC8CF6A111E /* ReadingRecordsGridView.swift */,
 				S033 /* ReadingStatsView.swift */,
+				5A5FA287476AF43000DBDE1C /* StatsShareCardView.swift */,
 				S050 /* StreakView.swift */,
+				5EDFDE7A71134F5FAF808BEE /* TimelineMilestoneRow.swift */,
+				63A4F26EF330BBF6FE612D24 /* TimelineStatsView.swift */,
 				S045 /* UserProfileView.swift */,
 			);
 			path = Profile;
@@ -646,10 +559,18 @@
 			isa = PBXGroup;
 			children = (
 				S057 /* EnhancedPDFReaderView.swift */,
+				29296F4BACA66508F83E36D8 /* EPUBBookmarksView.swift */,
+				375ADCF9C4345084422C66BA /* EPUBNavigatorViewController.swift */,
 				S059 /* EPUBReaderView.swift */,
+				0E4778EEBC3E1BF4762A56DC /* EPUBSearchView.swift */,
+				600D8DC5C1309F622ADA7022 /* FriendThoughtBubble.swift */,
+				E5C8F5067F67D13B385D6486 /* FriendThoughtsOverlay.swift */,
 				S034 /* PDFReaderView.swift */,
 				S056 /* ReaderContainerView.swift */,
+				52B99FF43DB771DAD280A205 /* ReaderDisplayToggleSheet.swift */,
+				A6946993AC4359986F8BA92B /* ReaderMoreActionsSheet.swift */,
 				S058 /* ReaderSettingsSheet.swift */,
+				09D18147904048574E19F2DF /* ReaderTOCTabView.swift */,
 				S066 /* TextSelectionMenu.swift */,
 			);
 			path = Reader;
@@ -675,6 +596,7 @@
 			isa = PBXGroup;
 			children = (
 				S039 /* BookDetailView.swift */,
+				79C39C4F1E2EC2A2CB3F29B3 /* BookDetailSections.swift */,
 				S040 /* ReviewFormView.swift */,
 			);
 			path = Shared;
@@ -698,6 +620,7 @@
 				S061 /* StoreHomeView.swift */,
 				S063 /* StoreRankingView.swift */,
 				S064 /* StoreSearchView.swift */,
+				3A10D905C34F7450D3F983AA /* StoreSections.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
