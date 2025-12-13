@@ -97,6 +97,32 @@ booklibrio/
 - OCR text extraction (Google Vision API)
 - Automatic metadata lookup (Google Books API)
 
+## Internationalization (i18n)
+
+BookLibrio supports multiple languages with comprehensive localization:
+
+| Platform | Languages | Keys | Implementation |
+|----------|-----------|------|----------------|
+| iOS | English, 简体中文 | 1,150+ | Type-safe L10n enums |
+| Web | English, 简体中文 | 140+ | React Context |
+
+### Supported Languages
+
+- 🇺🇸 **English** (en) - Full support
+- 🇨🇳 **简体中文** (zh-Hans) - Full support
+
+### Localization Coverage
+
+- ✅ All UI text and labels
+- ✅ Reader controls and settings
+- ✅ Navigation and tabs
+- ✅ Error messages and alerts
+- ✅ AI features and prompts
+- ✅ Social features
+- ✅ Membership and store
+
+> 📖 See [I18N Guide](docs/I18N_GUIDE.md) for adding new languages or contributing translations.
+
 ## Quick Start
 
 ### Prerequisites
@@ -287,7 +313,9 @@ Path-filtered workflows run only when relevant packages change:
 
 ## Documentation
 
+- [Development Plan](docs/DEVELOPMENT_PLAN.md) - 4-month development roadmap
 - [Deployment Architecture](docs/DEPLOYMENT_ARCHITECTURE.md) - Detailed deployment guide
+- [I18N Guide](docs/I18N_GUIDE.md) - Internationalization and localization guide
 - [Mobile Development](packages/mobile/README.md) - React Native app documentation
 - [Android Development](packages/android/README.md) - Android native app documentation
 - [iOS Development](packages/ios/README.md) - iOS native app documentation

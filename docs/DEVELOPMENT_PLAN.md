@@ -293,6 +293,50 @@ Week  1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16
 
 ---
 
-*文档版本: 1.0*
+## 🌐 国际化 (i18n) 现状
+
+### 当前支持
+
+| 平台 | 语言 | 字符串数 | 实现方式 |
+|------|------|----------|----------|
+| iOS | English, 简体中文 | 1,150+ | L10n.swift + Localizable.strings |
+| Web | English, 简体中文 | 140+ | React Context |
+
+### 关键文件
+
+**iOS:**
+
+- `packages/ios/BookPost/Utilities/L10n.swift` - 类型安全的本地化封装
+- `packages/ios/BookPost/Resources/en.lproj/Localizable.strings` - 英文
+- `packages/ios/BookPost/Resources/zh-Hans.lproj/Localizable.strings` - 简体中文
+
+**Web:**
+
+- `packages/web/src/i18n/index.tsx` - React Context 实现
+
+### 已覆盖功能
+
+- ✅ 所有 UI 文本和标签
+- ✅ 阅读器控制和设置
+- ✅ 导航和标签页
+- ✅ 错误消息和提示
+- ✅ AI 功能
+- ✅ 社交功能
+- ✅ 会员和商店
+
+### 未来计划
+
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| P2 | 添加繁体中文 (zh-Hant) | 计划中 |
+| P3 | 添加日语支持 | 待定 |
+| P3 | 添加韩语支持 | 待定 |
+| P3 | 日期/时间本地化格式 | 待定 |
+
+> 📖 详细指南请参考 [I18N Guide](I18N_GUIDE.md)
+
+---
+
+*文档版本: 1.1*
 *创建日期: 2024-12*
-*更新日期: -*
+*更新日期: 2024-12*
