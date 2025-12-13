@@ -219,84 +219,16 @@ struct BadgeCardView: View {
             showDetail = true
         } label: {
             VStack(spacing: 8) {
-                // Badge icon with 3D effect
-                ZStack {
-                    // Shadow layer for 3D effect
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [backgroundColor.opacity(0.3), backgroundColor.opacity(0.1)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .frame(width: 64, height: 64)
-                        .offset(y: 4)
-                        .blur(radius: 4)
-
-                    // Main badge circle with gradient
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: isEarned
-                                    ? [backgroundColor, backgroundColor.opacity(0.7)]
-                                    : [Color.gray.opacity(0.5), Color.gray.opacity(0.3)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 60, height: 60)
-                        .overlay(
-                            // Inner highlight for 3D effect
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [.white.opacity(0.4), .clear],
-                                        startPoint: .topLeading,
-                                        endPoint: .center
-                                    )
-                                )
-                                .frame(width: 58, height: 58)
-                        )
-                        .shadow(color: backgroundColor.opacity(isEarned ? 0.5 : 0.2), radius: 8, x: 0, y: 4)
-
-                    // Icon
-                    Image(systemName: iconName)
-                        .font(.title2)
-                        .foregroundStyle(
-                            isEarned
-                                ? LinearGradient(colors: [.white, .white.opacity(0.9)], startPoint: .top, endPoint: .bottom)
-                                : LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0.5)], startPoint: .top, endPoint: .bottom)
-                        )
-
-                    // Level badge
-                    if level > 1 {
-                        Text("Lv.\(level)")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(Color.orange)
-                            .cornerRadius(4)
-                            .offset(x: 22, y: -22)
-                    }
-
-                    // Progress ring for in-progress badges
-                    if case .inProgress(let b) = badge {
-                        Circle()
-                            .trim(from: 0, to: b.progress.percentage / 100)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [.orange, .yellow],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                ),
-                                style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                            )
-                            .frame(width: 68, height: 68)
-                            .rotationEffect(.degrees(-90))
-                    }
-                }
+                // 3D Badge icon
+                Badge3DView(
+                    iconName: iconName,
+                    color: backgroundColor,
+                    isEarned: isEarned,
+                    level: level,
+                    size: 60,
+                    showProgress: !isEarned,
+                    progress: progressPercentage
+                )
 
                 // Badge name
                 Text(name)
@@ -319,7 +251,7 @@ struct BadgeCardView: View {
             }
         }
         .buttonStyle(.plain)
-        .opacity(isEarned ? 1 : 0.8)
+        .opacity(isEarned ? 1 : 0.85)
         .sheet(isPresented: $showDetail) {
             EnhancedBadgeDetailSheet(badge: badge)
         }
@@ -374,6 +306,13 @@ struct BadgeCardView: View {
         case .inProgress(let b):
             return categoryColor(b.badge.badgeCategory)
         }
+    }
+
+    private var progressPercentage: Double {
+        if case .inProgress(let b) = badge {
+            return b.progress.percentage
+        }
+        return 0
     }
 
     private func categoryColor(_ category: BadgeCategory) -> Color {
@@ -440,80 +379,32 @@ struct EnhancedBadgeDetailSheet: View {
         }
     }
 
-    // Large 3D badge view
+    // Large 3D badge view with interaction
     private var largeBadgeView: some View {
-        ZStack {
-            // Outer glow
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [categoryColor.opacity(0.3), .clear],
-                        center: .center,
-                        startRadius: 50,
-                        endRadius: 100
-                    )
-                )
-                .frame(width: 200, height: 200)
+        VStack(spacing: 8) {
+            Interactive3DBadgeView(
+                iconName: iconName,
+                color: categoryColor,
+                isEarned: isEarned,
+                level: level,
+                badgeName: name,
+                badgeDescription: badgeDescription,
+                earnedDate: earnedDateValue
+            )
 
-            // Shadow
-            Circle()
-                .fill(categoryColor.opacity(0.2))
-                .frame(width: 130, height: 130)
-                .offset(y: 8)
-                .blur(radius: 12)
-
-            // Main badge
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: isEarned
-                            ? [categoryColor, categoryColor.opacity(0.7)]
-                            : [Color.gray.opacity(0.5), Color.gray.opacity(0.3)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 120, height: 120)
-                .overlay(
-                    // Inner highlight
-                    Ellipse()
-                        .fill(
-                            LinearGradient(
-                                colors: [.white.opacity(0.5), .clear],
-                                startPoint: .top,
-                                endPoint: .center
-                            )
-                        )
-                        .frame(width: 100, height: 60)
-                        .offset(y: -20)
-                )
-                .shadow(color: categoryColor.opacity(0.5), radius: 20, x: 0, y: 10)
-
-            // Icon
-            Image(systemName: iconName)
-                .font(.system(size: 50))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.white, .white.opacity(0.8)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-
-            // Level indicator
-            if level > 1 {
-                Text("Level \(level)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(categoryColor.opacity(0.9))
-                    .cornerRadius(12)
-                    .offset(y: 70)
-            }
+            // Interaction hint
+            Text("拖拽旋转 • 双击翻转")
+                .font(.caption2)
+                .foregroundColor(.secondary)
         }
-        .padding(.top, 20)
+        .padding(.top, 10)
+    }
+
+    private var earnedDateValue: Date? {
+        if case .earned(let b) = badge {
+            return b.earnedDate
+        }
+        return nil
     }
 
     // Badge info section
