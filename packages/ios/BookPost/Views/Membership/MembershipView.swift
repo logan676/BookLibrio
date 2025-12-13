@@ -35,7 +35,7 @@ struct MembershipView: View {
                 .padding()
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("会员中心")
+            .navigationTitle(L10n.Membership.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -61,7 +61,7 @@ struct MembershipView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "crown.fill")
                             .foregroundColor(.yellow)
-                        Text("当前会员")
+                        Text(L10n.Membership.currentMember)
                             .font(.headline)
                     }
 
@@ -70,7 +70,7 @@ struct MembershipView: View {
                             .font(.title2)
                             .fontWeight(.bold)
 
-                        Text("有效期至 \(membership.expiresAt)")
+                        Text(L10n.Membership.validUntil(membership.expiresAt))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -84,7 +84,7 @@ struct MembershipView: View {
                         Text("\(days)")
                             .font(.title)
                             .fontWeight(.bold)
-                        Text("天")
+                        Text(L10n.Membership.days)
                             .font(.caption)
                     }
                     .foregroundColor(.orange)
@@ -96,10 +96,10 @@ struct MembershipView: View {
                 HStack {
                     Image(systemName: "exclamationmark.circle.fill")
                         .foregroundColor(.orange)
-                    Text("会员即将到期，立即续费享更多优惠")
+                    Text(L10n.Membership.renewalReminder)
                         .font(.caption)
                     Spacer()
-                    Button("立即续费") {
+                    Button(L10n.Membership.renewNow) {
                         // Scroll to plans
                     }
                     .font(.caption)
@@ -125,7 +125,7 @@ struct MembershipView: View {
 
     private var benefitsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("会员权益")
+            Text(L10n.Membership.benefits)
                 .font(.headline)
 
             LazyVGrid(columns: [
@@ -167,7 +167,7 @@ struct MembershipView: View {
 
     private var plansSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("选择套餐")
+            Text(L10n.Membership.choosePlan)
                 .font(.headline)
 
             VStack(spacing: 12) {
@@ -189,7 +189,7 @@ struct MembershipView: View {
             VStack(spacing: 0) {
                 // Badge if recommended
                 if plan.isRecommended {
-                    Text("推荐")
+                    Text(L10n.Membership.recommended)
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -274,7 +274,7 @@ struct MembershipView: View {
 
             Spacer()
 
-            Text("立即领取")
+            Text(L10n.Membership.claimNow)
                 .font(.caption)
                 .foregroundColor(.blue)
         }
@@ -293,7 +293,7 @@ struct MembershipView: View {
                 Image(systemName: "ticket.fill")
                     .foregroundColor(.blue)
 
-                Text("使用兑换码")
+                Text(L10n.Membership.useRedeemCode)
                     .foregroundColor(.primary)
 
                 Spacer()
@@ -321,7 +321,7 @@ struct MembershipView: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "questionmark.circle")
-                    Text("会员常见问题")
+                    Text(L10n.Membership.memberFAQ)
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -341,9 +341,9 @@ struct MembershipPurchaseButton: View {
         Button(action: action) {
             HStack {
                 if let plan = plan {
-                    Text("立即开通 · ¥\(plan.price)")
+                    Text(L10n.Membership.subscribeNow(plan.price))
                 } else {
-                    Text("请选择套餐")
+                    Text(L10n.Membership.selectPlan)
                 }
             }
             .font(.headline)
@@ -372,10 +372,10 @@ struct RedeemCodeSheet: View {
             VStack(spacing: 24) {
                 // Input field
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("输入兑换码")
+                    Text(L10n.Membership.enterRedeemCode)
                         .font(.headline)
 
-                    TextField("请输入兑换码", text: $code)
+                    TextField(L10n.Membership.redeemPlaceholder, text: $code)
                         .textFieldStyle(.plain)
                         .padding()
                         .background(Color(.systemGray6))
@@ -397,7 +397,7 @@ struct RedeemCodeSheet: View {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
-                        Text("立即兑换")
+                        Text(L10n.Membership.redeemNow)
                     }
                 }
                 .font(.headline)
@@ -411,17 +411,17 @@ struct RedeemCodeSheet: View {
                 Spacer()
 
                 // Help text
-                Text("兑换码可通过活动获得，每个账号仅可使用一次")
+                Text(L10n.Membership.redeemHelp)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
             .padding()
-            .navigationTitle("兑换码")
+            .navigationTitle(L10n.Membership.redeemCode)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button(L10n.Membership.done) { dismiss() }
                 }
             }
         }
@@ -436,7 +436,7 @@ struct RedeemCodeSheet: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             isLoading = false
             // For demo, show error
-            errorMessage = "兑换码无效或已使用"
+            errorMessage = L10n.Membership.redeemInvalid
         }
     }
 }
@@ -454,52 +454,54 @@ struct MembershipPlan: Identifiable {
     let isRecommended: Bool
     let isAutoRenewal: Bool
 
-    static let allPlans: [MembershipPlan] = [
-        MembershipPlan(
-            id: "monthly_auto",
-            name: "连续包月",
-            description: "首月特惠，自动续费可随时取消",
-            price: 19,
-            originalPrice: 30,
-            duration: 30,
-            discount: 0.37,
-            isRecommended: true,
-            isAutoRenewal: true
-        ),
-        MembershipPlan(
-            id: "monthly",
-            name: "月卡",
-            description: "单月会员",
-            price: 30,
-            originalPrice: nil,
-            duration: 30,
-            discount: 0,
-            isRecommended: false,
-            isAutoRenewal: false
-        ),
-        MembershipPlan(
-            id: "quarterly",
-            name: "季卡",
-            description: "3个月会员",
-            price: 68,
-            originalPrice: 90,
-            duration: 90,
-            discount: 0.24,
-            isRecommended: false,
-            isAutoRenewal: false
-        ),
-        MembershipPlan(
-            id: "yearly",
-            name: "年卡",
-            description: "12个月会员，超值推荐",
-            price: 198,
-            originalPrice: 360,
-            duration: 365,
-            discount: 0.45,
-            isRecommended: false,
-            isAutoRenewal: false
-        )
-    ]
+    static var allPlans: [MembershipPlan] {
+        [
+            MembershipPlan(
+                id: "monthly_auto",
+                name: L10n.Membership.monthlyAuto,
+                description: L10n.Membership.monthlyAutoDesc,
+                price: 19,
+                originalPrice: 30,
+                duration: 30,
+                discount: 0.37,
+                isRecommended: true,
+                isAutoRenewal: true
+            ),
+            MembershipPlan(
+                id: "monthly",
+                name: L10n.Membership.monthly,
+                description: L10n.Membership.monthlyDesc,
+                price: 30,
+                originalPrice: nil,
+                duration: 30,
+                discount: 0,
+                isRecommended: false,
+                isAutoRenewal: false
+            ),
+            MembershipPlan(
+                id: "quarterly",
+                name: L10n.Membership.quarterly,
+                description: L10n.Membership.quarterlyDesc,
+                price: 68,
+                originalPrice: 90,
+                duration: 90,
+                discount: 0.24,
+                isRecommended: false,
+                isAutoRenewal: false
+            ),
+            MembershipPlan(
+                id: "yearly",
+                name: L10n.Membership.yearly,
+                description: L10n.Membership.yearlyDesc,
+                price: 198,
+                originalPrice: 360,
+                duration: 365,
+                discount: 0.45,
+                isRecommended: false,
+                isAutoRenewal: false
+            )
+        ]
+    }
 }
 
 struct MembershipStatus {
@@ -515,14 +517,16 @@ struct MembershipBenefit: Identifiable {
     let subtitle: String
     let color: Color
 
-    static let allBenefits: [MembershipBenefit] = [
-        MembershipBenefit(id: "1", icon: "book.fill", title: "无限阅读", subtitle: "海量书籍免费读", color: .blue),
-        MembershipBenefit(id: "2", icon: "waveform", title: "AI有声书", subtitle: "智能朗读全部书籍", color: .purple),
-        MembershipBenefit(id: "3", icon: "sparkles", title: "AI问书", subtitle: "智能问答无限次", color: .orange),
-        MembershipBenefit(id: "4", icon: "arrow.down.circle.fill", title: "离线下载", subtitle: "无网络也能阅读", color: .green),
-        MembershipBenefit(id: "5", icon: "gift.fill", title: "专属活动", subtitle: "会员专享福利", color: .red),
-        MembershipBenefit(id: "6", icon: "crown.fill", title: "身份标识", subtitle: "彰显尊贵身份", color: .yellow)
-    ]
+    static var allBenefits: [MembershipBenefit] {
+        [
+            MembershipBenefit(id: "1", icon: "book.fill", title: L10n.Membership.benefitUnlimitedReading, subtitle: L10n.Membership.benefitUnlimitedReadingDesc, color: .blue),
+            MembershipBenefit(id: "2", icon: "waveform", title: L10n.Membership.benefitAIAudiobook, subtitle: L10n.Membership.benefitAIAudiobookDesc, color: .purple),
+            MembershipBenefit(id: "3", icon: "sparkles", title: L10n.Membership.benefitAIQuestion, subtitle: L10n.Membership.benefitAIQuestionDesc, color: .orange),
+            MembershipBenefit(id: "4", icon: "arrow.down.circle.fill", title: L10n.Membership.benefitOfflineDownload, subtitle: L10n.Membership.benefitOfflineDownloadDesc, color: .green),
+            MembershipBenefit(id: "5", icon: "gift.fill", title: L10n.Membership.benefitExclusiveEvents, subtitle: L10n.Membership.benefitExclusiveEventsDesc, color: .red),
+            MembershipBenefit(id: "6", icon: "crown.fill", title: L10n.Membership.benefitBadge, subtitle: L10n.Membership.benefitBadgeDesc, color: .yellow)
+        ]
+    }
 }
 
 // MARK: - ViewModel
@@ -532,7 +536,7 @@ class MembershipViewModel: ObservableObject {
     @Published var plans: [MembershipPlan] = []
     @Published var selectedPlan: MembershipPlan?
     @Published var currentMembership: MembershipStatus?
-    @Published var promoText: String? = "新用户首月仅需9.9元"
+    @Published var promoText: String? = L10n.Membership.newUserPromo
     @Published var showRedeemSheet = false
     @Published var isLoading = false
 

@@ -9,29 +9,31 @@ struct OnboardingView: View {
     @State private var dailyGoal: Int = 30
     @State private var preferredReadingTime: ReadingTimePreference = .evening
 
-    private let pages: [OnboardingPage] = [
-        OnboardingPage(
-            title: "欢迎来到 BookPost",
-            subtitle: "发现阅读的乐趣",
-            description: "海量正版书籍、杂志、有声书\n让阅读成为你生活的一部分",
-            imageName: "books.vertical.fill",
-            imageColor: .blue
-        ),
-        OnboardingPage(
-            title: "记录阅读时光",
-            subtitle: "追踪你的阅读进度",
-            description: "设置每日目标，记录阅读时间\n养成持续阅读的好习惯",
-            imageName: "chart.line.uptrend.xyaxis",
-            imageColor: .green
-        ),
-        OnboardingPage(
-            title: "分享阅读感悟",
-            subtitle: "与书友一起成长",
-            description: "发表书评、收藏金句、分享读书心得\n在这里找到志同道合的朋友",
-            imageName: "bubble.left.and.bubble.right.fill",
-            imageColor: .orange
-        )
-    ]
+    private var pages: [OnboardingPage] {
+        [
+            OnboardingPage(
+                title: L10n.Onboarding.welcomeTitle,
+                subtitle: L10n.Onboarding.welcomeSubtitle,
+                description: L10n.Onboarding.welcomeDescription,
+                imageName: "books.vertical.fill",
+                imageColor: .blue
+            ),
+            OnboardingPage(
+                title: L10n.Onboarding.trackingTitle,
+                subtitle: L10n.Onboarding.trackingSubtitle,
+                description: L10n.Onboarding.trackingDescription,
+                imageName: "chart.line.uptrend.xyaxis",
+                imageColor: .green
+            ),
+            OnboardingPage(
+                title: L10n.Onboarding.sharingTitle,
+                subtitle: L10n.Onboarding.sharingSubtitle,
+                description: L10n.Onboarding.sharingDescription,
+                imageName: "bubble.left.and.bubble.right.fill",
+                imageColor: .orange
+            )
+        ]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,7 +41,7 @@ struct OnboardingView: View {
             HStack {
                 Spacer()
                 if currentPage < pages.count {
-                    Button("跳过") {
+                    Button(L10n.Onboarding.skip) {
                         completeOnboarding()
                     }
                     .foregroundColor(.secondary)
@@ -135,11 +137,11 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 8) {
-                Text("选择你喜欢的类型")
+                Text(L10n.Onboarding.genreTitle)
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("我们将为你推荐更合适的书籍")
+                Text(L10n.Onboarding.genreSubtitle)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -150,13 +152,13 @@ struct OnboardingView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                ForEach(Genre.allGenres, id: \.self) { genre in
+                ForEach(Genre.allGenres, id: \.key) { genre in
                     genreButton(genre)
                 }
             }
             .padding(.horizontal, 24)
 
-            Text("已选择 \(selectedGenres.count) 个类型")
+            Text(L10n.Onboarding.selectedGenres(selectedGenres.count))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -165,19 +167,19 @@ struct OnboardingView: View {
         }
     }
 
-    private func genreButton(_ genre: String) -> some View {
-        let isSelected = selectedGenres.contains(genre)
+    private func genreButton(_ genre: Genre.GenreItem) -> some View {
+        let isSelected = selectedGenres.contains(genre.key)
 
         return Button {
             withAnimation(.spring(response: 0.3)) {
                 if isSelected {
-                    selectedGenres.remove(genre)
+                    selectedGenres.remove(genre.key)
                 } else {
-                    selectedGenres.insert(genre)
+                    selectedGenres.insert(genre.key)
                 }
             }
         } label: {
-            Text(genre)
+            Text(genre.displayName)
                 .font(.subheadline)
                 .fontWeight(isSelected ? .semibold : .regular)
                 .foregroundColor(isSelected ? .white : .primary)
@@ -195,11 +197,11 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 8) {
-                Text("设置阅读目标")
+                Text(L10n.Onboarding.goalTitle)
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("每天阅读一点，积累成就感")
+                Text(L10n.Onboarding.goalSubtitle)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -210,7 +212,7 @@ struct OnboardingView: View {
                     .font(.system(size: 72, weight: .bold, design: .rounded))
                     .foregroundColor(.blue)
 
-                Text("分钟/天")
+                Text(L10n.Onboarding.minutesPerDay)
                     .font(.title3)
                     .foregroundColor(.secondary)
 
@@ -235,7 +237,7 @@ struct OnboardingView: View {
 
             // Reading time preference
             VStack(spacing: 12) {
-                Text("你通常什么时候阅读？")
+                Text(L10n.Onboarding.whenDoYouRead)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
@@ -292,11 +294,11 @@ struct OnboardingView: View {
             }
 
             VStack(spacing: 16) {
-                Text("一切就绪！")
+                Text(L10n.Onboarding.allSetTitle)
                     .font(.title)
                     .fontWeight(.bold)
 
-                Text("开始你的阅读之旅吧")
+                Text(L10n.Onboarding.allSetSubtitle)
                     .font(.title3)
                     .foregroundColor(.secondary)
 
@@ -305,18 +307,18 @@ struct OnboardingView: View {
                     if !selectedGenres.isEmpty {
                         summaryRow(
                             icon: "heart.fill",
-                            text: "喜欢 \(selectedGenres.count) 种类型"
+                            text: L10n.Onboarding.likeGenres(selectedGenres.count)
                         )
                     }
 
                     summaryRow(
                         icon: "target",
-                        text: "每天阅读 \(dailyGoal) 分钟"
+                        text: L10n.Onboarding.dailyReading(dailyGoal)
                     )
 
                     summaryRow(
                         icon: preferredReadingTime.iconName,
-                        text: "\(preferredReadingTime.displayName)阅读"
+                        text: L10n.Onboarding.readingAt(preferredReadingTime.displayName)
                     )
                 }
                 .padding()
@@ -380,11 +382,11 @@ struct OnboardingView: View {
     private var actionButtonTitle: String {
         switch currentPage {
         case pages.count + 2:
-            return "开始阅读"
+            return L10n.Onboarding.startReading
         case pages.count:
-            return selectedGenres.isEmpty ? "稍后选择" : "下一步"
+            return selectedGenres.isEmpty ? L10n.Onboarding.skipForNow : L10n.Onboarding.next
         default:
-            return "继续"
+            return L10n.Onboarding.continue
         }
     }
 
@@ -418,10 +420,10 @@ enum ReadingTimePreference: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .morning: return "早晨"
-        case .afternoon: return "下午"
-        case .evening: return "傍晚"
-        case .night: return "深夜"
+        case .morning: return L10n.Onboarding.timeMorning
+        case .afternoon: return L10n.Onboarding.timeAfternoon
+        case .evening: return L10n.Onboarding.timeEvening
+        case .night: return L10n.Onboarding.timeNight
         }
     }
 
@@ -436,13 +438,31 @@ enum ReadingTimePreference: String, CaseIterable {
 }
 
 enum Genre {
-    static let allGenres: [String] = [
-        "小说", "历史", "传记",
-        "科幻", "推理", "言情",
-        "科普", "心理", "哲学",
-        "商业", "技术", "艺术",
-        "旅行", "美食", "健康"
-    ]
+    struct GenreItem: Identifiable {
+        let key: String
+        let displayName: String
+        var id: String { key }
+    }
+
+    static var allGenres: [GenreItem] {
+        [
+            GenreItem(key: "novel", displayName: L10n.Onboarding.genreNovel),
+            GenreItem(key: "history", displayName: L10n.Onboarding.genreHistory),
+            GenreItem(key: "biography", displayName: L10n.Onboarding.genreBiography),
+            GenreItem(key: "scifi", displayName: L10n.Onboarding.genreSciFi),
+            GenreItem(key: "mystery", displayName: L10n.Onboarding.genreMystery),
+            GenreItem(key: "romance", displayName: L10n.Onboarding.genreRomance),
+            GenreItem(key: "popscience", displayName: L10n.Onboarding.genrePopScience),
+            GenreItem(key: "psychology", displayName: L10n.Onboarding.genrePsychology),
+            GenreItem(key: "philosophy", displayName: L10n.Onboarding.genrePhilosophy),
+            GenreItem(key: "business", displayName: L10n.Onboarding.genreBusiness),
+            GenreItem(key: "technology", displayName: L10n.Onboarding.genreTechnology),
+            GenreItem(key: "art", displayName: L10n.Onboarding.genreArt),
+            GenreItem(key: "travel", displayName: L10n.Onboarding.genreTravel),
+            GenreItem(key: "food", displayName: L10n.Onboarding.genreFood),
+            GenreItem(key: "health", displayName: L10n.Onboarding.genreHealth)
+        ]
+    }
 }
 
 // MARK: - Onboarding Wrapper

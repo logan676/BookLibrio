@@ -64,7 +64,7 @@ struct AIQuestionView: View {
                 // Input area
                 inputArea
             }
-            .navigationTitle("AI 问答")
+            .navigationTitle(L10n.AI.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -80,13 +80,13 @@ struct AIQuestionView: View {
                         Button {
                             viewModel.clearHistory()
                         } label: {
-                            Label("清空对话", systemImage: "trash")
+                            Label(L10n.AI.clearChat, systemImage: "trash")
                         }
 
                         Button {
                             // Export conversation
                         } label: {
-                            Label("导出对话", systemImage: "square.and.arrow.up")
+                            Label(L10n.AI.exportChat, systemImage: "square.and.arrow.up")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -106,7 +106,7 @@ struct AIQuestionView: View {
             HStack {
                 Image(systemName: "text.quote")
                     .foregroundColor(.blue)
-                Text("选中的文本")
+                Text(L10n.AI.selectedText)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -130,18 +130,18 @@ struct AIQuestionView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.blue)
 
-            Text("AI 阅读助手")
+            Text(L10n.AI.readingAssistant)
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Text("我可以帮你解答关于《\(bookTitle)》的问题，包括内容解读、概念解释、背景知识等。")
+            Text(L10n.AI.welcomeDescription(bookTitle))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
             // Suggested questions
             VStack(spacing: 8) {
-                Text("试试问我：")
+                Text(L10n.AI.tryAsking)
                     .font(.caption)
                     .foregroundColor(.secondary)
 
@@ -168,9 +168,9 @@ struct AIQuestionView: View {
 
     private var suggestedQuestions: [String] {
         [
-            "这本书的主要观点是什么？",
-            "解释一下这个概念",
-            "作者为什么这么说？"
+            L10n.AI.suggestedMain,
+            L10n.AI.suggestedExplain,
+            L10n.AI.suggestedWhy
         ]
     }
 
@@ -179,7 +179,7 @@ struct AIQuestionView: View {
     private var inputArea: some View {
         HStack(spacing: 12) {
             // Text field
-            TextField("输入你的问题...", text: $viewModel.inputText, axis: .vertical)
+            TextField(L10n.AI.inputPlaceholder, text: $viewModel.inputText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...5)
                 .focused($isInputFocused)
@@ -390,7 +390,7 @@ class AIQuestionViewModel: ObservableObject {
         } catch {
             // Show error message
             let errorMessage = AIMessage(
-                content: "抱歉，暂时无法回答你的问题。请稍后再试。",
+                content: L10n.AI.errorMessage,
                 isUser: false
             )
             messages.append(errorMessage)
@@ -460,7 +460,7 @@ struct WordLookupView: View {
             if isLoading {
                 HStack {
                     ProgressView()
-                    Text("正在查询...")
+                    Text(L10n.AI.lookingUp)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -468,7 +468,7 @@ struct WordLookupView: View {
                 Text(definition)
                     .font(.subheadline)
             } else {
-                Text("未找到释义")
+                Text(L10n.AI.noDefinition)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -478,14 +478,14 @@ struct WordLookupView: View {
                 Button {
                     UIPasteboard.general.string = word
                 } label: {
-                    Label("复制", systemImage: "doc.on.doc")
+                    Label(L10n.AI.copy, systemImage: "doc.on.doc")
                         .font(.caption)
                 }
 
                 Button {
                     // Add to vocabulary
                 } label: {
-                    Label("添加到生词本", systemImage: "plus.circle")
+                    Label(L10n.AI.addToVocabulary, systemImage: "plus.circle")
                         .font(.caption)
                 }
 
@@ -507,7 +507,7 @@ struct WordLookupView: View {
     private func lookupWord() async {
         // Simulated lookup
         try? await Task.sleep(nanoseconds: 800_000_000)
-        definition = "【释义】这是 \"\(word)\" 的示例释义。在实际应用中，这里会显示从词典API获取的真实释义内容。"
+        definition = L10n.AI.sampleDefinition(word)
         isLoading = false
     }
 }

@@ -65,19 +65,19 @@ struct AudioPlayerView: View {
                         Button {
                             showChapterList = true
                         } label: {
-                            Label("章节列表", systemImage: "list.bullet")
+                            Label(L10n.AudioPlayer.chapterList, systemImage: "list.bullet")
                         }
 
                         Button {
                             // Show original text
                         } label: {
-                            Label("显示原文", systemImage: "text.alignleft")
+                            Label(L10n.AudioPlayer.showOriginal, systemImage: "text.alignleft")
                         }
 
                         Button {
                             // Share
                         } label: {
-                            Label("分享", systemImage: "square.and.arrow.up")
+                            Label(L10n.AudioPlayer.share, systemImage: "square.and.arrow.up")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -123,7 +123,7 @@ struct AudioPlayerView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
-            Text("第\(playerState.currentChapter)章")
+            Text(L10n.AudioPlayer.chapter(playerState.currentChapter))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -131,7 +131,7 @@ struct AudioPlayerView: View {
             HStack(spacing: 4) {
                 Image(systemName: "waveform")
                     .font(.caption)
-                Text("AI 朗读 · \(playerState.selectedVoice.name)")
+                Text("\(L10n.AudioPlayer.aiNarration) · \(playerState.selectedVoice.name)")
                     .font(.caption)
             }
             .foregroundColor(.blue)
@@ -235,7 +235,7 @@ struct AudioPlayerView: View {
                     Text(String(format: "%.1fx", playerState.playbackSpeed))
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("倍速")
+                    Text(L10n.AudioPlayer.speed)
                         .font(.caption2)
                 }
             }
@@ -247,7 +247,7 @@ struct AudioPlayerView: View {
                 VStack(spacing: 4) {
                     Image(systemName: "waveform.circle")
                         .font(.title3)
-                    Text("音色")
+                    Text(L10n.AudioPlayer.voice)
                         .font(.caption2)
                 }
             }
@@ -259,7 +259,7 @@ struct AudioPlayerView: View {
                 VStack(spacing: 4) {
                     Image(systemName: playerState.sleepTimer != nil ? "moon.fill" : "moon")
                         .font(.title3)
-                    Text("定时")
+                    Text(L10n.AudioPlayer.timer)
                         .font(.caption2)
                 }
             }
@@ -271,7 +271,7 @@ struct AudioPlayerView: View {
                 VStack(spacing: 4) {
                     Image(systemName: "list.bullet")
                         .font(.title3)
-                    Text("目录")
+                    Text(L10n.AudioPlayer.contents)
                         .font(.caption2)
                 }
             }
@@ -303,7 +303,7 @@ class AudioPlayerState: ObservableObject {
 
     init() {
         // Sample chapters
-        chapters = (1...10).map { ChapterInfo(number: $0, title: "第\($0)章", duration: 300) }
+        chapters = (1...10).map { ChapterInfo(number: $0, title: L10n.AudioPlayer.chapter($0), duration: 300) }
     }
 
     func togglePlayPause() {
@@ -363,18 +363,41 @@ class AudioPlayerState: ObservableObject {
 
 struct AIVoice: Identifiable, Hashable {
     let id: String
-    let name: String
+    let nameKey: String
     let gender: String
-    let description: String
+    let descriptionKey: String
 
-    static let defaultVoice = AIVoice(id: "default", name: "默认女声", gender: "female", description: "温柔知性")
+    var name: String {
+        switch nameKey {
+        case "defaultFemale": return L10n.AudioPlayer.voiceDefaultFemale
+        case "gentleFemale": return L10n.AudioPlayer.voiceGentleFemale
+        case "livelyFemale": return L10n.AudioPlayer.voiceLivelyFemale
+        case "deepMale": return L10n.AudioPlayer.voiceDeepMale
+        case "youngMale": return L10n.AudioPlayer.voiceYoungMale
+        case "child": return L10n.AudioPlayer.voiceChild
+        default: return nameKey
+        }
+    }
+
+    var description: String {
+        switch descriptionKey {
+        case "gentleIntellect": return L10n.AudioPlayer.descGentleIntellect
+        case "youngLively": return L10n.AudioPlayer.descYoungLively
+        case "deepMagnetic": return L10n.AudioPlayer.descDeepMagnetic
+        case "youngSunny": return L10n.AudioPlayer.descYoungSunny
+        case "cuteChildish": return L10n.AudioPlayer.descCuteChildish
+        default: return descriptionKey
+        }
+    }
+
+    static let defaultVoice = AIVoice(id: "default", nameKey: "defaultFemale", gender: "female", descriptionKey: "gentleIntellect")
 
     static let allVoices: [AIVoice] = [
-        AIVoice(id: "female1", name: "温柔女声", gender: "female", description: "温柔知性"),
-        AIVoice(id: "female2", name: "活力女声", gender: "female", description: "年轻活泼"),
-        AIVoice(id: "male1", name: "磁性男声", gender: "male", description: "低沉磁性"),
-        AIVoice(id: "male2", name: "青年男声", gender: "male", description: "年轻阳光"),
-        AIVoice(id: "child", name: "童声", gender: "neutral", description: "可爱童趣")
+        AIVoice(id: "female1", nameKey: "gentleFemale", gender: "female", descriptionKey: "gentleIntellect"),
+        AIVoice(id: "female2", nameKey: "livelyFemale", gender: "female", descriptionKey: "youngLively"),
+        AIVoice(id: "male1", nameKey: "deepMale", gender: "male", descriptionKey: "deepMagnetic"),
+        AIVoice(id: "male2", nameKey: "youngMale", gender: "male", descriptionKey: "youngSunny"),
+        AIVoice(id: "child", nameKey: "child", gender: "neutral", descriptionKey: "cuteChildish")
     ]
 }
 
@@ -386,13 +409,23 @@ struct ChapterInfo: Identifiable {
 }
 
 enum SleepTimerOption: String, CaseIterable, Identifiable {
-    case min15 = "15分钟"
-    case min30 = "30分钟"
-    case min45 = "45分钟"
-    case min60 = "60分钟"
-    case endOfChapter = "播完本章"
+    case min15
+    case min30
+    case min45
+    case min60
+    case endOfChapter
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .min15: return L10n.AudioPlayer.timer15min
+        case .min30: return L10n.AudioPlayer.timer30min
+        case .min45: return L10n.AudioPlayer.timer45min
+        case .min60: return L10n.AudioPlayer.timer60min
+        case .endOfChapter: return L10n.AudioPlayer.timerEndOfChapter
+        }
+    }
 }
 
 // MARK: - Voice Selection Sheet
@@ -439,11 +472,11 @@ struct VoiceSelectionSheet: View {
                     }
                 }
             }
-            .navigationTitle("选择音色")
+            .navigationTitle(L10n.AudioPlayer.selectVoice)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button(L10n.AudioPlayer.done) { dismiss() }
                 }
             }
         }
@@ -466,9 +499,9 @@ struct SleepTimerSheet: View {
                         HStack {
                             Image(systemName: "moon.fill")
                                 .foregroundColor(.blue)
-                            Text("定时 \(timer.rawValue)")
+                            Text(L10n.AudioPlayer.timerActive(timer.displayName))
                             Spacer()
-                            Button("取消") {
+                            Button(L10n.AudioPlayer.cancel) {
                                 selectedTimer = nil
                             }
                             .foregroundColor(.red)
@@ -476,14 +509,14 @@ struct SleepTimerSheet: View {
                     }
                 }
 
-                Section("设置定时关闭") {
+                Section(L10n.AudioPlayer.setSleepTimer) {
                     ForEach(SleepTimerOption.allCases) { option in
                         Button {
                             selectedTimer = option
                             dismiss()
                         } label: {
                             HStack {
-                                Text(option.rawValue)
+                                Text(option.displayName)
                                     .foregroundColor(.primary)
 
                                 Spacer()
@@ -497,11 +530,11 @@ struct SleepTimerSheet: View {
                     }
                 }
             }
-            .navigationTitle("定时关闭")
+            .navigationTitle(L10n.AudioPlayer.sleepTimer)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button(L10n.AudioPlayer.done) { dismiss() }
                 }
             }
         }
@@ -544,11 +577,11 @@ struct ChapterListSheet: View {
                     }
                 }
             }
-            .navigationTitle("章节目录")
+            .navigationTitle(L10n.AudioPlayer.chapterList)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button(L10n.AudioPlayer.done) { dismiss() }
                 }
             }
         }
@@ -556,7 +589,7 @@ struct ChapterListSheet: View {
 
     private func formatDuration(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds) / 60
-        return "\(minutes)分钟"
+        return L10n.AudioPlayer.minutesCount(minutes)
     }
 }
 
