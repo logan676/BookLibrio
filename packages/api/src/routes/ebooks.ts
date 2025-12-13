@@ -1,10 +1,10 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import { db } from '../db/client'
 import { ebooks, ebookCategories, ebookUnderlines, ebookIdeas } from '../db/schema'
-import { eq, like, desc, count, and, isNull } from 'drizzle-orm'
+import { eq, like, desc, count, and, isNull, not, isNotNull } from 'drizzle-orm'
 import { streamFromR2, isR2Configured, downloadFromR2, getR2ObjectMetadata } from '../services/storage'
 import { requireAuth } from '../middleware/auth'
-import { enrichEbookMetadata, enrichEbooksBatch } from '../services/bookMetadata'
+import { enrichEbookMetadata, enrichEbooksBatch, enrichRatingsBatch } from '../services/bookMetadata'
 // @ts-ignore - epub2 has no type definitions
 import * as EPub from 'epub2'
 // @ts-ignore - pdf-parse has type issues
@@ -115,11 +115,28 @@ app.get('/enrichment-status', async (c) => {
 
 // POST /api/ebooks/enrich-batch - Enrich multiple ebooks
 app.post('/enrich-batch', async (c) => {
-  const body = await c.req.json()
-  const { ids, limit = 10, includeEmpty = true } = body as {
-    ids?: number[]
-    limit?: number
-    includeEmpty?: boolean
+  // Support both JSON body and query parameters
+  let ids: number[] | undefined
+  let limit = 10
+  let includeEmpty = true
+
+  // Try to parse JSON body if present
+  try {
+    const contentType = c.req.header('content-type')
+    if (contentType?.includes('application/json')) {
+      const body = await c.req.json()
+      ids = body.ids
+      limit = body.limit ?? 10
+      includeEmpty = body.includeEmpty ?? true
+    }
+  } catch {
+    // If JSON parsing fails, continue with defaults/query params
+  }
+
+  // Override with query parameters if provided
+  const queryLimit = c.req.query('limit')
+  if (queryLimit) {
+    limit = parseInt(queryLimit, 10) || 10
   }
 
   let ebookIds: number[] = []
@@ -151,6 +168,69 @@ app.post('/enrich-batch', async (c) => {
   console.log(`[API] Batch enriching ${ebookIds.length} ebooks: ${ebookIds.join(', ')}`)
 
   const result = await enrichEbooksBatch(ebookIds, { delayMs: 300 })
+
+  return c.json({
+    success: true,
+    ...result
+  })
+})
+
+// POST /api/ebooks/enrich-ratings - Re-enrich ebooks to fetch rating data
+app.post('/enrich-ratings', async (c) => {
+  // Support both JSON body and query parameters
+  let ids: number[] | undefined
+  let limit = 50
+
+  // Try to parse JSON body if present
+  try {
+    const contentType = c.req.header('content-type')
+    if (contentType?.includes('application/json')) {
+      const body = await c.req.json()
+      ids = body.ids
+      limit = body.limit ?? 50
+    }
+  } catch {
+    // If JSON parsing fails, continue with defaults/query params
+  }
+
+  // Override with query parameters if provided
+  const queryLimit = c.req.query('limit')
+  if (queryLimit) {
+    limit = parseInt(queryLimit, 10) || 50
+  }
+
+  let ebookIds: number[] = []
+
+  if (ids && Array.isArray(ids)) {
+    // Use provided IDs
+    ebookIds = ids.slice(0, Math.min(ids.length, 100)) // Max 100 at a time
+  } else {
+    // Get enriched ebooks that need ratings (have author but haven't been checked for ratings yet)
+    const results = await db
+      .select({ id: ebooks.id })
+      .from(ebooks)
+      .where(and(
+        isNull(ebooks.externalRatingSource),
+        isNotNull(ebooks.author)
+      ))
+      .limit(Math.min(limit, 100))
+
+    ebookIds = results.map(r => r.id)
+  }
+
+  if (ebookIds.length === 0) {
+    return c.json({
+      success: true,
+      message: 'No ebooks to enrich for ratings',
+      processed: 0,
+      succeeded: 0,
+      failed: 0
+    })
+  }
+
+  console.log(`[API] Batch enriching ratings for ${ebookIds.length} ebooks`)
+
+  const result = await enrichRatingsBatch(ebookIds, { delayMs: 300 })
 
   return c.json({
     success: true,

@@ -118,6 +118,10 @@ export const ebooks = pgTable('ebooks', {
   language: text('language').default('zh'),
   doubanId: text('douban_id'),
   goodreadsId: text('goodreads_id'),
+  // External ratings (from Google Books or other sources)
+  externalRating: decimal('external_rating', { precision: 3, scale: 2 }),
+  externalRatingsCount: integer('external_ratings_count'),
+  externalRatingSource: text('external_rating_source'), // 'google_books', 'goodreads', etc.
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
   isbnIdx: index('idx_ebooks_isbn').on(table.isbn),

@@ -43,6 +43,10 @@ const BookMetadataSchema = z.object({
   // External IDs
   doubanId: z.string().nullable().optional(),
   goodreadsId: z.string().nullable().optional(),
+  // External ratings (from Google Books, Open Library, etc.)
+  externalRating: z.number().nullable().optional(),
+  externalRatingsCount: z.number().nullable().optional(),
+  externalRatingSource: z.string().nullable().optional(),
   createdAt: z.string().nullable(),
 })
 
@@ -162,6 +166,10 @@ app.openapi(getBookDetailRoute, async (c) => {
         fileSize: result.fileSize,
         doubanId: result.doubanId,
         goodreadsId: result.goodreadsId,
+        // External ratings from Google Books or Open Library
+        externalRating: result.externalRating ? parseFloat(result.externalRating) : null,
+        externalRatingsCount: result.externalRatingsCount,
+        externalRatingSource: result.externalRatingSource,
         createdAt: result.createdAt?.toISOString() ?? null,
       }
     }
@@ -186,6 +194,10 @@ app.openapi(getBookDetailRoute, async (c) => {
         fileSize: result.fileSize,
         issueNumber: result.issueNumber,
         issn: result.issn,
+        // Magazines don't typically have external ratings
+        externalRating: null,
+        externalRatingsCount: null,
+        externalRatingSource: null,
         createdAt: result.createdAt?.toISOString() ?? null,
       }
     }
