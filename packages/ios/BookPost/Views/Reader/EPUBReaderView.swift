@@ -3,6 +3,7 @@ import SwiftUI
 #if canImport(ReadiumShared) && canImport(ReadiumNavigator)
 import ReadiumShared
 import ReadiumNavigator
+import ReadiumAdapterGCDWebServer
 #endif
 
 /// EPUB Reader view using Readium framework
@@ -169,8 +170,7 @@ struct EPUBReaderView: View {
             AddToListSheet(
                 bookId: id,
                 bookType: bookType,
-                bookTitle: title,
-                onDismiss: { showAddToList = false }
+                bookTitle: title
             )
         }
         .sheet(isPresented: $showNavTabs) {
@@ -178,10 +178,14 @@ struct EPUBReaderView: View {
                 bookType: bookType,
                 bookId: id,
                 bookTitle: title,
-                tableOfContents: viewModel.tableOfContents,
+                tableOfContents: viewModel.tableOfContents.map { epubItem in
+                    epubItem.toTOCItem()
+                },
                 currentHref: viewModel.currentLocation,
                 onSelectTOCItem: { item in
-                    viewModel.navigateToTOCItem(item)
+                    if let href = item.href {
+                        viewModel.currentLocation = href
+                    }
                 }
             )
         }
@@ -266,12 +270,13 @@ struct EPUBReaderView: View {
     @ViewBuilder
     private var readerContent: some View {
         #if canImport(ReadiumShared) && canImport(ReadiumNavigator)
-        if let publication = viewModel.publication {
+        if let publication = viewModel.publication, let httpServer = viewModel.httpServer {
             EPUBNavigatorView(
                 publication: publication,
                 initialLocator: viewModel.initialLocator,
                 settings: settingsStore.settings,
                 targetLocator: viewModel.targetLocator,
+                httpServer: httpServer,
                 onTap: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         showToolbar.toggle()

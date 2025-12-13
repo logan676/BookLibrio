@@ -330,7 +330,7 @@ struct FriendThoughtListItem: View {
                     }
 
                     if let highlightedText = thought.highlightedText, !highlightedText.isEmpty {
-                        Text(""\(highlightedText)"")
+                        Text("\"\(highlightedText)\"")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .lineLimit(1)

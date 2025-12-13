@@ -22,6 +22,8 @@
 "common.more" = "More";
 "common.reset" = "Reset";
 "common.progress" = "Progress";
+"common.share" = "Share";
+"common.save" = "Save";
 
 // MARK: - Tab Bar
 "tab.home" = "Home";

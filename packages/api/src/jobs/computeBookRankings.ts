@@ -18,7 +18,6 @@ import {
   magazines,
   bookStats,
   readingSessions,
-  bookReviews,
   userBookshelves,
 } from '../db/schema'
 import { sql, eq, and, gte, desc, asc, isNotNull, or } from 'drizzle-orm'

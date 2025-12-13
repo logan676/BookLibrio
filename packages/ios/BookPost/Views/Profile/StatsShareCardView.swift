@@ -37,7 +37,7 @@ struct StatsShareCardView: View {
             }
             .sheet(isPresented: $showShareSheet) {
                 if let image = exportedImage {
-                    ShareSheet(items: [image])
+                    StatsActivityShareSheet(items: [image])
                 }
             }
         }
@@ -462,7 +462,7 @@ struct GradientShareCard: View {
 
 // MARK: - Share Sheet
 
-struct ShareSheet: UIViewControllerRepresentable {
+struct StatsActivityShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {

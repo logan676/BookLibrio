@@ -21,6 +21,7 @@ import socialRoutes from './routes/social'
 import goalsRoutes from './routes/goals'
 import bookListsRoutes from './routes/book-lists'
 import adminRoutes from './routes/admin'
+import rankingsRoutes from './routes/rankings'
 
 // Create OpenAPI-enabled Hono app
 const app = new OpenAPIHono()
@@ -82,6 +83,7 @@ app.route('/api/social', socialRoutes)
 app.route('/api/user/goals', goalsRoutes)
 app.route('/api/book-lists', bookListsRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/rankings', rankingsRoutes)
 
 // OpenAPI documentation endpoint
 app.doc('/api/openapi.json', {

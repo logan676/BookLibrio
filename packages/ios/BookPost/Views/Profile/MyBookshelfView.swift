@@ -10,7 +10,7 @@ struct MyBookshelfView: View {
     @State private var selectedStatus: BookshelfStatus?
     @State private var selectedType: String = "all"
     @State private var sortOption: BookshelfSortOption = .added
-    @State private var sortOrder: SortOrder = .descending
+    @State private var sortOrder: BookshelfSortOrder = .descending
 
     private var statusFilters: [(BookshelfStatus?, String)] {
         [
@@ -318,7 +318,7 @@ enum BookshelfSortOption: String, CaseIterable {
     }
 }
 
-enum SortOrder: String {
+enum BookshelfSortOrder: String {
     case ascending = "asc"
     case descending = "desc"
 }

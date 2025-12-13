@@ -14,7 +14,7 @@
 
 import { db } from '../db/client'
 import { ebooks, aiBookSummaries } from '../db/schema'
-import { eq, and, isNull, notInArray, sql } from 'drizzle-orm'
+import { eq, and, notInArray, sql } from 'drizzle-orm'
 import { log } from '../utils/logger'
 import { generateSummary, SummaryType, AISummaryResult } from '../services/claudeAI'
 

@@ -349,23 +349,26 @@ class FriendThoughtsViewModel: ObservableObject {
             "Love this part of the book."
         ]
 
-        return (0..<4).map { i in
-            FriendThought(
+        var result: [FriendThought] = []
+        for i in 0..<4 {
+            let thought = FriendThought(
                 id: i + 1,
                 userId: i + 1,
                 userName: names[i],
                 userAvatar: nil,
                 content: contents[i],
                 highlightedText: "Sample highlighted text from the book",
-                chapterIndex: i / 2 + 1,
-                chapterTitle: "Chapter \(i / 2 + 1)",
+                chapterIndex: (i / 2) + 1,
+                chapterTitle: "Chapter \((i / 2) + 1)",
                 cfiRange: nil,
                 progression: Double(i + 1) * 0.2,
                 createdAt: Date().addingTimeInterval(Double(-i * 3600)),
-                likeCount: Int.random(in: 0...10),
-                isLiked: Bool.random()
+                likeCount: (i * 2) + 3,
+                isLiked: i % 2 == 0
             )
+            result.append(thought)
         }
+        return result
     }
 }
 

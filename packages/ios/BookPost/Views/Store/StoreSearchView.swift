@@ -96,7 +96,7 @@ struct StoreSearchView: View {
                             .foregroundColor(.secondary)
                         }
 
-                        FlowLayout(spacing: 8) {
+                        StoreFlowLayout(spacing: 8) {
                             ForEach(viewModel.searchHistory, id: \.self) { term in
                                 HistoryChip(text: term) {
                                     viewModel.searchQuery = term
@@ -112,7 +112,7 @@ struct StoreSearchView: View {
                     Text("热门搜索")
                         .font(.headline)
 
-                    FlowLayout(spacing: 8) {
+                    StoreFlowLayout(spacing: 8) {
                         ForEach(viewModel.hotSearches, id: \.self) { term in
                             HotSearchChip(text: term) {
                                 viewModel.searchQuery = term
@@ -164,7 +164,7 @@ struct StoreSearchView: View {
                 // Results list
                 LazyVStack(spacing: 0) {
                     ForEach(viewModel.filteredResults) { item in
-                        SearchResultRow(item: item) {
+                        StoreSearchResultRow(item: item) {
                             selectedItem = item
                         }
                         Divider()
@@ -213,7 +213,7 @@ struct StoreSearchView: View {
 
 // MARK: - Search Result Row
 
-struct SearchResultRow: View {
+struct StoreSearchResultRow: View {
     let item: StoreItem
     let action: () -> Void
 
@@ -324,11 +324,11 @@ struct FilterChip: View {
 
 // MARK: - Flow Layout for Tags
 
-struct FlowLayout: Layout {
+struct StoreFlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(
+        let result = StoreFlowResult(
             in: proposal.replacingUnspecifiedDimensions().width,
             subviews: subviews,
             spacing: spacing
@@ -337,7 +337,7 @@ struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(
+        let result = StoreFlowResult(
             in: bounds.width,
             subviews: subviews,
             spacing: spacing
@@ -349,7 +349,7 @@ struct FlowLayout: Layout {
         }
     }
 
-    struct FlowResult {
+    struct StoreFlowResult {
         var size: CGSize = .zero
         var positions: [CGPoint] = []
 

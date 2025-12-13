@@ -9,7 +9,7 @@ import Foundation
 
 /// A user-curated book list (豆列)
 /// Can be public or private, followed by other users
-struct BookList: Codable, Identifiable {
+struct BookList: Codable, Identifiable, Hashable {
     let id: Int
     let title: String
     let description: String?
@@ -58,6 +58,16 @@ struct BookList: Codable, Identifiable {
         guard let dateStr = createdAt else { return nil }
         return ISO8601DateFormatter().date(from: dateStr)
     }
+
+    // MARK: - Hashable
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: BookList, rhs: BookList) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 // MARK: - Book List Creator
@@ -76,7 +86,7 @@ struct BookListCreator: Codable, Identifiable {
 // MARK: - Book List Item
 
 /// A book entry within a list, with optional notes
-struct BookListItem: Codable, Identifiable {
+struct BookListItem: Codable, Identifiable, Hashable {
     let id: Int
     let listId: Int
     let bookId: Int
@@ -99,12 +109,22 @@ struct BookListItem: Codable, Identifiable {
         guard let dateStr = addedAt else { return nil }
         return ISO8601DateFormatter().date(from: dateStr)
     }
+
+    // MARK: - Hashable
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: BookListItem, rhs: BookListItem) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 // MARK: - Book Info in List
 
 /// Book information embedded in list items
-struct BookListBook: Codable, Identifiable {
+struct BookListBook: Codable, Identifiable, Hashable {
     let id: Int
     let title: String
     let author: String?
@@ -123,6 +143,16 @@ struct BookListBook: Codable, Identifiable {
     var formattedRating: String? {
         guard let rating = rating else { return nil }
         return String(format: "%.1f", rating)
+    }
+
+    // MARK: - Hashable
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: BookListBook, rhs: BookListBook) -> Bool {
+        lhs.id == rhs.id
     }
 }
 

@@ -72,41 +72,47 @@ class EPUBSearchViewModel: ObservableObject {
                 }
 
                 let query = searchQuery.trimmingCharacters(in: .whitespaces)
-                let iterator = searchService.search(query: query)
+                let searchResult = await searchService.search(query: query, options: nil)
 
                 var searchResults: [EPUBSearchResult] = []
 
-                // Iterate through search results
-                while !Task.isCancelled {
-                    let result = try await iterator.next()
-                    switch result {
-                    case .success(let locatorCollection):
-                        guard let collection = locatorCollection else {
-                            // No more results
+                switch searchResult {
+                case .success(let iterator):
+                    // Iterate through search results
+                    while !Task.isCancelled {
+                        let nextResult = try await iterator.next()
+                        switch nextResult {
+                        case .success(let locatorCollection):
+                            guard let collection = locatorCollection else {
+                                // No more results
+                                break
+                            }
+
+                            for locator in collection.locators {
+                                let searchResultItem = EPUBSearchResult(locator: locator)
+                                searchResults.append(searchResultItem)
+
+                                // Update UI periodically for better UX
+                                if searchResults.count % 10 == 0 {
+                                    await MainActor.run {
+                                        self.results = searchResults
+                                    }
+                                }
+                            }
+
+                        case .failure(let error):
+                            print("Search iteration error: \(error)")
                             break
                         }
 
-                        for locator in collection.locators {
-                            let searchResult = EPUBSearchResult(locator: locator)
-                            searchResults.append(searchResult)
-
-                            // Update UI periodically for better UX
-                            if searchResults.count % 10 == 0 {
-                                await MainActor.run {
-                                    self.results = searchResults
-                                }
-                            }
+                        // Check if we got nil (end of results)
+                        if case .success(let collection) = nextResult, collection == nil {
+                            break
                         }
-
-                    case .failure(let error):
-                        print("Search error: \(error)")
-                        break
                     }
 
-                    // Check if we got nil (end of results)
-                    if case .success(let collection) = result, collection == nil {
-                        break
-                    }
+                case .failure(let error):
+                    print("Search start error: \(error)")
                 }
 
                 await MainActor.run {

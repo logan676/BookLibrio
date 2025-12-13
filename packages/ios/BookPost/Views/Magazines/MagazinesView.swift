@@ -3,7 +3,7 @@ import SwiftUI
 @MainActor
 class MagazinesViewModel: ObservableObject {
     @Published var magazines: [Magazine] = []
-    @Published var publishers: [Publisher] = []
+    @Published var publishers: [MagazinePublisher] = []
     @Published var selectedPublisherId: Int?
     @Published var searchQuery = ""
     @Published var total = 0

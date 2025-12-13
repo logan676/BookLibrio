@@ -24,6 +24,8 @@ enum L10n {
         static var more: String { NSLocalizedString("common.more", comment: "") }
         static var reset: String { NSLocalizedString("common.reset", comment: "") }
         static var progress: String { NSLocalizedString("common.progress", comment: "") }
+        static var share: String { NSLocalizedString("common.share", comment: "") }
+        static var save: String { NSLocalizedString("common.save", comment: "") }
     }
 
     // MARK: - Tab Bar
@@ -390,6 +392,31 @@ enum L10n {
         static var bookmarksDelete: String { NSLocalizedString("reader.bookmarks.delete", comment: "") }
         static var bookmarksDeleteConfirm: String { NSLocalizedString("reader.bookmarks.deleteConfirm", comment: "") }
         static var bookmarksCurrentPage: String { NSLocalizedString("reader.bookmarks.currentPage", comment: "") }
+
+        // Additional settings
+        static var textSample: String { NSLocalizedString("reader.textSample", comment: "") }
+        static var margin: String { NSLocalizedString("reader.margin", comment: "") }
+        static var pageFlip: String { NSLocalizedString("reader.pageFlip", comment: "") }
+        static var syncBrightness: String { NSLocalizedString("reader.syncBrightness", comment: "") }
+        static var currentBrightness: String { NSLocalizedString("reader.currentBrightness", comment: "") }
+
+        // Page flip styles
+        static var flipHorizontal: String { NSLocalizedString("reader.flipHorizontal", comment: "") }
+        static var flipVertical: String { NSLocalizedString("reader.flipVertical", comment: "") }
+        static var flipCurl: String { NSLocalizedString("reader.flipCurl", comment: "") }
+        static var flipFade: String { NSLocalizedString("reader.flipFade", comment: "") }
+
+        // Highlight colors
+        static var highlightYellow: String { NSLocalizedString("reader.highlightYellow", comment: "") }
+        static var highlightGreen: String { NSLocalizedString("reader.highlightGreen", comment: "") }
+        static var highlightBlue: String { NSLocalizedString("reader.highlightBlue", comment: "") }
+        static var highlightPink: String { NSLocalizedString("reader.highlightPink", comment: "") }
+        static var highlightPurple: String { NSLocalizedString("reader.highlightPurple", comment: "") }
+        static var highlightOrange: String { NSLocalizedString("reader.highlightOrange", comment: "") }
+
+        static func pageDisplay(_ current: Int, _ total: Int) -> String {
+            String(format: NSLocalizedString("reader.pageDisplay", comment: ""), current, total)
+        }
     }
 
     // MARK: - Audio Player
@@ -771,67 +798,6 @@ enum L10n {
 
         static func sampleDefinition(_ word: String) -> String {
             String(format: NSLocalizedString("ai.sampleDefinition", comment: ""), word)
-        }
-    }
-
-    // MARK: - Reader Settings
-    enum Reader {
-        static var settings: String { NSLocalizedString("reader.settings", comment: "") }
-        static var done: String { NSLocalizedString("reader.done", comment: "") }
-        static var reset: String { NSLocalizedString("reader.reset", comment: "") }
-        static var brightness: String { NSLocalizedString("reader.brightness", comment: "") }
-        static var backgroundColor: String { NSLocalizedString("reader.backgroundColor", comment: "") }
-        static var textSample: String { NSLocalizedString("reader.textSample", comment: "") }
-        static var fontSize: String { NSLocalizedString("reader.fontSize", comment: "") }
-        static var previewText: String { NSLocalizedString("reader.previewText", comment: "") }
-        static var fontFamily: String { NSLocalizedString("reader.fontFamily", comment: "") }
-        static var lineSpacing: String { NSLocalizedString("reader.lineSpacing", comment: "") }
-        static var margin: String { NSLocalizedString("reader.margin", comment: "") }
-        static var pageFlip: String { NSLocalizedString("reader.pageFlip", comment: "") }
-        static var other: String { NSLocalizedString("reader.other", comment: "") }
-        static var keepScreenOn: String { NSLocalizedString("reader.keepScreenOn", comment: "") }
-        static var syncBrightness: String { NSLocalizedString("reader.syncBrightness", comment: "") }
-        static var currentBrightness: String { NSLocalizedString("reader.currentBrightness", comment: "") }
-
-        // Color modes
-        static var colorWhite: String { NSLocalizedString("reader.colorWhite", comment: "") }
-        static var colorSepia: String { NSLocalizedString("reader.colorSepia", comment: "") }
-        static var colorGreen: String { NSLocalizedString("reader.colorGreen", comment: "") }
-        static var colorDark: String { NSLocalizedString("reader.colorDark", comment: "") }
-
-        // Font families
-        static var fontSystem: String { NSLocalizedString("reader.fontSystem", comment: "") }
-        static var fontSongti: String { NSLocalizedString("reader.fontSongti", comment: "") }
-        static var fontKaiti: String { NSLocalizedString("reader.fontKaiti", comment: "") }
-        static var fontHeiti: String { NSLocalizedString("reader.fontHeiti", comment: "") }
-
-        // Line spacing
-        static var spacingCompact: String { NSLocalizedString("reader.spacingCompact", comment: "") }
-        static var spacingNormal: String { NSLocalizedString("reader.spacingNormal", comment: "") }
-        static var spacingRelaxed: String { NSLocalizedString("reader.spacingRelaxed", comment: "") }
-        static var spacingLoose: String { NSLocalizedString("reader.spacingLoose", comment: "") }
-
-        // Margin sizes
-        static var marginSmall: String { NSLocalizedString("reader.marginSmall", comment: "") }
-        static var marginMedium: String { NSLocalizedString("reader.marginMedium", comment: "") }
-        static var marginLarge: String { NSLocalizedString("reader.marginLarge", comment: "") }
-
-        // Page flip styles
-        static var flipHorizontal: String { NSLocalizedString("reader.flipHorizontal", comment: "") }
-        static var flipVertical: String { NSLocalizedString("reader.flipVertical", comment: "") }
-        static var flipCurl: String { NSLocalizedString("reader.flipCurl", comment: "") }
-        static var flipFade: String { NSLocalizedString("reader.flipFade", comment: "") }
-
-        // Highlight colors
-        static var highlightYellow: String { NSLocalizedString("reader.highlightYellow", comment: "") }
-        static var highlightGreen: String { NSLocalizedString("reader.highlightGreen", comment: "") }
-        static var highlightBlue: String { NSLocalizedString("reader.highlightBlue", comment: "") }
-        static var highlightPink: String { NSLocalizedString("reader.highlightPink", comment: "") }
-        static var highlightPurple: String { NSLocalizedString("reader.highlightPurple", comment: "") }
-        static var highlightOrange: String { NSLocalizedString("reader.highlightOrange", comment: "") }
-
-        static func pageDisplay(_ current: Int, _ total: Int) -> String {
-            String(format: NSLocalizedString("reader.pageDisplay", comment: ""), current, total)
         }
     }
 

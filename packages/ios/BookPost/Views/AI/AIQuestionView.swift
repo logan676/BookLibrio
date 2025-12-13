@@ -234,7 +234,7 @@ struct MessageBubble: View {
                             ? Color.blue
                             : Color(.systemGray6)
                     )
-                    .cornerRadius(16, corners: message.isUser
+                    .aiCornerRadius(16, corners: message.isUser
                         ? [.topLeft, .topRight, .bottomLeft]
                         : [.topLeft, .topRight, .bottomRight])
 
@@ -270,12 +270,12 @@ struct MessageBubble: View {
 // MARK: - Rounded Corner Extension
 
 extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
+    func aiCornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(AIRoundedCorner(radius: radius, corners: corners))
     }
 }
 
-struct RoundedCorner: Shape {
+struct AIRoundedCorner: Shape {
     var radius: CGFloat = .infinity
     var corners: UIRectCorner = .allCorners
 

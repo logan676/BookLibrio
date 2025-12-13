@@ -10,7 +10,7 @@
 
 import { db } from '../db/client'
 import { ebooks } from '../db/schema'
-import { isNull, or, eq, and, ne } from 'drizzle-orm'
+import { isNull, or, eq, and } from 'drizzle-orm'
 import { log } from '../utils/logger'
 import * as goodreads from '../services/goodreads'
 

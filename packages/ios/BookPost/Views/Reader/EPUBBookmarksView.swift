@@ -83,7 +83,7 @@ struct EPUBBookmarksView: View {
     private var bookmarksList: some View {
         List {
             ForEach(bookmarks) { bookmark in
-                BookmarkRow(
+                EPUBBookmarkRow(
                     bookmark: bookmark,
                     isCurrent: bookmark.href == currentHref
                 )
@@ -134,7 +134,7 @@ struct EPUBBookmarksView: View {
 }
 
 /// Single bookmark row view
-struct BookmarkRow: View {
+struct EPUBBookmarkRow: View {
     let bookmark: Bookmark
     let isCurrent: Bool
 

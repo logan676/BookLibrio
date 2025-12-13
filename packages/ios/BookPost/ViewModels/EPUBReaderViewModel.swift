@@ -5,6 +5,7 @@ import Combine
 import ReadiumShared
 import ReadiumStreamer
 import ReadiumNavigator
+import ReadiumAdapterGCDWebServer
 #endif
 
 /// ViewModel for EPUB reader state management
@@ -44,6 +45,9 @@ class EPUBReaderViewModel: ObservableObject {
     // Readium objects
     @Published var publication: Publication?
     private var publicationOpener: PublicationOpener?
+
+    // HTTP server for serving publication resources
+    private(set) var httpServer: GCDHTTPServer?
     #endif
 
     init(bookType: String, bookId: Int, title: String) {
@@ -80,6 +84,9 @@ class EPUBReaderViewModel: ObservableObject {
             }
 
             #if canImport(ReadiumShared) && canImport(ReadiumStreamer) && canImport(ReadiumNavigator)
+            // Create HTTP server for serving publication resources
+            self.httpServer = GCDHTTPServer(assetRetriever: AssetRetriever(httpClient: DefaultHTTPClient()))
+
             // Parse EPUB with Readium
             await parseEPUB(at: fileURL)
 
@@ -340,6 +347,18 @@ struct EPUBTOCItem: Identifiable {
     let title: String
     let href: String
     let children: [EPUBTOCItem]
+
+    /// Convert to generic TOCItem for use with ReaderTOCTabView
+    func toTOCItem(level: Int = 0) -> TOCItem {
+        TOCItem(
+            id: id.uuidString,
+            title: title,
+            level: level,
+            pageNumber: nil,
+            href: href,
+            children: children.map { $0.toTOCItem(level: level + 1) }
+        )
+    }
 }
 
 // MARK: - Saved Reading Position

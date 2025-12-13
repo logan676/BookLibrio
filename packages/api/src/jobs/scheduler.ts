@@ -19,6 +19,9 @@ import { aggregateBookStats } from './aggregateBookStats'
 import { enrichBookMetadata } from './enrichBookMetadata'
 import { computeRelatedBooks } from './computeRelatedBooks'
 import { cleanupExpiredAiCache } from './cleanupExpiredAiCache'
+import { enrichGoodreadsRatings } from './enrichGoodreadsRatings'
+import { generateAISummaries } from './generateAISummaries'
+import { computeBookRankings } from './computeBookRankings'
 
 // Timing constants (in milliseconds)
 const MINUTE = 60 * 1000
@@ -97,10 +100,13 @@ export function initializeJobs(): void {
   // Hourly jobs
   scheduleJob('refresh_popular_highlights', refreshPopularHighlights, HOUR, true)
   scheduleJob('aggregate_book_stats', aggregateBookStats, HOUR, true)
+  scheduleJob('compute_book_rankings', computeBookRankings, HOUR, true)
 
   // Daily jobs (run at different offsets to spread load)
   scheduleJob('enrich_book_metadata', enrichBookMetadata, DAY, false)
   scheduleJob('cleanup_expired_ai_cache', cleanupExpiredAiCache, DAY, false)
+  scheduleJob('enrich_goodreads_ratings', enrichGoodreadsRatings, DAY, false)
+  scheduleJob('generate_ai_summaries', generateAISummaries, DAY, false)
 
   // Weekly job
   scheduleJob('compute_related_books', computeRelatedBooks, WEEK, false)
@@ -128,6 +134,9 @@ export async function triggerJob(jobName: string): Promise<boolean> {
     'enrich_book_metadata': enrichBookMetadata,
     'compute_related_books': computeRelatedBooks,
     'cleanup_expired_ai_cache': cleanupExpiredAiCache,
+    'enrich_goodreads_ratings': enrichGoodreadsRatings,
+    'generate_ai_summaries': generateAISummaries,
+    'compute_book_rankings': computeBookRankings,
   }
 
   const job = jobs[jobName]
@@ -150,5 +159,8 @@ export function getJobStatus(): Record<string, { running: boolean; lastRun?: Dat
     'enrich_book_metadata': { running: runningJobs.has('enrich_book_metadata') },
     'compute_related_books': { running: runningJobs.has('compute_related_books') },
     'cleanup_expired_ai_cache': { running: runningJobs.has('cleanup_expired_ai_cache') },
+    'enrich_goodreads_ratings': { running: runningJobs.has('enrich_goodreads_ratings') },
+    'generate_ai_summaries': { running: runningJobs.has('generate_ai_summaries') },
+    'compute_book_rankings': { running: runningJobs.has('compute_book_rankings') },
   }
 }

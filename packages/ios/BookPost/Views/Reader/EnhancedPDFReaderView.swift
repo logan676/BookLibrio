@@ -143,8 +143,7 @@ struct EnhancedPDFReaderView: View {
             AddToListSheet(
                 bookId: id,
                 bookType: type,
-                bookTitle: title,
-                onDismiss: { showAddToList = false }
+                bookTitle: title
             )
         }
         .onAppear {

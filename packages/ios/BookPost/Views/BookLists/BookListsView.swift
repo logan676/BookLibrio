@@ -78,7 +78,7 @@ struct BookListsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(BookListCategory.allCases) { category in
-                    CategoryChip(
+                    BookListCategoryChip(
                         title: category.displayName,
                         icon: category.iconName,
                         isSelected: viewModel.selectedCategory == category
@@ -204,7 +204,7 @@ struct BookListsView: View {
 
 // MARK: - Category Chip
 
-struct CategoryChip: View {
+struct BookListCategoryChip: View {
     let title: String
     let icon: String
     var isSelected: Bool = false

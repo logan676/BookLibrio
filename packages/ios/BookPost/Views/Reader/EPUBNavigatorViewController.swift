@@ -5,6 +5,7 @@ import Combine
 #if canImport(ReadiumShared) && canImport(ReadiumNavigator)
 import ReadiumShared
 import ReadiumNavigator
+import ReadiumAdapterGCDWebServer
 
 /// UIKit-based EPUB Navigator controller
 /// Wraps Readium's EPUBNavigatorViewController for use in SwiftUI
@@ -14,7 +15,8 @@ class EPUBNavigatorContainerViewController: UIViewController {
 
     private let publication: Publication
     private let initialLocator: Locator?
-    private let readingProgression: ReadingProgression
+    private let readingProgression: ReadiumNavigator.ReadingProgression
+    private let httpServer: GCDHTTPServer
 
     private var navigator: EPUBNavigatorViewController?
     private var cancellables = Set<AnyCancellable>()
@@ -36,12 +38,16 @@ class EPUBNavigatorContainerViewController: UIViewController {
     init(
         publication: Publication,
         initialLocator: Locator? = nil,
-        settings: ReadingSettings
+        settings: ReadingSettings,
+        httpServer: GCDHTTPServer
     ) {
         self.publication = publication
         self.initialLocator = initialLocator
         self.settings = settings
-        self.readingProgression = publication.metadata.readingProgression ?? .ltr
+        self.httpServer = httpServer
+        // Convert ReadiumShared.ReadingProgression to ReadiumNavigator.ReadingProgression
+        let sharedProgression = publication.metadata.readingProgression
+        self.readingProgression = sharedProgression == .rtl ? .rtl : .ltr
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -64,7 +70,7 @@ class EPUBNavigatorContainerViewController: UIViewController {
             do {
                 // Create EPUB preferences based on current settings
                 let preferences = EPUBPreferences(
-                    backgroundColor: settings.colorMode.uiBackgroundColor.cgColor,
+                    backgroundColor: settings.colorMode.readiumBackgroundColor,
                     columnCount: .auto,
                     fontFamily: settings.fontFamily.readiumFontFamily,
                     fontSize: settings.fontSize,
@@ -73,21 +79,21 @@ class EPUBNavigatorContainerViewController: UIViewController {
                     publisherStyles: true,
                     readingProgression: readingProgression,
                     scroll: settings.pageFlipStyle == .vertical,
-                    textColor: settings.colorMode.uiTextColor.cgColor
+                    textColor: settings.colorMode.readiumTextColor
                 )
 
                 // Create navigator configuration
                 let config = EPUBNavigatorViewController.Configuration(
                     defaults: EPUBDefaults(),
-                    editingActions: [.copy],
-                    decorationTemplates: decorationTemplates
+                    editingActions: [.copy]
                 )
 
                 // Create the navigator
                 let epubNavigator = try await EPUBNavigatorViewController(
                     publication: publication,
                     initialLocation: initialLocator,
-                    config: config
+                    config: config,
+                    httpServer: httpServer
                 )
 
                 self.navigator = epubNavigator
@@ -103,43 +109,12 @@ class EPUBNavigatorContainerViewController: UIViewController {
                 // Apply initial preferences
                 epubNavigator.submitPreferences(preferences)
 
-                // Observe location changes
-                epubNavigator.currentLocator
-                    .sink { [weak self] locator in
-                        self?.onLocationChanged?(locator)
-                    }
-                    .store(in: &cancellables)
+                // Location changes are observed through NavigatorDelegate
 
             } catch {
                 onError?(error)
             }
         }
-    }
-
-    // MARK: - Decoration Templates (for highlights)
-
-    private var decorationTemplates: [Decoration.Style.Id: HTMLDecorationTemplate] {
-        [
-            .highlight: HTMLDecorationTemplate(
-                layout: .boxes,
-                width: .wrap,
-                element: { decoration in
-                    let color = (decoration.extras["color"] as? String) ?? "#FFFF00"
-                    return """
-                    <div style="background-color: \(color); opacity: 0.4; border-radius: 3px;"></div>
-                    """
-                }
-            ),
-            .underline: HTMLDecorationTemplate(
-                layout: .bounds,
-                width: .page,
-                element: { _ in
-                    """
-                    <div style="border-bottom: 2px solid currentColor;"></div>
-                    """
-                }
-            )
-        ]
     }
 
     // MARK: - Settings Application
@@ -148,7 +123,7 @@ class EPUBNavigatorContainerViewController: UIViewController {
         guard let navigator = navigator else { return }
 
         let preferences = EPUBPreferences(
-            backgroundColor: settings.colorMode.uiBackgroundColor.cgColor,
+            backgroundColor: settings.colorMode.readiumBackgroundColor,
             columnCount: .auto,
             fontFamily: settings.fontFamily.readiumFontFamily,
             fontSize: settings.fontSize,
@@ -157,7 +132,7 @@ class EPUBNavigatorContainerViewController: UIViewController {
             publisherStyles: true,
             readingProgression: readingProgression,
             scroll: settings.pageFlipStyle == .vertical,
-            textColor: settings.colorMode.uiTextColor.cgColor
+            textColor: settings.colorMode.readiumTextColor
         )
 
         navigator.submitPreferences(preferences)
@@ -168,33 +143,33 @@ class EPUBNavigatorContainerViewController: UIViewController {
 
     func goToLocator(_ locator: Locator) {
         Task {
-            _ = await navigator?.go(to: locator, animated: true)
+            _ = await navigator?.go(to: locator)
         }
     }
 
-    func goToLink(_ link: Link) {
+    func goToLink(_ link: ReadiumShared.Link) {
         Task {
-            _ = await navigator?.go(to: link, animated: true)
+            _ = await navigator?.go(to: link)
         }
     }
 
     func goForward() {
         Task {
-            _ = await navigator?.goForward(animated: true)
+            _ = await navigator?.goForward()
         }
     }
 
     func goBackward() {
         Task {
-            _ = await navigator?.goBackward(animated: true)
+            _ = await navigator?.goBackward()
         }
     }
 
     func goToProgression(_ progression: Double) {
         Task {
             // Find the locator at this progression
-            if let locator = publication.locate(progression: progression) {
-                _ = await navigator?.go(to: locator, animated: true)
+            if let locator = await publication.locate(progression: progression) {
+                _ = await navigator?.go(to: locator)
             }
         }
     }
@@ -214,15 +189,20 @@ extension EPUBNavigatorContainerViewController: EPUBNavigatorDelegate {
         UIApplication.shared.open(url)
     }
 
-    func navigator(_ navigator: any Navigator, shouldNavigateTo link: Link) -> Bool {
-        return true
+    func navigator(_ navigator: any Navigator, locationDidChange locator: Locator) {
+        onLocationChanged?(locator)
     }
+}
 
-    func navigator(_ navigator: any Navigator, didTapAt point: CGPoint) {
+// MARK: - VisualNavigatorDelegate
+
+extension EPUBNavigatorContainerViewController: VisualNavigatorDelegate {
+
+    func navigator(_ navigator: any VisualNavigator, didTapAt point: CGPoint) {
         onTap?()
     }
 
-    func navigator(_ navigator: any Navigator, didPressKey event: KeyEvent) {
+    func navigator(_ navigator: any VisualNavigator, didPressKey event: KeyEvent) {
         // Handle keyboard navigation
         switch event.key {
         case .arrowLeft:
@@ -260,6 +240,7 @@ struct EPUBNavigatorView: UIViewControllerRepresentable {
     let initialLocator: Locator?
     let settings: ReadingSettings
     let targetLocator: Locator?  // For navigation from search results
+    let httpServer: GCDHTTPServer
     let onTap: () -> Void
     let onLocationChanged: (Locator) -> Void
 
@@ -267,7 +248,8 @@ struct EPUBNavigatorView: UIViewControllerRepresentable {
         let controller = EPUBNavigatorContainerViewController(
             publication: publication,
             initialLocator: initialLocator,
-            settings: settings
+            settings: settings,
+            httpServer: httpServer
         )
         controller.onTap = onTap
         controller.onLocationChanged = onLocationChanged
@@ -349,6 +331,16 @@ extension ColorMode {
         case .dark: return UIColor(red: 0.85, green: 0.85, blue: 0.85, alpha: 1.0)
         }
     }
+
+    #if canImport(ReadiumNavigator)
+    var readiumBackgroundColor: ReadiumNavigator.Color? {
+        ReadiumNavigator.Color(uiColor: uiBackgroundColor)
+    }
+
+    var readiumTextColor: ReadiumNavigator.Color? {
+        ReadiumNavigator.Color(uiColor: uiTextColor)
+    }
+    #endif
 }
 
 extension FontFamily {
@@ -356,23 +348,12 @@ extension FontFamily {
     var readiumFontFamily: ReadiumNavigator.FontFamily? {
         switch self {
         case .system: return nil
-        case .songti: return ReadiumNavigator.FontFamily(name: "STSong")
-        case .kaiti: return ReadiumNavigator.FontFamily(name: "STKaiti")
-        case .heiti: return ReadiumNavigator.FontFamily(name: "STHeiti")
+        case .songti: return .serif
+        case .kaiti: return .serif
+        case .heiti: return .sansSerif
         }
     }
     #endif
-}
-
-extension LineSpacing {
-    var multiplier: Double {
-        switch self {
-        case .compact: return 1.2
-        case .normal: return 1.5
-        case .relaxed: return 1.8
-        case .loose: return 2.0
-        }
-    }
 }
 
 extension MarginSize {

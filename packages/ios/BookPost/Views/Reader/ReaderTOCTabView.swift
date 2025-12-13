@@ -295,7 +295,7 @@ struct TOCItemRow: View {
 
                 Spacer()
 
-                if item.hasChildren {
+                if !item.children.isEmpty {
                     Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -319,7 +319,7 @@ struct BookmarksTabContent: View {
     @StateObject private var bookmarkManager = BookmarkManager.shared
 
     private var bookmarks: [Bookmark] {
-        bookmarkManager.getBookmarks(bookType: bookType, bookId: bookId)
+        bookmarkManager.bookmarks(for: bookType, bookId: bookId)
     }
 
     var body: some View {
@@ -664,14 +664,15 @@ struct AIOutlineTopicRow: View {
 
 #Preview {
     let tocItems = [
-        TOCItem(title: "Introduction", href: "intro.xhtml", level: 0, hasChildren: false),
-        TOCItem(title: "Chapter 1: The Beginning", href: "ch1.xhtml", level: 0, hasChildren: true),
-        TOCItem(title: "Section 1.1", href: "ch1-1.xhtml", level: 1, hasChildren: false),
-        TOCItem(title: "Chapter 2: The Journey", href: "ch2.xhtml", level: 0, hasChildren: false),
-        TOCItem(title: "Chapter 3: The End", href: "ch3.xhtml", level: 0, hasChildren: false)
+        TOCItem(title: "Introduction", level: 0, href: "intro.xhtml"),
+        TOCItem(title: "Chapter 1: The Beginning", level: 0, href: "ch1.xhtml", children: [
+            TOCItem(title: "Section 1.1", level: 1, href: "ch1-1.xhtml")
+        ]),
+        TOCItem(title: "Chapter 2: The Journey", level: 0, href: "ch2.xhtml"),
+        TOCItem(title: "Chapter 3: The End", level: 0, href: "ch3.xhtml")
     ]
 
-    return ReaderTOCTabView(
+    ReaderTOCTabView(
         bookType: "ebook",
         bookId: 1,
         bookTitle: "Sample Book",

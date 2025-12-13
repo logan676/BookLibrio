@@ -14,7 +14,7 @@ struct Magazine: Codable, Identifiable {
     let createdAt: String?
 }
 
-struct Publisher: Codable, Identifiable {
+struct MagazinePublisher: Codable, Identifiable {
     let id: Int
     let name: String
     let description: String?
@@ -31,5 +31,5 @@ struct MagazineResponse: Codable {
 }
 
 struct PublishersResponse: Codable {
-    let data: [Publisher]
+    let data: [MagazinePublisher]
 }
