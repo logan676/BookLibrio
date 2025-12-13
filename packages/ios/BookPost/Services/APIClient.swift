@@ -221,7 +221,7 @@ class APIClient {
         return try await perform(request)
     }
 
-    func downloadEbookFile(id: Int) async throws -> URL {
+    func downloadEbookFile(id: Int, fileType: String? = nil) async throws -> URL {
         let request = try buildRequest(path: "/api/ebooks/\(id)/file", requiresAuth: true)
         let (tempURL, response) = try await session.download(for: request)
 
@@ -230,12 +230,26 @@ class APIClient {
             throw APIError.serverError((response as? HTTPURLResponse)?.statusCode ?? 0, nil)
         }
 
-        // Move to cache directory
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        let pdfDir = cacheDir.appendingPathComponent("pdfs/ebooks", isDirectory: true)
-        try FileManager.default.createDirectory(at: pdfDir, withIntermediateDirectories: true)
+        // Determine file type from parameter, Content-Type header, or default to pdf
+        let actualFileType: String
+        if let type = fileType?.lowercased(), !type.isEmpty {
+            actualFileType = type
+        } else if let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") {
+            if contentType.contains("epub") {
+                actualFileType = "epub"
+            } else {
+                actualFileType = "pdf"
+            }
+        } else {
+            actualFileType = "pdf"
+        }
 
-        let destURL = pdfDir.appendingPathComponent("\(id).pdf")
+        // Move to cache directory with correct extension
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let fileDir = cacheDir.appendingPathComponent("\(actualFileType)s/ebooks", isDirectory: true)
+        try FileManager.default.createDirectory(at: fileDir, withIntermediateDirectories: true)
+
+        let destURL = fileDir.appendingPathComponent("\(id).\(actualFileType)")
         if FileManager.default.fileExists(atPath: destURL.path) {
             try FileManager.default.removeItem(at: destURL)
         }

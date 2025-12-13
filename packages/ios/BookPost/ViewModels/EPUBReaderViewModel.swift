@@ -72,8 +72,8 @@ class EPUBReaderViewModel: ObservableObject {
             if FileManager.default.fileExists(atPath: cachedFile.path) {
                 fileURL = cachedFile
             } else {
-                // Download from API
-                fileURL = try await APIClient.shared.downloadEbookFile(id: bookId)
+                // Download from API with correct file type
+                fileURL = try await APIClient.shared.downloadEbookFile(id: bookId, fileType: "epub")
 
                 // Cache the file
                 try? FileManager.default.createDirectory(

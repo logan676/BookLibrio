@@ -463,7 +463,7 @@ struct EnhancedPDFReaderView: View {
         do {
             let fileURL: URL
             if type == "ebook" {
-                fileURL = try await APIClient.shared.downloadEbookFile(id: id)
+                fileURL = try await APIClient.shared.downloadEbookFile(id: id, fileType: "pdf")
             } else {
                 fileURL = try await APIClient.shared.downloadMagazineFile(id: id)
             }
