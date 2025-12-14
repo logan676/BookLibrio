@@ -656,10 +656,11 @@ struct RecommendedCoversSection: View {
 
                 Spacer()
 
-                Button("View All") {
+                Button("View More") {
                     onShowAll?()
                 }
                 .font(.subheadline)
+                .foregroundColor(.primary)
             }
             .padding(.horizontal)
 
@@ -671,7 +672,7 @@ struct RecommendedCoversSection: View {
                             onBookTap?(book)
                         } label: {
                             BookCoverView(coverUrl: book.coverUrl, title: book.title)
-                                .frame(width: 100, height: 140)
+                                .frame(width: 100, height: 150)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                 .shadow(radius: 2)
                         }
@@ -702,10 +703,11 @@ struct MixedYearBooksSection: View {
 
                 Spacer()
 
-                Button("View All") {
+                Button("View More") {
                     onShowAll?()
                 }
                 .font(.subheadline)
+                .foregroundColor(.primary)
             }
             .padding(.horizontal)
 
@@ -743,7 +745,7 @@ struct MixedYearBookCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .bottomTrailing) {
                     BookCoverView(coverUrl: book.coverUrl, title: book.title)
-                        .frame(width: 100, height: 140)
+                        .frame(width: 100, height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .shadow(radius: 2)
 
@@ -968,10 +970,11 @@ struct TopRatedSection: View {
 
                 Spacer()
 
-                Button(L10n.Store.more) {
+                Button("View More") {
                     onShowAll?()
                 }
                 .font(.subheadline)
+                .foregroundColor(.primary)
             }
             .padding(.horizontal)
 
@@ -999,7 +1002,7 @@ struct TopRatedBookCard: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
                 BookCoverView(coverUrl: book.coverUrl, title: book.title)
-                    .frame(width: 110, height: 155)
+                    .frame(width: 100, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .shadow(radius: 3)
 
@@ -1032,7 +1035,7 @@ struct TopRatedBookCard: View {
                     }
                 }
             }
-            .frame(width: 110)
+            .frame(width: 100)
         }
         .buttonStyle(.plain)
     }
@@ -1050,7 +1053,7 @@ struct ExternalRankingsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                Text("External Rankings & Recommended Lists")
+                Text("External Rankings")
                     .font(.title3)
                     .fontWeight(.bold)
 
@@ -1060,16 +1063,19 @@ struct ExternalRankingsSection: View {
                     onShowAll?()
                 }
                 .font(.subheadline)
+                .foregroundColor(.primary)
             }
             .padding(.horizontal)
 
             // Rankings scroll
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(rankings) { ranking in
-                        ExternalRankingCard(ranking: ranking) {
-                            onRankingTap?(ranking)
-                        }
+                HStack(spacing: 16) {
+                    ForEach(Array(rankings.enumerated()), id: \.element.id) { index, ranking in
+                        ExternalRankingCard(
+                            ranking: ranking,
+                            action: { onRankingTap?(ranking) },
+                            colorIndex: index
+                        )
                     }
                 }
                 .padding(.horizontal)
@@ -1078,81 +1084,204 @@ struct ExternalRankingsSection: View {
     }
 }
 
-/// Card for external ranking list - matches design with logo, title, subtitle, and book previews
+/// Card for external ranking list - compact design with stacked book covers
 struct ExternalRankingCard: View {
     let ranking: ExternalRanking
     let action: () -> Void
+    let colorIndex: Int  // Index for color selection to avoid adjacent duplicates
+
+    // Compact dimensions
+    private let cardWidth: CGFloat = 240
+    private let cardHeight: CGFloat = 260
+    private let mainCoverWidth: CGFloat = 70
+    private let mainCoverHeight: CGFloat = 105
+    private let sideCoverWidth: CGFloat = 56
+    private let sideCoverHeight: CGFloat = 84
+
+    // Color palettes - 80% split colors (8/10), 20% solid (2/10)
+    private static let colorPalettes: [(top: Color, bottom: Color, titleColor: Color, isLight: Bool)] = [
+        // 1. Split: Teal top → Dark navy bottom (Amazon style)
+        (Color(red: 0.07, green: 0.45, blue: 0.52), Color(red: 0.04, green: 0.18, blue: 0.25), .white, false),
+        // 2. Solid: Cream (NYT style) - 20%
+        (Color(red: 0.96, green: 0.94, blue: 0.90), Color(red: 0.96, green: 0.94, blue: 0.90), .black, true),
+        // 3. Split: Light blue top → Deep blue bottom
+        (Color(red: 0.55, green: 0.75, blue: 0.9), Color(red: 0.12, green: 0.25, blue: 0.45), .white, false),
+        // 4. Split: Lavender top → Deep purple bottom
+        (Color(red: 0.75, green: 0.65, blue: 0.85), Color(red: 0.3, green: 0.15, blue: 0.4), .white, false),
+        // 5. Split: Peach top → Burgundy bottom
+        (Color(red: 0.98, green: 0.8, blue: 0.7), Color(red: 0.55, green: 0.2, blue: 0.25), .white, false),
+        // 6. Split: Mint top → Forest green bottom
+        (Color(red: 0.7, green: 0.9, blue: 0.8), Color(red: 0.1, green: 0.35, blue: 0.25), .white, false),
+        // 7. Split: Light coral top → Deep red bottom
+        (Color(red: 0.95, green: 0.6, blue: 0.55), Color(red: 0.5, green: 0.12, blue: 0.15), .white, false),
+        // 8. Solid: Warm sand - 20%
+        (Color(red: 0.94, green: 0.9, blue: 0.82), Color(red: 0.94, green: 0.9, blue: 0.82), .black, true),
+        // 9. Split: Sky blue top → Navy bottom
+        (Color(red: 0.6, green: 0.8, blue: 0.95), Color(red: 0.08, green: 0.15, blue: 0.3), .white, false),
+        // 10. Split: Gold/yellow top → Brown bottom
+        (Color(red: 0.95, green: 0.85, blue: 0.55), Color(red: 0.4, green: 0.25, blue: 0.15), .white, false),
+    ]
+
+    private var palette: (top: Color, bottom: Color, titleColor: Color, isLight: Bool) {
+        let index = colorIndex % Self.colorPalettes.count
+        return Self.colorPalettes[index]
+    }
+
+    private var titleColor: Color { palette.titleColor }
+    private var subtitleColor: Color { palette.isLight ? .gray : .white.opacity(0.8) }
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                // Source logo and name
-                HStack(spacing: 8) {
-                    if let logoUrl = ranking.sourceLogoUrl, !logoUrl.isEmpty {
-                        AsyncImage(url: URL(string: logoUrl)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            Image(systemName: CuratedListType(rawValue: ranking.listType)?.icon ?? "list.bullet")
-                                .font(.title3)
-                                .foregroundColor(.primary)
-                        }
-                        .frame(height: 20)
-                    } else {
-                        // Text logo for sources like "amazon" or "New York Times"
-                        Text(ranking.displaySourceName)
-                            .font(.subheadline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                    }
+            VStack(spacing: 0) {
+                // Logo at top (centered)
+                logoView
+                    .frame(height: 32)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 12)
 
-                    Spacer()
-                }
+                // Stacked book covers
+                stackedBooksView
+                    .frame(height: mainCoverHeight + 30)
+                    .padding(.top, 8)
 
-                // Title
-                Text(ranking.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                // Title and subtitle at bottom
+                VStack(spacing: 2) {
+                    Text(ranking.title)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(titleColor)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
 
-                // Subtitle
-                if let subtitle = ranking.subtitle {
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                // Book cover previews
-                if let covers = ranking.previewCovers, !covers.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(covers.prefix(3), id: \.self) { coverUrl in
-                            AsyncImage(url: URL(string: coverUrl)) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle()
-                                    .fill(Color(.systemGray5))
-                            }
-                            .frame(width: 45, height: 65)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
+                    if let subtitle = ranking.subtitle {
+                        Text(subtitle)
+                            .font(.caption2)
+                            .foregroundColor(subtitleColor)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(1)
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
             }
-            .padding(12)
-            .frame(width: 170, height: 180)
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
+            .frame(width: cardWidth, height: cardHeight)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(
+                        LinearGradient(
+                            stops: [
+                                .init(color: palette.top, location: 0),
+                                .init(color: palette.top, location: 0.45),
+                                .init(color: palette.bottom, location: 0.55),
+                                .init(color: palette.bottom, location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(.plain)
+    }
+
+    // Stacked books: always show 3 books (use placeholders if needed)
+    private var stackedBooksView: some View {
+        let covers = ranking.previewCovers ?? []
+
+        return ZStack {
+            // Left book (behind, offset left)
+            bookCover(url: covers.count > 1 ? covers[1] : nil, width: sideCoverWidth, height: sideCoverHeight)
+                .offset(x: -50, y: 15)
+                .zIndex(0)
+
+            // Right book (behind, offset right)
+            bookCover(url: covers.count > 2 ? covers[2] : nil, width: sideCoverWidth, height: sideCoverHeight)
+                .offset(x: 50, y: 15)
+                .zIndex(0)
+
+            // Center book (front, elevated)
+            bookCover(url: covers.count > 0 ? covers[0] : nil, width: mainCoverWidth, height: mainCoverHeight)
+                .zIndex(1)
+                .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
+        }
+    }
+
+    // Book cover view - always shows something (image or placeholder)
+    private func bookCover(url: String?, width: CGFloat, height: CGFloat) -> some View {
+        Group {
+            if let coverUrl = url, let imageUrl = URL(string: coverUrl) {
+                AsyncImage(url: imageUrl) { phase in
+                    switch phase {
+                    case .empty:
+                        placeholderCover
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .failure:
+                        placeholderCover
+                    @unknown default:
+                        placeholderCover
+                    }
+                }
+            } else {
+                placeholderCover
+            }
+        }
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+    }
+
+    private var placeholderCover: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                Image(systemName: "book.closed")
+                    .font(.caption)
+                    .foregroundColor(.gray.opacity(0.5))
+            )
+    }
+
+    // Logo view
+    @ViewBuilder
+    private var logoView: some View {
+        if let logoUrl = ranking.sourceLogoUrl, !logoUrl.isEmpty {
+            AsyncImage(url: URL(string: logoUrl)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                default:
+                    sourceNameText
+                }
+            }
+        } else {
+            sourceNameText
+        }
+    }
+
+    private var sourceNameText: some View {
+        Text(ranking.displaySourceName)
+            .font(.caption)
+            .fontWeight(.bold)
+            .foregroundColor(titleColor)
+            .italic(ranking.displaySourceName.lowercased().contains("times"))
     }
 }
 

@@ -21,9 +21,9 @@ struct CategoryGridView: View {
                 NavigationLink {
                     AllCategoriesView(bookType: selectedBookType)
                 } label: {
-                    Text("View All")
+                    Text("View More")
                         .font(.subheadline)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.primary)
                 }
             }
             .padding(.horizontal)

@@ -130,6 +130,7 @@ struct EbookStoreView: View {
                     showBookLists = true
                 }
                 .font(.subheadline)
+                .foregroundColor(.primary)
             }
             .padding(.horizontal)
 
@@ -264,10 +265,61 @@ class EbookStoreViewModel: ObservableObject {
     private func loadExternalRankings() async {
         do {
             let response = try await apiClient.getExternalRankings(bookType: "ebook")
-            externalRankings = response.data
+            externalRankings = interleaveRankingsBySources(rankings: response.data)
         } catch {
             print("Failed to load external rankings: \(error)")
         }
+    }
+
+    /// Interleave rankings from different sources for browsing diversity
+    /// Instead of showing all Amazon rankings together, mix them: Amazon → NYT → Bill Gates → NPR → Amazon → ...
+    private func interleaveRankingsBySources(rankings: [ExternalRanking]) -> [ExternalRanking] {
+        guard !rankings.isEmpty else { return [] }
+
+        // Group rankings by source name
+        var sourceGroups: [String: [ExternalRanking]] = [:]
+        for ranking in rankings {
+            let source = ranking.displaySourceName
+            if sourceGroups[source] == nil {
+                sourceGroups[source] = []
+            }
+            sourceGroups[source]?.append(ranking)
+        }
+
+        // Get unique sources in their original appearance order
+        var sourceOrder: [String] = []
+        for ranking in rankings {
+            let source = ranking.displaySourceName
+            if !sourceOrder.contains(source) {
+                sourceOrder.append(source)
+            }
+        }
+
+        // Interleave: take one from each source in round-robin fashion
+        var result: [ExternalRanking] = []
+        var indices: [String: Int] = [:]
+        for source in sourceOrder {
+            indices[source] = 0
+        }
+
+        var hasMore = true
+        while hasMore {
+            hasMore = false
+            for source in sourceOrder {
+                guard let group = sourceGroups[source],
+                      let currentIndex = indices[source],
+                      currentIndex < group.count else {
+                    continue
+                }
+                result.append(group[currentIndex])
+                indices[source] = currentIndex + 1
+                if currentIndex + 1 < group.count {
+                    hasMore = true
+                }
+            }
+        }
+
+        return result
     }
 }
 

@@ -47,6 +47,7 @@
 		BD9407B018694DDF9908FCCB /* UserAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87353DAAC97839076674EC30 /* UserAvatarView.swift */; };
 		D81DF8A9E09A6F9B60C6A237 /* StoreTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C72234EC0764B4DFE662E1 /* StoreTabView.swift */; };
 		DA2C3AA3DFB66FB74D90703A /* MagazineStoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B539483F02342EB1302D3311 /* MagazineStoreView.swift */; };
+		EXTRANK001 /* ExternalRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EXTRAKKREF01 /* ExternalRankingDetailView.swift */; };
 		E207DBA357BC4F7BF77F0B0C /* TimelineMilestoneRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDFDE7A71134F5FAF808BEE /* TimelineMilestoneRow.swift */; };
 		E89A441F2EEC5614009B078F /* ReadiumNavigator in Frameworks */ = {isa = PBXBuildFile; productRef = E89A441E2EEC5614009B078F /* ReadiumNavigator */; };
 		E89A44212EEC5614009B078F /* ReadiumShared in Frameworks */ = {isa = PBXBuildFile; productRef = E89A44202EEC5614009B078F /* ReadiumShared */; };
@@ -174,6 +175,7 @@
 		87353DAAC97839076674EC30 /* UserAvatarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookPost/Views/Components/UserAvatarView.swift; sourceTree = SOURCE_ROOT; };
 		89D276F13760B2798AF938E5 /* BookListsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BookListsView.swift; path = BookListsView.swift; sourceTree = "<group>"; };
 		8C5BADCF3B757CA393BA0120 /* EbookStoreView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EbookStoreView.swift; sourceTree = "<group>"; };
+		EXTRAKKREF01 /* ExternalRankingDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExternalRankingDetailView.swift; sourceTree = "<group>"; };
 		924E838E589FADB20DA16D20 /* BookListsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BookListsViewModel.swift; path = BookListsViewModel.swift; sourceTree = "<group>"; };
 		9553999466AF980B5A4245A0 /* BookList.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BookList.swift; path = BookList.swift; sourceTree = "<group>"; };
 		A001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -303,37 +305,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		093C8386B13CEFEC85D896B3 /* Profile */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Profile;
-			sourceTree = "<group>";
-		};
-		475327135D8EE95093FC7979 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				7AA0775FFC69E9EE269C3318 /* Components */,
-				093C8386B13CEFEC85D896B3 /* Profile */,
-			);
-			name = Views;
-			sourceTree = "<group>";
-		};
-		4E201CCEAB427755CD107F6A /* BookPost */ = {
-			isa = PBXGroup;
-			children = (
-				475327135D8EE95093FC7979 /* Views */,
-			);
-			name = BookPost;
-			sourceTree = "<group>";
-		};
-		7AA0775FFC69E9EE269C3318 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Components;
-			sourceTree = "<group>";
-		};
 		9610DF256BF678A8B16BAA16 /* CuratedLists */ = {
 			isa = PBXGroup;
 			children = (
@@ -427,7 +398,6 @@
 			children = (
 				MAIN /* BookPost */,
 				PRODUCTS /* Products */,
-				4E201CCEAB427755CD107F6A /* BookPost */,
 			);
 			sourceTree = "<group>";
 		};
@@ -731,6 +701,7 @@
 				C0C72234EC0764B4DFE662E1 /* StoreTabView.swift */,
 				8C5BADCF3B757CA393BA0120 /* EbookStoreView.swift */,
 				B539483F02342EB1302D3311 /* MagazineStoreView.swift */,
+				EXTRAKKREF01 /* ExternalRankingDetailView.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -927,6 +898,7 @@
 				D81DF8A9E09A6F9B60C6A237 /* StoreTabView.swift in Sources */,
 				9E60E53E2D12E8A1CEF34467 /* EbookStoreView.swift in Sources */,
 				DA2C3AA3DFB66FB74D90703A /* MagazineStoreView.swift in Sources */,
+				EXTRANK001 /* ExternalRankingDetailView.swift in Sources */,
 				STORE001 /* Store.swift in Sources */,
 				MEANING001 /* MeaningPopupView.swift in Sources */,
 				0A88DFBC336009F30EA23C26 /* CategoryGridView.swift in Sources */,
