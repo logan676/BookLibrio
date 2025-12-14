@@ -14,6 +14,13 @@ const app = new OpenAPIHono()
 app.use('*', requireAuth)
 
 // Schemas
+const BadgeRequirementSchema = z.object({
+  id: z.number(),
+  description: z.string(),
+  current: z.number(),
+  target: z.number(),
+})
+
 const BadgeSchema = z.object({
   id: z.number(),
   category: z.string(),
@@ -24,10 +31,17 @@ const BadgeSchema = z.object({
   iconUrl: z.string().nullable(),
   backgroundColor: z.string().nullable(),
   earnedCount: z.number(),
+  // New fields for enhanced badge UI
+  tier: z.string().nullable(), // gold/silver/bronze/iron
+  rarity: z.string().nullable(), // legendary/epic/rare/common
+  lore: z.string().nullable(), // Badge story/background text
+  xpValue: z.number().nullable(), // XP points awarded
+  requirements: z.array(BadgeRequirementSchema).nullable(), // Multiple requirements
 })
 
 const EarnedBadgeSchema = BadgeSchema.extend({
   earnedAt: z.string(),
+  startDate: z.string().nullable(), // When user started working on this badge
 })
 
 const BadgeProgressSchema = z.object({

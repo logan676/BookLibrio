@@ -7,7 +7,7 @@ import SwiftUI
 
 struct BadgesView: View {
     @StateObject private var viewModel = BadgesViewModel()
-    @State private var selectedCategory: BadgeCategory?
+    @State private var selectedTier: BadgeTier?  // Filter by tier (Gold/Silver/etc)
     @State private var selectedBadge: BadgeItem?
     @Namespace private var badgeNamespace
 
@@ -19,19 +19,15 @@ struct BadgesView: View {
                     // Header summary
                     badgeSummaryCard
 
-                    // Category pills
-                    categorySelector
+                    // Tier filter pills (All / Gold / Silver / Bronze / Iron)
+                    tierFilterSelector
 
-                    // Badges list
-                    if let category = selectedCategory {
-                        categoryBadgesSection(category)
-                    } else {
-                        allBadgesSection
-                    }
+                    // Badges grouped by rarity
+                    badgesByRaritySection
                 }
                 .padding()
             }
-            .navigationTitle("My Badges")
+            .navigationTitle(L10n.Badges.title)
             .navigationBarTitleDisplayMode(.inline)
             .task {
                 await viewModel.loadBadges()
@@ -39,8 +35,8 @@ struct BadgesView: View {
             .refreshable {
                 await viewModel.loadBadges()
             }
-            .alert("New Badge Earned!", isPresented: $viewModel.showNewBadgeAlert) {
-                Button("Awesome!") {
+            .alert(L10n.Badges.newBadgeEarned, isPresented: $viewModel.showNewBadgeAlert) {
+                Button(L10n.Badges.awesome) {
                     viewModel.showNewBadgeAlert = false
                 }
             } message: {
@@ -61,39 +57,73 @@ struct BadgesView: View {
         }
     }
 
-    // MARK: - Summary Card
+    // MARK: - Summary Card (Redesigned to match design)
     private var badgeSummaryCard: some View {
-        VStack(spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Badges Earned")
-                        .font(.subheadline)
+        VStack(spacing: 16) {
+            // Top stats row
+            HStack(spacing: 0) {
+                // Earned badges
+                statItem(
+                    value: "\(viewModel.totalEarned)/\(viewModel.totalBadges)",
+                    label: "Earned",
+                    icon: "star.fill",
+                    color: .orange
+                )
+
+                Divider()
+                    .frame(height: 40)
+
+                // Read (placeholder - need real data from API)
+                statItem(
+                    value: formatNumber(viewModel.totalReadCount),
+                    label: "Read",
+                    icon: "book.fill",
+                    color: .blue
+                )
+
+                Divider()
+                    .frame(height: 40)
+
+                // Level
+                statItem(
+                    value: "Lv\(viewModel.userLevel)",
+                    label: "Level",
+                    icon: "trophy.fill",
+                    color: .purple
+                )
+            }
+
+            // Next milestone progress
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Next Milestone: \(viewModel.nextMilestoneName)")
+                        .font(.caption)
                         .foregroundColor(.secondary)
-
-                    Text("\(viewModel.totalEarned)")
-                        .font(.system(size: 36, weight: .bold))
-                        + Text(" / \(viewModel.totalBadges)")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                // Progress ring
-                ZStack {
-                    Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 8)
-
-                    Circle()
-                        .trim(from: 0, to: viewModel.earnedPercentage / 100)
-                        .stroke(Color.orange, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-
-                    Text("\(Int(viewModel.earnedPercentage))%")
+                    Spacer()
+                    Text("\(Int(viewModel.milestoneProgress * 100))%")
                         .font(.caption)
                         .fontWeight(.semibold)
+                        .foregroundColor(.orange)
                 }
-                .frame(width: 60, height: 60)
+
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.2))
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [.orange, .yellow],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geo.size.width * viewModel.milestoneProgress)
+                    }
+                }
+                .frame(height: 8)
             }
         }
         .padding()
@@ -102,111 +132,131 @@ struct BadgesView: View {
         .shadow(radius: 2)
     }
 
-    // MARK: - Category Selector
-    private var categorySelector: some View {
+    private func statItem(value: String, label: String, icon: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(color)
+                Text(value)
+                    .font(.system(size: 18, weight: .bold))
+            }
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func formatNumber(_ number: Int) -> String {
+        if number >= 1000 {
+            return String(format: "%.1fK", Double(number) / 1000.0)
+        }
+        return "\(number)"
+    }
+
+    // MARK: - Tier Filter Selector
+    private var tierFilterSelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                // All categories pill
-                categoryPill(nil, name: "All")
+                // All tiers pill
+                tierPill(nil, name: L10n.Badges.all)
 
-                ForEach(viewModel.sortedCategories, id: \.self) { category in
-                    categoryPill(category, name: category.displayName)
+                // Tier pills
+                ForEach(BadgeTier.allCases, id: \.self) { tier in
+                    tierPill(tier, name: tier.displayName)
                 }
             }
         }
     }
 
-    private func categoryPill(_ category: BadgeCategory?, name: String) -> some View {
-        let isSelected = selectedCategory == category
+    private func tierPill(_ tier: BadgeTier?, name: String) -> some View {
+        let isSelected = selectedTier == tier
+        let pillColor: Color = tier?.gradientColors.first ?? .orange
 
         return Button {
             withAnimation {
-                selectedCategory = category
+                selectedTier = tier
             }
         } label: {
             HStack(spacing: 6) {
-                if let category = category {
-                    Image(systemName: category.icon)
-                        .font(.caption)
+                if tier != nil {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: tier!.gradientColors,
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 12, height: 12)
                 }
                 Text(name)
                     .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
 
-                if let category = category,
-                   let summary = viewModel.categorySummaries[category.rawValue] {
-                    Text("\(summary.earned)/\(summary.total)")
+                // Count for this tier
+                let count = badgesForTier(tier).count
+                if count > 0 {
+                    Text("\(count)")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.orange : Color(.systemGray6))
+            .background(
+                isSelected
+                    ? AnyShapeStyle(LinearGradient(colors: tier?.gradientColors ?? [.orange, .orange.opacity(0.8)], startPoint: .leading, endPoint: .trailing))
+                    : AnyShapeStyle(Color(.systemGray6))
+            )
             .foregroundColor(isSelected ? .white : .primary)
             .cornerRadius(20)
         }
     }
 
-    // MARK: - All Badges Section
-    private var allBadgesSection: some View {
+    // MARK: - Badges By Rarity Section
+    private var badgesByRaritySection: some View {
         VStack(spacing: 24) {
-            // Earned badges
-            if !viewModel.earnedBadges.isEmpty {
-                badgeSection(
-                    title: "Earned",
-                    badges: viewModel.earnedBadges.map { .earned($0) }
-                )
+            // Group badges by rarity (Legendary -> Common)
+            ForEach(BadgeRarity.allCases, id: \.self) { rarity in
+                let badges = badgesForRarity(rarity)
+                if !badges.isEmpty {
+                    raritySection(rarity: rarity, badges: badges)
+                }
             }
 
-            // In progress badges
-            if !viewModel.inProgressBadges.isEmpty {
-                badgeSection(
-                    title: "In Progress",
-                    badges: viewModel.inProgressBadges.map { .inProgress($0) }
-                )
-            }
-        }
-    }
-
-    private func categoryBadgesSection(_ category: BadgeCategory) -> some View {
-        let earned = viewModel.earnedBadges(for: category)
-        let inProgress = viewModel.inProgressBadges(for: category)
-
-        return VStack(spacing: 24) {
-            if !earned.isEmpty {
-                badgeSection(
-                    title: "Earned",
-                    badges: earned.map { .earned($0) }
-                )
-            }
-
-            if !inProgress.isEmpty {
-                badgeSection(
-                    title: "In Progress",
-                    badges: inProgress.map { .inProgress($0) }
-                )
-            }
-
-            if earned.isEmpty && inProgress.isEmpty {
-                Text("No badges in this category yet")
-                    .foregroundColor(.secondary)
-                    .padding()
+            // Empty state
+            if allFilteredBadges.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "medal")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    Text(L10n.Badges.noBadgesInCategory)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 40)
             }
         }
     }
 
-    private func badgeSection(title: String, badges: [BadgeItem]) -> some View {
+    private func raritySection(rarity: BadgeRarity, badges: [BadgeItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
+            // Rarity header
+            RaritySectionHeader(
+                rarity: rarity,
+                count: badges.filter { isEarned($0) }.count,
+                total: badges.count
+            )
 
+            // Badge grid with metallic cards
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible())
-            ], spacing: 16) {
+            ], spacing: 12) {
                 ForEach(badges) { badge in
-                    BadgeCardWithTransition(
+                    BadgeGridCard(
                         badge: badge,
                         namespace: badgeNamespace,
                         isSelected: selectedBadge?.id == badge.id
@@ -218,6 +268,55 @@ struct BadgesView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Helper Methods
+
+    /// Get all badges filtered by selected tier
+    private var allFilteredBadges: [BadgeItem] {
+        var badges: [BadgeItem] = []
+        badges.append(contentsOf: viewModel.earnedBadges.map { .earned($0) })
+        badges.append(contentsOf: viewModel.inProgressBadges.map { .inProgress($0) })
+
+        if let tier = selectedTier {
+            badges = badges.filter { getBadgeTier($0) == tier }
+        }
+
+        return badges
+    }
+
+    /// Get badges for a specific tier filter
+    private func badgesForTier(_ tier: BadgeTier?) -> [BadgeItem] {
+        var badges: [BadgeItem] = []
+        badges.append(contentsOf: viewModel.earnedBadges.map { .earned($0) })
+        badges.append(contentsOf: viewModel.inProgressBadges.map { .inProgress($0) })
+
+        guard let tier = tier else { return badges }
+        return badges.filter { getBadgeTier($0) == tier }
+    }
+
+    /// Get badges for a specific rarity, applying tier filter
+    private func badgesForRarity(_ rarity: BadgeRarity) -> [BadgeItem] {
+        allFilteredBadges.filter { getBadgeRarity($0) == rarity }
+    }
+
+    private func getBadgeTier(_ badge: BadgeItem) -> BadgeTier {
+        switch badge {
+        case .earned(let b): return b.badgeTier
+        case .inProgress(let b): return b.badge.badgeTier
+        }
+    }
+
+    private func getBadgeRarity(_ badge: BadgeItem) -> BadgeRarity {
+        switch badge {
+        case .earned(let b): return b.badgeRarity
+        case .inProgress(let b): return b.badge.badgeRarity
+        }
+    }
+
+    private func isEarned(_ badge: BadgeItem) -> Bool {
+        if case .earned = badge { return true }
+        return false
     }
 }
 
@@ -355,16 +454,28 @@ struct EnhancedBadgeDetailSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
+                    // EARNED label (for earned badges)
+                    if isEarned {
+                        EarnedBadgeLabel()
+                            .padding(.top, 8)
+                    }
+
                     // Large 3D badge
                     largeBadgeView
 
-                    // Badge info
-                    badgeInfoSection
+                    // Badge name and description
+                    badgeHeaderSection
 
-                    // Progress section (for in-progress)
-                    if case .inProgress(let b) = badge {
-                        progressSection(b.progress)
+                    // Three info tags (Start Date / Category / Tier)
+                    infoTagsSection
+
+                    // Requirements section
+                    requirementsSection
+
+                    // LORE section (if available)
+                    if let lore = badgeLore, !lore.isEmpty {
+                        LoreSection(lore: lore)
                     }
 
                     // Community stats
@@ -395,7 +506,7 @@ struct EnhancedBadgeDetailSheet: View {
         }
     }
 
-    // Large 3D badge view with interaction
+    // MARK: - Large 3D badge view with interaction
     private var largeBadgeView: some View {
         VStack(spacing: 8) {
             Interactive3DBadgeView(
@@ -409,11 +520,10 @@ struct EnhancedBadgeDetailSheet: View {
             )
 
             // Interaction hint
-            Text("拖拽旋转 • 双击翻转")
+            Text(L10n.Badges.interactionHint)
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
-        .padding(.top, 10)
     }
 
     private var earnedDateValue: Date? {
@@ -423,9 +533,9 @@ struct EnhancedBadgeDetailSheet: View {
         return nil
     }
 
-    // Badge info section
-    private var badgeInfoSection: some View {
-        VStack(spacing: 12) {
+    // MARK: - Badge Header Section
+    private var badgeHeaderSection: some View {
+        VStack(spacing: 8) {
             Text(name)
                 .font(.title2)
                 .fontWeight(.bold)
@@ -436,68 +546,69 @@ struct EnhancedBadgeDetailSheet: View {
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
-
-            if let requirement = badgeRequirement {
-                HStack {
-                    Image(systemName: "flag.fill")
-                        .foregroundColor(.orange)
-                    Text(requirement)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(20)
-            }
-
-            if case .earned(let b) = badge, let date = b.earnedDate {
-                HStack {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundColor(.green)
-                    Text("Earned on \(date.formatted(date: .long, time: .omitted))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
         }
     }
 
-    // Progress section
-    private func progressSection(_ progress: BadgeProgress) -> some View {
-        VStack(spacing: 12) {
-            Text("Progress")
-                .font(.headline)
+    // MARK: - Info Tags Section (NEW)
+    private var infoTagsSection: some View {
+        HStack(spacing: 12) {
+            // Start Date
+            BadgeInfoTag(
+                title: "Start Date",
+                value: startDateText
+            )
 
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
+            // Category (Rarity)
+            BadgeInfoTag(
+                title: "Category",
+                value: badgeRarity.displayName,
+                color: badgeRarity.color
+            )
 
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(
-                            LinearGradient(
-                                colors: [.orange, .yellow],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: geo.size.width * (progress.percentage / 100))
-                }
-            }
-            .frame(height: 12)
+            // Tier
+            BadgeInfoTag(
+                title: "Tier",
+                value: badgeTier.displayName,
+                color: badgeTier.borderColor
+            )
+        }
+    }
 
+    // MARK: - Requirements Section (NEW)
+    private var requirementsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
             HStack {
-                Text("\(progress.current) / \(progress.target)")
+                Text("Requirements")
                     .font(.headline)
-                    .foregroundColor(.orange)
+                    .fontWeight(.bold)
 
                 Spacer()
 
-                Text(progress.remaining)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                // Completion status
+                if isEarned {
+                    Text("Completed")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.green)
+                } else {
+                    let completed = badgeRequirements.filter { $0.isCompleted }.count
+                    Text("\(completed)/\(badgeRequirements.count)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.orange)
+                }
+            }
+
+            // Requirements list
+            VStack(spacing: 0) {
+                ForEach(Array(badgeRequirements.enumerated()), id: \.element.id) { index, requirement in
+                    RequirementRow(requirement: requirement, index: index)
+
+                    if index < badgeRequirements.count - 1 {
+                        Divider()
+                    }
+                }
             }
         }
         .padding()
@@ -505,13 +616,13 @@ struct EnhancedBadgeDetailSheet: View {
         .cornerRadius(12)
     }
 
-    // Community section
+    // MARK: - Community Section
     private var communitySection: some View {
         VStack(spacing: 12) {
             HStack {
                 Image(systemName: "person.3.fill")
                     .foregroundColor(.blue)
-                Text("Community")
+                Text(L10n.Badges.community)
                     .font(.headline)
                 Spacer()
             }
@@ -521,7 +632,7 @@ struct EnhancedBadgeDetailSheet: View {
                     Text("\(earnedCount)")
                         .font(.title2)
                         .fontWeight(.bold)
-                    Text("readers earned")
+                    Text(L10n.Badges.readersEarned)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -530,11 +641,11 @@ struct EnhancedBadgeDetailSheet: View {
                     .frame(height: 40)
 
                 VStack {
-                    Text(rarity)
+                    Text(badgeRarity.displayName)
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(rarityColor)
-                    Text("rarity")
+                        .foregroundColor(badgeRarity.color)
+                    Text(L10n.Badges.rarity)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -546,14 +657,14 @@ struct EnhancedBadgeDetailSheet: View {
         .cornerRadius(12)
     }
 
-    // Share button
+    // MARK: - Share Button
     private var shareButton: some View {
         Button {
             showShareSheet = true
         } label: {
             HStack {
-                Image(systemName: "square.and.arrow.up")
-                Text("Share Achievement")
+                Image(systemName: "sparkles")
+                Text("Show off Badge")
             }
             .font(.headline)
             .foregroundColor(.white)
@@ -561,7 +672,7 @@ struct EnhancedBadgeDetailSheet: View {
             .padding()
             .background(
                 LinearGradient(
-                    colors: [categoryColor, categoryColor.opacity(0.8)],
+                    colors: badgeTier.gradientColors,
                     startPoint: .leading,
                     endPoint: .trailing
                 )
@@ -570,7 +681,8 @@ struct EnhancedBadgeDetailSheet: View {
         }
     }
 
-    // Helper properties
+    // MARK: - Helper Properties
+
     private var isEarned: Bool {
         if case .earned = badge { return true }
         return false
@@ -606,10 +718,29 @@ struct EnhancedBadgeDetailSheet: View {
         }
     }
 
-    private var badgeRequirement: String? {
+    private var badgeLore: String? {
         switch badge {
-        case .earned(let b): return b.requirement
-        case .inProgress(let b): return b.badge.requirement
+        case .earned(let b): return b.lore
+        case .inProgress(let b): return b.badge.lore
+        }
+    }
+
+    private var badgeRequirements: [BadgeRequirement] {
+        switch badge {
+        case .earned(let b): return b.badgeRequirements
+        case .inProgress(let b):
+            // For in-progress badges, update requirements with current progress
+            let reqs = b.badge.badgeRequirements
+            if reqs.isEmpty {
+                // Fallback: create from progress
+                return [BadgeRequirement(
+                    id: 0,
+                    description: b.badge.requirement ?? "Complete the challenge",
+                    current: b.progress.current,
+                    target: b.progress.target
+                )]
+            }
+            return reqs
         }
     }
 
@@ -629,20 +760,41 @@ struct EnhancedBadgeDetailSheet: View {
         return category.color
     }
 
-    private var rarity: String {
-        if earnedCount < 100 { return "Legendary" }
-        if earnedCount < 500 { return "Epic" }
-        if earnedCount < 2000 { return "Rare" }
-        if earnedCount < 10000 { return "Uncommon" }
-        return "Common"
+    private var badgeTier: BadgeTier {
+        switch badge {
+        case .earned(let b): return b.badgeTier
+        case .inProgress(let b): return b.badge.badgeTier
+        }
     }
 
-    private var rarityColor: Color {
-        if earnedCount < 100 { return .orange }
-        if earnedCount < 500 { return .purple }
-        if earnedCount < 2000 { return .blue }
-        if earnedCount < 10000 { return .green }
-        return .gray
+    private var badgeRarity: BadgeRarity {
+        switch badge {
+        case .earned(let b): return b.badgeRarity
+        case .inProgress(let b): return b.badge.badgeRarity
+        }
+    }
+
+    private var startDateText: String {
+        // Try to get start date from badge
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+
+        switch badge {
+        case .earned(let b):
+            if let startDate = b.badgeStartDate {
+                return dateFormatter.string(from: startDate)
+            }
+            // Fallback to earned date
+            if let earnedDate = b.earnedDate {
+                return dateFormatter.string(from: earnedDate)
+            }
+        case .inProgress(let b):
+            if let startDateStr = b.badge.startDate,
+               let date = ISO8601DateFormatter().date(from: startDateStr) {
+                return dateFormatter.string(from: date)
+            }
+        }
+        return "N/A"
     }
 }
 
@@ -674,7 +826,7 @@ struct BadgeShareCardView: View {
                         } else {
                             Image(systemName: "square.and.arrow.down")
                         }
-                        Text("Save to Photos")
+                        Text(L10n.Badges.saveToPhotos)
                     }
                     .font(.headline)
                     .foregroundColor(.white)
@@ -686,11 +838,11 @@ struct BadgeShareCardView: View {
                 .disabled(isSaving)
                 .padding(.horizontal)
             }
-            .navigationTitle("Share Badge")
+            .navigationTitle(L10n.Badges.shareBadge)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                 }
             }
             .overlay {
@@ -699,7 +851,7 @@ struct BadgeShareCardView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 50))
                             .foregroundColor(.green)
-                        Text("Saved!")
+                        Text(L10n.Badges.saved)
                             .font(.headline)
                     }
                     .padding(30)
@@ -732,7 +884,7 @@ struct BadgeShareCardView: View {
 
             // Achievement text
             VStack(spacing: 8) {
-                Text("🎉 Achievement Unlocked!")
+                Text(L10n.Badges.achievementUnlocked)
                     .font(.headline)
                     .foregroundColor(.orange)
 

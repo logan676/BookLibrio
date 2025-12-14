@@ -545,6 +545,12 @@ export const badges = pgTable('badges', {
   // Display
   iconUrl: text('icon_url'),
   backgroundColor: text('background_color'),
+  // New fields for enhanced badge UI
+  tier: text('tier'), // gold/silver/bronze/iron
+  rarity: text('rarity'), // legendary/epic/rare/common
+  lore: text('lore'), // Badge story/background text
+  xpValue: integer('xp_value'), // XP points awarded
+  requirements: jsonb('requirements'), // Multiple requirements: [{id, description, conditionType, conditionValue}]
   // Stats
   earnedCount: integer('earned_count').default(0),
   isActive: boolean('is_active').default(true),

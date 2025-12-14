@@ -6,6 +6,145 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Badge Tier (材质等级)
+enum BadgeTier: String, Codable, CaseIterable {
+    case gold
+    case silver
+    case bronze
+    case iron
+
+    var displayName: String {
+        switch self {
+        case .gold: return "Gold"
+        case .silver: return "Silver"
+        case .bronze: return "Bronze"
+        case .iron: return "Iron"
+        }
+    }
+
+    /// 金属渐变色
+    var gradientColors: [Color] {
+        switch self {
+        case .gold:
+            return [
+                Color(red: 1.0, green: 0.84, blue: 0.0),    // #FFD700
+                Color(red: 1.0, green: 0.65, blue: 0.0),    // #FFA500
+                Color(red: 0.72, green: 0.53, blue: 0.04)   // #B8860B
+            ]
+        case .silver:
+            return [
+                Color(red: 0.85, green: 0.87, blue: 0.90),  // Light silver
+                Color(red: 0.75, green: 0.75, blue: 0.75),  // #C0C0C0
+                Color(red: 0.55, green: 0.55, blue: 0.58)   // Dark silver
+            ]
+        case .bronze:
+            return [
+                Color(red: 0.80, green: 0.60, blue: 0.40),  // Light bronze
+                Color(red: 0.72, green: 0.45, blue: 0.20),  // #CD7F32
+                Color(red: 0.55, green: 0.35, blue: 0.15)   // Dark bronze
+            ]
+        case .iron:
+            return [
+                Color(red: 0.55, green: 0.55, blue: 0.55),  // Light iron
+                Color(red: 0.40, green: 0.40, blue: 0.42),  // Medium iron
+                Color(red: 0.28, green: 0.28, blue: 0.30)   // Dark iron
+            ]
+        }
+    }
+
+    /// 边框颜色
+    var borderColor: Color {
+        switch self {
+        case .gold: return Color(red: 0.85, green: 0.65, blue: 0.13)
+        case .silver: return Color(red: 0.65, green: 0.65, blue: 0.70)
+        case .bronze: return Color(red: 0.60, green: 0.40, blue: 0.20)
+        case .iron: return Color(red: 0.35, green: 0.35, blue: 0.38)
+        }
+    }
+}
+
+// MARK: - Badge Rarity (稀有度)
+enum BadgeRarity: String, Codable, CaseIterable {
+    case legendary
+    case epic
+    case rare
+    case common
+
+    var displayName: String {
+        switch self {
+        case .legendary: return "Legendary"
+        case .epic: return "Epic"
+        case .rare: return "Rare"
+        case .common: return "Common"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .legendary: return "★"
+        case .epic: return "★"
+        case .rare: return "★"
+        case .common: return "★"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .legendary: return Color(red: 1.0, green: 0.84, blue: 0.0)  // Gold
+        case .epic: return Color(red: 0.75, green: 0.75, blue: 0.80)     // Silver
+        case .rare: return Color(red: 0.72, green: 0.45, blue: 0.20)     // Bronze
+        case .common: return Color(red: 0.50, green: 0.50, blue: 0.52)   // Iron
+        }
+    }
+
+    /// 对应的材质等级
+    var tier: BadgeTier {
+        switch self {
+        case .legendary: return .gold
+        case .epic: return .silver
+        case .rare: return .bronze
+        case .common: return .iron
+        }
+    }
+}
+
+// MARK: - Badge Requirement (单条需求)
+struct BadgeRequirement: Identifiable, Codable {
+    let id: Int
+    let description: String
+    let current: Int
+    let target: Int
+
+    var isCompleted: Bool {
+        current >= target
+    }
+
+    var percentage: Double {
+        guard target > 0 else { return 0 }
+        return min(Double(current) / Double(target) * 100, 100)
+    }
+
+    // 用于解码时提供默认ID
+    enum CodingKeys: String, CodingKey {
+        case id, description, current, target
+    }
+
+    init(id: Int, description: String, current: Int, target: Int) {
+        self.id = id
+        self.description = description
+        self.current = current
+        self.target = target
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decodeIfPresent(Int.self, forKey: .id) ?? UUID().hashValue
+        self.description = try container.decode(String.self, forKey: .description)
+        self.current = try container.decode(Int.self, forKey: .current)
+        self.target = try container.decode(Int.self, forKey: .target)
+    }
+}
+
 // MARK: - Badge Category
 enum BadgeCategory: String, Codable, CaseIterable {
     case readingStreak = "reading_streak"
@@ -16,7 +155,6 @@ enum BadgeCategory: String, Codable, CaseIterable {
     case monthlyChallenge = "monthly_challenge"
     case social = "social"
     case special = "special"
-    // New categories for more badge variety
     case earlyBird = "early_bird"
     case nightOwl = "night_owl"
     case speedReader = "speed_reader"
@@ -25,25 +163,36 @@ enum BadgeCategory: String, Codable, CaseIterable {
     case explorer = "explorer"
     case milestone = "milestone"
     case seasonal = "seasonal"
+    // New categories for 100-badge system
+    case timeHabit = "time_habit"
+    case genre = "genre"
+    case achievement = "achievement"
+    case persistence = "persistence"
+    case series = "series"
 
     var displayName: String {
         switch self {
-        case .readingStreak: return "Reading Streak"
-        case .readingDuration: return "Reading Time"
-        case .readingDays: return "Reading Days"
-        case .booksFinished: return "Books Finished"
-        case .weeklyChallenge: return "Weekly Challenge"
-        case .monthlyChallenge: return "Monthly Challenge"
-        case .social: return "Social"
-        case .special: return "Special"
-        case .earlyBird: return "Early Bird"
-        case .nightOwl: return "Night Owl"
-        case .speedReader: return "Speed Reader"
-        case .reviewer: return "Reviewer"
-        case .collector: return "Collector"
-        case .explorer: return "Explorer"
-        case .milestone: return "Milestone"
-        case .seasonal: return "Seasonal"
+        case .readingStreak: return L10n.Badges.categoryReadingStreak
+        case .readingDuration: return L10n.Badges.categoryReadingDuration
+        case .readingDays: return L10n.Badges.categoryReadingDays
+        case .booksFinished: return L10n.Badges.categoryBooksFinished
+        case .weeklyChallenge: return L10n.Badges.categoryWeeklyChallenge
+        case .monthlyChallenge: return L10n.Badges.categoryMonthlyChallenge
+        case .social: return L10n.Badges.categorySocial
+        case .special: return L10n.Badges.categorySpecial
+        case .earlyBird: return L10n.Badges.categoryEarlyBird
+        case .nightOwl: return L10n.Badges.categoryNightOwl
+        case .speedReader: return L10n.Badges.categorySpeedReader
+        case .reviewer: return L10n.Badges.categoryReviewer
+        case .collector: return L10n.Badges.categoryCollector
+        case .explorer: return L10n.Badges.categoryExplorer
+        case .milestone: return L10n.Badges.categoryMilestone
+        case .seasonal: return L10n.Badges.categorySeasonal
+        case .timeHabit: return L10n.Badges.categoryTimeHabit
+        case .genre: return L10n.Badges.categoryGenre
+        case .achievement: return L10n.Badges.categoryAchievement
+        case .persistence: return L10n.Badges.categoryPersistence
+        case .series: return L10n.Badges.categorySeries
         }
     }
 
@@ -61,10 +210,15 @@ enum BadgeCategory: String, Codable, CaseIterable {
         case .nightOwl: return "moon.stars.fill"
         case .speedReader: return "hare.fill"
         case .reviewer: return "text.bubble.fill"
-        case .collector: return "rectangle.stack.fill"
+        case .collector: return "bookmark.fill"
         case .explorer: return "safari.fill"
         case .milestone: return "flag.checkered"
-        case .seasonal: return "leaf.fill"
+        case .seasonal: return "gift.fill"
+        case .timeHabit: return "clock.arrow.2.circlepath"
+        case .genre: return "books.vertical.fill"
+        case .achievement: return "trophy.fill"
+        case .persistence: return "arrow.uturn.up.circle.fill"
+        case .series: return "rectangle.stack.fill"
         }
     }
 
@@ -87,6 +241,11 @@ enum BadgeCategory: String, Codable, CaseIterable {
         case .explorer: return Color(red: 0.2, green: 0.6, blue: 0.5)   // Teal
         case .milestone: return Color(red: 0.9, green: 0.7, blue: 0.1)  // Gold
         case .seasonal: return Color(red: 0.6, green: 0.8, blue: 0.3)   // Fresh green
+        case .timeHabit: return Color(red: 0.5, green: 0.4, blue: 0.7)  // Purple tint
+        case .genre: return Color(red: 0.3, green: 0.6, blue: 0.8)      // Book blue
+        case .achievement: return Color(red: 0.9, green: 0.5, blue: 0.1) // Trophy orange
+        case .persistence: return Color(red: 0.4, green: 0.7, blue: 0.4) // Resilient green
+        case .series: return Color(red: 0.6, green: 0.4, blue: 0.6)     // Series purple
         }
     }
 }
@@ -103,8 +262,100 @@ struct Badge: Identifiable, Codable {
     let backgroundColor: String?
     let earnedCount: Int
 
+    // 新增字段 (可选，后端可能尚未支持)
+    let tier: String?
+    let rarity: String?
+    let lore: String?
+    let requirements: [BadgeRequirement]?
+    let xpValue: Int?
+    let startDate: String?
+
     var badgeCategory: BadgeCategory {
         BadgeCategory(rawValue: category) ?? .special
+    }
+
+    /// 勋章材质等级 (基于稀有度或level计算)
+    var badgeTier: BadgeTier {
+        if let tierStr = tier, let t = BadgeTier(rawValue: tierStr) {
+            return t
+        }
+        // 根据level推断材质
+        switch level {
+        case 5...: return .gold
+        case 3...4: return .silver
+        case 2: return .bronze
+        default: return .iron
+        }
+    }
+
+    /// 勋章稀有度 (基于rarity或earnedCount计算)
+    var badgeRarity: BadgeRarity {
+        if let rarityStr = rarity, let r = BadgeRarity(rawValue: rarityStr) {
+            return r
+        }
+        // 根据earnedCount推断稀有度
+        if earnedCount < 100 { return .legendary }
+        if earnedCount < 500 { return .epic }
+        if earnedCount < 2000 { return .rare }
+        return .common
+    }
+
+    /// 获取需求列表 (如果后端没有提供，则使用单一requirement生成)
+    var badgeRequirements: [BadgeRequirement] {
+        if let reqs = requirements, !reqs.isEmpty {
+            return reqs
+        }
+        // 兼容旧数据：将单一requirement转换为列表
+        if let req = requirement {
+            return [BadgeRequirement(id: 0, description: req, current: 0, target: 1)]
+        }
+        return []
+    }
+
+    // 自定义解码以支持可选新字段
+    enum CodingKeys: String, CodingKey {
+        case id, category, level, name, description, requirement
+        case iconUrl, backgroundColor, earnedCount
+        case tier, rarity, lore, requirements, xpValue, startDate
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        category = try container.decode(String.self, forKey: .category)
+        level = try container.decode(Int.self, forKey: .level)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        requirement = try container.decodeIfPresent(String.self, forKey: .requirement)
+        iconUrl = try container.decodeIfPresent(String.self, forKey: .iconUrl)
+        backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
+        earnedCount = try container.decodeIfPresent(Int.self, forKey: .earnedCount) ?? 0
+        // 新字段
+        tier = try container.decodeIfPresent(String.self, forKey: .tier)
+        rarity = try container.decodeIfPresent(String.self, forKey: .rarity)
+        lore = try container.decodeIfPresent(String.self, forKey: .lore)
+        requirements = try container.decodeIfPresent([BadgeRequirement].self, forKey: .requirements)
+        xpValue = try container.decodeIfPresent(Int.self, forKey: .xpValue)
+        startDate = try container.decodeIfPresent(String.self, forKey: .startDate)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(category, forKey: .category)
+        try container.encode(level, forKey: .level)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(requirement, forKey: .requirement)
+        try container.encodeIfPresent(iconUrl, forKey: .iconUrl)
+        try container.encodeIfPresent(backgroundColor, forKey: .backgroundColor)
+        try container.encode(earnedCount, forKey: .earnedCount)
+        try container.encodeIfPresent(tier, forKey: .tier)
+        try container.encodeIfPresent(rarity, forKey: .rarity)
+        try container.encodeIfPresent(lore, forKey: .lore)
+        try container.encodeIfPresent(requirements, forKey: .requirements)
+        try container.encodeIfPresent(xpValue, forKey: .xpValue)
+        try container.encodeIfPresent(startDate, forKey: .startDate)
     }
 }
 
@@ -121,12 +372,110 @@ struct EarnedBadge: Identifiable, Codable {
     let earnedAt: String
     let earnedCount: Int
 
+    // 新增字段 (可选，后端可能尚未支持)
+    let tier: String?
+    let rarity: String?
+    let lore: String?
+    let requirements: [BadgeRequirement]?
+    let xpValue: Int?
+    let startDate: String?
+
     var earnedDate: Date? {
         ISO8601DateFormatter().date(from: earnedAt)
     }
 
     var badgeCategory: BadgeCategory {
         BadgeCategory(rawValue: category) ?? .special
+    }
+
+    /// 勋章材质等级
+    var badgeTier: BadgeTier {
+        if let tierStr = tier, let t = BadgeTier(rawValue: tierStr) {
+            return t
+        }
+        switch level {
+        case 5...: return .gold
+        case 3...4: return .silver
+        case 2: return .bronze
+        default: return .iron
+        }
+    }
+
+    /// 勋章稀有度
+    var badgeRarity: BadgeRarity {
+        if let rarityStr = rarity, let r = BadgeRarity(rawValue: rarityStr) {
+            return r
+        }
+        if earnedCount < 100 { return .legendary }
+        if earnedCount < 500 { return .epic }
+        if earnedCount < 2000 { return .rare }
+        return .common
+    }
+
+    /// 获取需求列表
+    var badgeRequirements: [BadgeRequirement] {
+        if let reqs = requirements, !reqs.isEmpty {
+            return reqs
+        }
+        if let req = requirement {
+            // 已完成的徽章，需求进度显示为已完成
+            return [BadgeRequirement(id: 0, description: req, current: 1, target: 1)]
+        }
+        return []
+    }
+
+    /// 开始日期
+    var badgeStartDate: Date? {
+        guard let dateStr = startDate else { return nil }
+        return ISO8601DateFormatter().date(from: dateStr)
+    }
+
+    // 自定义解码
+    enum CodingKeys: String, CodingKey {
+        case id, category, level, name, description, requirement
+        case iconUrl, backgroundColor, earnedAt, earnedCount
+        case tier, rarity, lore, requirements, xpValue, startDate
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        category = try container.decode(String.self, forKey: .category)
+        level = try container.decode(Int.self, forKey: .level)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        requirement = try container.decodeIfPresent(String.self, forKey: .requirement)
+        iconUrl = try container.decodeIfPresent(String.self, forKey: .iconUrl)
+        backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
+        earnedAt = try container.decode(String.self, forKey: .earnedAt)
+        earnedCount = try container.decodeIfPresent(Int.self, forKey: .earnedCount) ?? 0
+        // 新字段
+        tier = try container.decodeIfPresent(String.self, forKey: .tier)
+        rarity = try container.decodeIfPresent(String.self, forKey: .rarity)
+        lore = try container.decodeIfPresent(String.self, forKey: .lore)
+        requirements = try container.decodeIfPresent([BadgeRequirement].self, forKey: .requirements)
+        xpValue = try container.decodeIfPresent(Int.self, forKey: .xpValue)
+        startDate = try container.decodeIfPresent(String.self, forKey: .startDate)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(category, forKey: .category)
+        try container.encode(level, forKey: .level)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(requirement, forKey: .requirement)
+        try container.encodeIfPresent(iconUrl, forKey: .iconUrl)
+        try container.encodeIfPresent(backgroundColor, forKey: .backgroundColor)
+        try container.encode(earnedAt, forKey: .earnedAt)
+        try container.encode(earnedCount, forKey: .earnedCount)
+        try container.encodeIfPresent(tier, forKey: .tier)
+        try container.encodeIfPresent(rarity, forKey: .rarity)
+        try container.encodeIfPresent(lore, forKey: .lore)
+        try container.encodeIfPresent(requirements, forKey: .requirements)
+        try container.encodeIfPresent(xpValue, forKey: .xpValue)
+        try container.encodeIfPresent(startDate, forKey: .startDate)
     }
 }
 
