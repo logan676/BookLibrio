@@ -16,30 +16,34 @@ struct EbookStoreView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Search bar is now in StoreTabView (above tab picker)
-
-                // Recommendations (horizontal scroll)
+                // 1. Recommended for You (horizontal scroll - covers only)
                 if !viewModel.recommendedBooks.isEmpty {
-                    RecommendationsSection(
+                    RecommendedCoversSection(
                         books: viewModel.recommendedBooks,
-                        isRefreshing: viewModel.isRefreshingRecommendations,
                         onBookTap: { selectedItem = $0 },
-                        onRefresh: {
-                            Task { await viewModel.refreshRecommendations() }
-                        },
                         onShowAll: { showCategoryBrowser = true }
                     )
                 }
 
-                // Categories (using enhanced CategoryGridView with horizontal scroll)
-                CategoryGridView(selectedBookType: $bookType)
+                // 2. Categories (fiction categories only)
+                CategoryGridView(selectedBookType: $bookType, showFictionOnly: true)
 
-                // Books by Year (NEW)
-                if !viewModel.booksByYear.isEmpty {
-                    BooksByYearSection(
-                        booksByYear: viewModel.booksByYear,
+                // 3. External Rankings & Recommended Lists
+                if !viewModel.externalRankings.isEmpty {
+                    ExternalRankingsSection(
+                        rankings: viewModel.externalRankings,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showRankings = true }
+                    )
+                }
+
+                // 4. Books by Year (mixed years display)
+                if !viewModel.mixedYearBooks.isEmpty {
+                    MixedYearBooksSection(
+                        books: viewModel.mixedYearBooks,
                         onBookTap: { book in
-                            // Convert BookByYear to StoreItem for navigation
                             let item = StoreItem(
                                 id: book.id,
                                 itemType: .ebook,
@@ -51,14 +55,11 @@ struct EbookStoreView: View {
                             )
                             selectedItem = item
                         },
-                        onShowAll: { year in
-                            // TODO: Navigate to year-specific browse
-                            showCategoryBrowser = true
-                        }
+                        onShowAll: { showCategoryBrowser = true }
                     )
                 }
 
-                // Top Rated Books (NEW)
+                // 5. Top Rated (with weighted random)
                 if !viewModel.topRatedBooks.isEmpty {
                     TopRatedSection(
                         books: viewModel.topRatedBooks,
@@ -78,45 +79,9 @@ struct EbookStoreView: View {
                     )
                 }
 
-                // New arrivals
-                if !viewModel.newArrivals.isEmpty {
-                    horizontalSection(
-                        title: L10n.Store.newArrivals,
-                        subtitle: "最新上架电子书",
-                        items: viewModel.newArrivals,
-                        showMore: { showCategoryBrowser = true }
-                    )
-                }
-
-                // Hot ebooks
-                if !viewModel.hotBooks.isEmpty {
-                    horizontalSection(
-                        title: "热门电子书",
-                        subtitle: "大家都在读",
-                        items: viewModel.hotBooks,
-                        showMore: { showCategoryBrowser = true }
-                    )
-                }
-
-                // External Rankings (NEW)
-                if !viewModel.externalRankings.isEmpty {
-                    ExternalRankingsSection(
-                        rankings: viewModel.externalRankings,
-                        onRankingTap: { ranking in
-                            selectedRanking = ranking
-                        },
-                        onShowAll: { showRankings = true }
-                    )
-                }
-
-                // Book Lists
+                // 6. Curated Collections
                 if !viewModel.popularBookLists.isEmpty {
-                    bookListsSection
-                }
-
-                // Rankings (existing)
-                if !viewModel.topRanked.isEmpty {
-                    rankingPreviewSection
+                    curatedCollectionsSection
                 }
             }
             .padding(.bottom, 32)
@@ -146,69 +111,22 @@ struct EbookStoreView: View {
             BookListDetailView(listId: list.id)
         }
         .sheet(item: $selectedRanking) { ranking in
-            // External ranking detail view - could be a new view or reuse CuratedListDetailView
-            CuratedListDetailView(listId: ranking.id)
+            ExternalRankingDetailView(ranking: ranking)
         }
     }
 
-    // MARK: - Horizontal Section
+    // MARK: - Curated Collections Section
 
-    private func horizontalSection(
-        title: String,
-        subtitle: String,
-        items: [StoreItem],
-        showMore: @escaping () -> Void
-    ) -> some View {
+    private var curatedCollectionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                Text("Curated Collections")
+                    .font(.title3)
+                    .fontWeight(.bold)
 
                 Spacer()
 
-                Button(L10n.Store.more) {
-                    showMore()
-                }
-                .font(.subheadline)
-            }
-            .padding(.horizontal)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(items) { item in
-                        StoreBookCard(item: item) {
-                            selectedItem = item
-                        }
-                    }
-                }
-                .padding(.horizontal)
-            }
-        }
-    }
-
-    // MARK: - Book Lists Section
-
-    private var bookListsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.BookList.popularLists)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Text(L10n.BookList.curatedCollections)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Button(L10n.Store.more) {
+                Button("View More") {
                     showBookLists = true
                 }
                 .font(.subheadline)
@@ -216,57 +134,15 @@ struct EbookStoreView: View {
             .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     ForEach(viewModel.popularBookLists) { list in
-                        BookListCard(list: list, style: .compact) {
+                        CuratedCollectionCard(list: list) {
                             selectedBookList = list
                         }
-                        .frame(width: 280)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
                     }
                 }
                 .padding(.horizontal)
             }
-        }
-    }
-
-    // MARK: - Ranking Preview Section
-
-    private var rankingPreviewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("电子书排行榜")
-                    .font(.title2)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                Button(L10n.Store.viewAll) {
-                    showRankings = true
-                }
-                .font(.subheadline)
-            }
-            .padding(.horizontal)
-
-            VStack(spacing: 0) {
-                ForEach(Array(viewModel.topRanked.prefix(5).enumerated()), id: \.element.id) { index, item in
-                    RankingRowPreview(rank: index + 1, item: item) {
-                        selectedItem = item
-                    }
-
-                    if index < 4 {
-                        Divider()
-                            .padding(.leading, 60)
-                    }
-                }
-            }
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-            .padding(.horizontal)
         }
     }
 }
@@ -276,16 +152,11 @@ struct EbookStoreView: View {
 @MainActor
 class EbookStoreViewModel: ObservableObject {
     @Published var recommendedBooks: [StoreItem] = []
-    @Published var newArrivals: [StoreItem] = []
-    @Published var hotBooks: [StoreItem] = []
-    @Published var topRanked: [StoreItem] = []
     @Published var popularBookLists: [BookList] = []
-    // New Store sections
-    @Published var booksByYear: [BooksByYearGroup] = []
+    @Published var mixedYearBooks: [BookByYear] = []
     @Published var topRatedBooks: [TopRatedBook] = []
     @Published var externalRankings: [ExternalRanking] = []
     @Published var isLoading = false
-    @Published var isRefreshingRecommendations = false
     @Published var errorMessage: String?
 
     private let apiClient = APIClient.shared
@@ -296,12 +167,8 @@ class EbookStoreViewModel: ObservableObject {
 
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.loadRecommendations() }
-            group.addTask { await self.loadNewArrivals() }
-            group.addTask { await self.loadHotBooks() }
-            group.addTask { await self.loadTopRanked() }
             group.addTask { await self.loadBookLists() }
-            // New Store sections
-            group.addTask { await self.loadBooksByYear() }
+            group.addTask { await self.loadMixedYearBooks() }
             group.addTask { await self.loadTopRatedBooks() }
             group.addTask { await self.loadExternalRankings() }
         }
@@ -313,46 +180,13 @@ class EbookStoreViewModel: ObservableObject {
         await loadHomeData()
     }
 
-    func refreshRecommendations() async {
-        isRefreshingRecommendations = true
-        await loadRecommendations()
-        isRefreshingRecommendations = false
-    }
-
     // EBOOK ONLY - No magazines here
     private func loadRecommendations() async {
         do {
-            let ebooks = try await apiClient.getEbooks(limit: 10)
-            recommendedBooks = ebooks.data.shuffled().prefix(6).map { StoreItem(from: $0) }
+            let ebooks = try await apiClient.getEbooks(limit: 12)
+            recommendedBooks = ebooks.data.shuffled().prefix(8).map { StoreItem(from: $0) }
         } catch {
             print("Failed to load ebook recommendations: \(error)")
-        }
-    }
-
-    private func loadNewArrivals() async {
-        do {
-            let ebooks = try await apiClient.getEbooks(limit: 10)
-            newArrivals = ebooks.data.map { StoreItem(from: $0) }
-        } catch {
-            print("Failed to load new ebook arrivals: \(error)")
-        }
-    }
-
-    private func loadHotBooks() async {
-        do {
-            let ebooks = try await apiClient.getEbooks(limit: 10)
-            hotBooks = ebooks.data.shuffled().map { StoreItem(from: $0) }
-        } catch {
-            print("Failed to load hot ebooks: \(error)")
-        }
-    }
-
-    private func loadTopRanked() async {
-        do {
-            let ebooks = try await apiClient.getEbooks(limit: 10)
-            topRanked = ebooks.data.map { StoreItem(from: $0) }
-        } catch {
-            print("Failed to load top ranked ebooks: \(error)")
         }
     }
 
@@ -365,24 +199,66 @@ class EbookStoreViewModel: ObservableObject {
         }
     }
 
-    // MARK: - New Store API calls
+    // MARK: - Mixed Year Books (combines multiple years into one shuffled list)
 
-    private func loadBooksByYear() async {
+    private func loadMixedYearBooks() async {
         do {
-            let response = try await apiClient.getBooksByYear(bookType: "ebook", limit: 10)
-            booksByYear = response.data
+            let response = try await apiClient.getBooksByYear(bookType: "ebook", limit: 15)
+            // Flatten all books from different years and shuffle them
+            var allBooks: [BookByYear] = []
+            for group in response.data {
+                allBooks.append(contentsOf: group.books)
+            }
+            // Shuffle to mix different years together
+            mixedYearBooks = allBooks.shuffled()
         } catch {
             print("Failed to load books by year: \(error)")
         }
     }
 
+    // MARK: - Top Rated with Weighted Random Algorithm
+
     private func loadTopRatedBooks() async {
         do {
-            let response = try await apiClient.getTopRatedBooks(bookType: "ebook", limit: 10, minRatingCount: 5)
-            topRatedBooks = response.data
+            // Get more books to apply weighted random selection
+            let response = try await apiClient.getTopRatedBooks(bookType: "ebook", limit: 30, minRatingCount: 3)
+            topRatedBooks = applyWeightedRandomSelection(books: response.data, count: 10)
         } catch {
             print("Failed to load top rated books: \(error)")
         }
+    }
+
+    /// Weighted random selection: higher rated books have higher probability but lower rated (3+) can still appear
+    private func applyWeightedRandomSelection(books: [TopRatedBook], count: Int) -> [TopRatedBook] {
+        guard !books.isEmpty else { return [] }
+
+        // Calculate weights based on rating (rating^2 to favor higher ratings more)
+        var weightedBooks: [(book: TopRatedBook, weight: Double)] = books.map { book in
+            let rating = book.rating ?? 3.0
+            // Weight formula: (rating - 2)^2 so 3-star gets weight 1, 5-star gets weight 9
+            let weight = pow(max(rating - 2, 0.5), 2)
+            return (book, weight)
+        }
+
+        var selected: [TopRatedBook] = []
+        var totalWeight = weightedBooks.reduce(0) { $0 + $1.weight }
+
+        while selected.count < min(count, weightedBooks.count) && !weightedBooks.isEmpty {
+            // Random selection based on weight
+            var randomValue = Double.random(in: 0..<totalWeight)
+
+            for (index, item) in weightedBooks.enumerated() {
+                randomValue -= item.weight
+                if randomValue <= 0 {
+                    selected.append(item.book)
+                    totalWeight -= item.weight
+                    weightedBooks.remove(at: index)
+                    break
+                }
+            }
+        }
+
+        return selected
     }
 
     private func loadExternalRankings() async {
@@ -393,7 +269,6 @@ class EbookStoreViewModel: ObservableObject {
             print("Failed to load external rankings: \(error)")
         }
     }
-
 }
 
 #Preview {

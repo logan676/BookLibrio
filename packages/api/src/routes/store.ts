@@ -335,11 +335,47 @@ app.openapi(externalRankingsRoute, async (c) => {
     )
     .orderBy(curatedLists.sortOrder)
 
+  // Get preview covers for each ranking (first 3 books)
+  const rankingsWithCovers = await Promise.all(
+    rankings.map(async (ranking) => {
+      const items = await db
+        .select({
+          externalCoverUrl: curatedListItems.externalCoverUrl,
+          bookId: curatedListItems.bookId,
+          bookType: curatedListItems.bookType,
+        })
+        .from(curatedListItems)
+        .where(eq(curatedListItems.listId, ranking.id))
+        .orderBy(curatedListItems.position)
+        .limit(3)
+
+      // Get cover URLs - prefer external cover, fallback to linked book cover
+      const previewCovers: string[] = []
+      for (const item of items) {
+        if (item.externalCoverUrl) {
+          previewCovers.push(item.externalCoverUrl)
+        } else if (item.bookId && item.bookType === 'ebook') {
+          const [ebook] = await db
+            .select({ coverUrl: ebooks.coverUrl })
+            .from(ebooks)
+            .where(eq(ebooks.id, item.bookId))
+            .limit(1)
+          if (ebook?.coverUrl) {
+            previewCovers.push(ebook.coverUrl)
+          }
+        }
+      }
+
+      return {
+        ...ranking,
+        lastUpdated: ranking.lastUpdated?.toISOString() ?? null,
+        previewCovers,
+      }
+    })
+  )
+
   return c.json({
-    data: rankings.map(r => ({
-      ...r,
-      lastUpdated: r.lastUpdated?.toISOString() ?? null,
-    })),
+    data: rankingsWithCovers,
   })
 })
 

@@ -638,6 +638,219 @@ struct DailyBookList: Identifiable {
     }
 }
 
+// MARK: - Recommended Covers Section (Covers Only)
+
+/// Section displaying recommended books as covers only without text
+struct RecommendedCoversSection: View {
+    let books: [StoreItem]
+    var onBookTap: ((StoreItem) -> Void)?
+    var onShowAll: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Text("Recommended for You")
+                    .font(.title3)
+                    .fontWeight(.bold)
+
+                Spacer()
+
+                Button("View All") {
+                    onShowAll?()
+                }
+                .font(.subheadline)
+            }
+            .padding(.horizontal)
+
+            // Covers-only horizontal scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(books) { book in
+                        Button {
+                            onBookTap?(book)
+                        } label: {
+                            BookCoverView(coverUrl: book.coverUrl, title: book.title)
+                                .frame(width: 100, height: 140)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .shadow(radius: 2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+}
+
+// MARK: - Mixed Year Books Section
+
+/// Section displaying books from mixed years with year badge overlay
+struct MixedYearBooksSection: View {
+    let books: [BookByYear]
+    var onBookTap: ((BookByYear) -> Void)?
+    var onShowAll: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Text("Books by Year")
+                    .font(.title3)
+                    .fontWeight(.bold)
+
+                Spacer()
+
+                Button("View All") {
+                    onShowAll?()
+                }
+                .font(.subheadline)
+            }
+            .padding(.horizontal)
+
+            // Mixed books horizontal scroll with year badges
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(books) { book in
+                        MixedYearBookCard(book: book) {
+                            onBookTap?(book)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+}
+
+/// Card for mixed year book with year badge overlay
+struct MixedYearBookCard: View {
+    let book: BookByYear
+    let action: () -> Void
+
+    private var yearString: String {
+        if let dateString = book.publicationDate {
+            // Extract year from date string (e.g., "2023-05-15" -> "2023")
+            let year = dateString.prefix(4)
+            return String(year)
+        }
+        return ""
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .bottomTrailing) {
+                    BookCoverView(coverUrl: book.coverUrl, title: book.title)
+                        .frame(width: 100, height: 140)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .shadow(radius: 2)
+
+                    // Year badge overlay
+                    if !yearString.isEmpty {
+                        Text(yearString)
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(4)
+                            .padding(4)
+                    }
+                }
+
+                Text(book.title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+
+                if let author = book.author {
+                    Text(author)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: 100)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Curated Collection Card
+
+/// Card for curated book collection/list display
+struct CuratedCollectionCard: View {
+    let list: BookList
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Cover image or gradient background
+                if let coverUrl = list.coverUrl, let url = URL(string: coverUrl) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        collectionPlaceholder
+                    }
+                    .frame(width: 160, height: 100)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    collectionPlaceholder
+                        .frame(width: 160, height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+
+                // Title
+                Text(list.title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                // Subtitle/description
+                if let description = list.description {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                // Book count
+                HStack(spacing: 4) {
+                    Image(systemName: "book.closed.fill")
+                        .font(.caption2)
+                    Text("\(list.itemCount) books")
+                        .font(.caption2)
+                }
+                .foregroundColor(.secondary)
+            }
+            .frame(width: 160)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var collectionPlaceholder: some View {
+        LinearGradient(
+            colors: [.purple.opacity(0.6), .blue.opacity(0.6)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .overlay(
+            Image(systemName: "books.vertical.fill")
+                .font(.title)
+                .foregroundColor(.white.opacity(0.8))
+        )
+    }
+}
+
 // MARK: - Books by Year Section
 
 /// Section displaying books grouped by publication year with horizontal scroll
@@ -652,15 +865,9 @@ struct BooksByYearSection: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // Year header
                     HStack {
-                        HStack(spacing: 8) {
-                            Text("\(group.year)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-
-                            Text("年出版")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
+                        Text(String(group.year) + "年")
+                            .font(.title2)
+                            .fontWeight(.bold)
 
                         Spacer()
 
@@ -791,29 +998,10 @@ struct TopRatedBookCard: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .topLeading) {
-                    BookCoverView(coverUrl: book.coverUrl, title: book.title)
-                        .frame(width: 110, height: 155)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .shadow(radius: 3)
-
-                    // Rating badge
-                    if let rating = book.rating {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill")
-                                .font(.caption2)
-                            Text(String(format: "%.1f", rating))
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 4)
-                        .background(Color.orange)
-                        .cornerRadius(4)
-                        .padding(4)
-                    }
-                }
+                BookCoverView(coverUrl: book.coverUrl, title: book.title)
+                    .frame(width: 110, height: 155)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .shadow(radius: 3)
 
                 Text(book.title)
                     .font(.caption)
@@ -828,10 +1016,21 @@ struct TopRatedBookCard: View {
                         .lineLimit(1)
                 }
 
-                // Rating count
-                Text(book.ratingCountFormatted)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                // Rating display below title and author
+                if let rating = book.rating {
+                    HStack(spacing: 2) {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                        Text(String(format: "%.1f", rating))
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                        Text("(\(book.ratingCountFormatted))")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .frame(width: 110)
         }
@@ -851,24 +1050,13 @@ struct ExternalRankingsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "trophy.fill")
-                        .foregroundColor(.yellow)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("权威榜单")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Text("NYT, Amazon, Goodreads 等")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
+                Text("External Rankings & Recommended Lists")
+                    .font(.title3)
+                    .fontWeight(.bold)
 
                 Spacer()
 
-                Button(L10n.Store.viewAll) {
+                Button("View More") {
                     onShowAll?()
                 }
                 .font(.subheadline)
@@ -877,7 +1065,7 @@ struct ExternalRankingsSection: View {
 
             // Rankings scroll
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     ForEach(rankings) { ranking in
                         ExternalRankingCard(ranking: ranking) {
                             onRankingTap?(ranking)
@@ -890,35 +1078,16 @@ struct ExternalRankingsSection: View {
     }
 }
 
-/// Card for external ranking list
+/// Card for external ranking list - matches design with logo, title, subtitle, and book previews
 struct ExternalRankingCard: View {
     let ranking: ExternalRanking
     let action: () -> Void
 
-    private var themeColor: Color {
-        switch ranking.listType {
-        case "nyt_bestseller":
-            return .blue
-        case "amazon_best":
-            return .orange
-        case "bill_gates":
-            return .green
-        case "goodreads_choice":
-            return .brown
-        case "pulitzer":
-            return .purple
-        case "booker":
-            return .red
-        default:
-            return .gray
-        }
-    }
-
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 0) {
-                // Source header
-                VStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Source logo and name
+                HStack(spacing: 8) {
                     if let logoUrl = ranking.sourceLogoUrl, !logoUrl.isEmpty {
                         AsyncImage(url: URL(string: logoUrl)) { image in
                             image
@@ -926,65 +1095,60 @@ struct ExternalRankingCard: View {
                                 .aspectRatio(contentMode: .fit)
                         } placeholder: {
                             Image(systemName: CuratedListType(rawValue: ranking.listType)?.icon ?? "list.bullet")
-                                .font(.title2)
+                                .font(.title3)
+                                .foregroundColor(.primary)
                         }
-                        .frame(height: 30)
-                        .foregroundColor(.white)
+                        .frame(height: 20)
                     } else {
-                        Image(systemName: CuratedListType(rawValue: ranking.listType)?.icon ?? "list.bullet")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                    }
-
-                    Text(ranking.displaySourceName)
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(themeColor)
-
-                // Content
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(ranking.title)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-
-                    if let subtitle = ranking.subtitle {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                        // Text logo for sources like "amazon" or "New York Times"
+                        Text(ranking.displaySourceName)
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
                     }
 
                     Spacer()
+                }
 
-                    HStack {
-                        if let bookCount = ranking.bookCount {
-                            HStack(spacing: 4) {
-                                Image(systemName: "book.closed.fill")
-                                    .font(.caption2)
-                                Text("\(bookCount) 本")
-                                    .font(.caption2)
+                // Title
+                Text(ranking.title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                // Subtitle
+                if let subtitle = ranking.subtitle {
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Book cover previews
+                if let covers = ranking.previewCovers, !covers.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(covers.prefix(3), id: \.self) { coverUrl in
+                            AsyncImage(url: URL(string: coverUrl)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color(.systemGray5))
                             }
-                            .foregroundColor(.secondary)
+                            .frame(width: 45, height: 65)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
                     }
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.systemBackground))
             }
-            .frame(width: 180, height: 160)
+            .padding(12)
+            .frame(width: 170, height: 180)
+            .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
         }

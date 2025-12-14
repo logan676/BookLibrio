@@ -88,3 +88,8 @@ packages/server/src/d1-client.js
 # PDF processing
 pdfs/
 .env*.local
+
+# Local backups (stored locally, not in git)
+**/backups/
+*.backup.sql
+*.backup.json

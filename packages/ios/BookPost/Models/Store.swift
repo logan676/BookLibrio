@@ -74,6 +74,7 @@ struct ExternalRanking: Identifiable, Codable {
     let bookCount: Int?
     let lastUpdated: String?
     let externalUrl: String?
+    let previewCovers: [String]?
 
     var displaySourceName: String {
         sourceName ?? CuratedListType(rawValue: listType)?.displayName ?? listType

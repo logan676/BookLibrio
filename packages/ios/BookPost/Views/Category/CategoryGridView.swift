@@ -4,12 +4,16 @@ import SwiftUI
 struct CategoryGridView: View {
     @StateObject private var viewModel = CategoryGridViewModel()
     @Binding var selectedBookType: String // "ebook" or "magazine"
+    var showFictionOnly: Bool = false // When true, only show fiction-related categories
+
+    // Fiction-related category slugs/names to show when showFictionOnly is true
+    private let fictionCategorySlugs = ["fiction", "literature", "history", "technology", "science", "philosophy", "biography", "mystery", "romance", "fantasy", "thriller"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("分类")
-                    .font(.title2)
+                Text("Categories")
+                    .font(.title3)
                     .fontWeight(.bold)
 
                 Spacer()
@@ -17,7 +21,7 @@ struct CategoryGridView: View {
                 NavigationLink {
                     AllCategoriesView(bookType: selectedBookType)
                 } label: {
-                    Text("全部")
+                    Text("View All")
                         .font(.subheadline)
                         .foregroundColor(.blue)
                 }
@@ -26,17 +30,17 @@ struct CategoryGridView: View {
 
             if viewModel.isLoading {
                 ProgressView()
-                    .frame(maxWidth: .infinity, minHeight: 100)
-            } else if viewModel.categories.isEmpty {
-                Text("暂无分类")
+                    .frame(maxWidth: .infinity, minHeight: 80)
+            } else if filteredCategories.isEmpty {
+                Text("No categories")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 100)
+                    .frame(maxWidth: .infinity, minHeight: 80)
             } else {
                 // Horizontal scroll with dynamic categories
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(viewModel.displayedCategories) { category in
+                    HStack(spacing: 16) {
+                        ForEach(filteredCategories) { category in
                             NavigationLink {
                                 CategoryDetailView(category: category, bookType: selectedBookType)
                             } label: {
@@ -57,6 +61,18 @@ struct CategoryGridView: View {
                 await viewModel.loadCategories(bookType: newValue)
             }
         }
+    }
+
+    private var filteredCategories: [Category] {
+        if showFictionOnly {
+            // Filter to only show fiction-related categories
+            return viewModel.displayedCategories.filter { category in
+                let slug = category.slug?.lowercased() ?? ""
+                let name = category.name.lowercased()
+                return fictionCategorySlugs.contains(where: { slug.contains($0) || name.contains($0) })
+            }
+        }
+        return viewModel.displayedCategories
     }
 }
 

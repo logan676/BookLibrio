@@ -4,7 +4,6 @@ import SwiftUI
 /// This view must NEVER display ebooks - they are completely separate
 struct MagazineStoreView: View {
     @StateObject private var viewModel = MagazineStoreViewModel()
-    @State private var showSearch = false
     @State private var selectedItem: StoreItem?
     @State private var showCategoryBrowser = false
     @State private var showRankings = false
@@ -13,9 +12,6 @@ struct MagazineStoreView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Search bar
-                searchBar
-
                 // Featured magazines
                 if !viewModel.featuredMagazines.isEmpty {
                     featuredSection
@@ -60,37 +56,12 @@ struct MagazineStoreView: View {
         .navigationDestination(item: $selectedItem) { item in
             BookDetailView(bookType: .magazine, bookId: item.itemId)
         }
-        .sheet(isPresented: $showSearch) {
-            StoreSearchView()
-        }
         .sheet(isPresented: $showCategoryBrowser) {
             StoreCategoryView()
         }
         .sheet(isPresented: $showRankings) {
             StoreRankingView()
         }
-    }
-
-    // MARK: - Search Bar
-
-    private var searchBar: some View {
-        Button {
-            showSearch = true
-        } label: {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-
-                Text("搜索杂志")
-                    .foregroundColor(.secondary)
-
-                Spacer()
-            }
-            .padding(12)
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
-        }
-        .padding(.horizontal)
     }
 
     // MARK: - Featured Section
