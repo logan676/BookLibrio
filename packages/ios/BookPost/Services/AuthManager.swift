@@ -126,4 +126,28 @@ class AuthManager: ObservableObject {
             return false
         }
     }
+
+    /// Update user's avatar URL locally after successful upload
+    @MainActor
+    func updateUserAvatar(_ avatarUrl: String) {
+        guard let currentUser = currentUser else { return }
+
+        // Create updated user with new avatar
+        let updatedUser = User(
+            id: currentUser.id,
+            username: currentUser.username,
+            email: currentUser.email,
+            avatar: avatarUrl,
+            isAdmin: currentUser.isAdmin,
+            createdAt: currentUser.createdAt
+        )
+
+        // Save to UserDefaults
+        if let userData = try? JSONEncoder().encode(updatedUser) {
+            UserDefaults.standard.set(userData, forKey: "\(userDefaultsKey)_user")
+        }
+
+        // Update published property to trigger UI refresh
+        self.currentUser = updatedUser
+    }
 }

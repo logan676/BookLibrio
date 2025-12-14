@@ -1,41 +1,26 @@
 import SwiftUI
 
-/// User's personal bookshelf with filtering by status and book type
-/// Now includes recent reading section at the top
+/// User's personal bookshelf with filtering by book type and reading status
 struct MyBookshelfView: View {
     @State private var items: [BookshelfItem] = []
     @State private var counts: BookshelfCounts?
     @State private var isLoading = false
     @State private var hasMore = false
     @State private var offset = 0
-    @State private var selectedStatus: BookshelfStatus?
-    @State private var selectedType: String = "all"
+    @State private var selectedFilter: BookshelfFilter = .recentOpen
+    @State private var selectedType: BookshelfType = .ebook
     @State private var sortOption: BookshelfSortOption = .added
     @State private var sortOrder: BookshelfSortOrder = .descending
 
-    // Recent reading history
-    @State private var readingHistory: [ReadingHistoryItem] = []
-    @State private var isLoadingHistory = false
-
-    private var statusFilters: [(BookshelfStatus?, String)] {
-        [
-            (nil, L10n.Common.all),
-            (.wantToRead, L10n.Bookshelf.wantToRead),
-            (.reading, L10n.Bookshelf.reading),
-            (.finished, L10n.Bookshelf.finished),
-            (.abandoned, L10n.Bookshelf.abandoned)
-        ]
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            // Recent reading section (only show when no filter is applied)
-            if selectedStatus == nil && !readingHistory.isEmpty {
-                recentReadingSection
-            }
+            // Type tabs (电子书/杂志/纸质书)
+            typeTabsView
 
-            // Filter tabs
-            filterTabsView
+            // Status filter (最近打开/想读/在读/已读)
+            statusFilterView
+
+            Divider()
 
             // Content
             if items.isEmpty && isLoading {
@@ -43,21 +28,15 @@ struct MyBookshelfView: View {
             } else if items.isEmpty {
                 emptyStateView
             } else {
-                bookshelfListView
+                bookshelfGridView
             }
         }
         .navigationTitle(L10n.Bookshelf.title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                sortMenu
-            }
-        }
         .task {
             await loadBookshelf()
-            await loadReadingHistory()
         }
-        .onChange(of: selectedStatus) { _, _ in
+        .onChange(of: selectedFilter) { _, _ in
             resetAndReload()
         }
         .onChange(of: selectedType) { _, _ in
@@ -71,168 +50,67 @@ struct MyBookshelfView: View {
         }
     }
 
-    // MARK: - Recent Reading Section
+    // MARK: - Type Tabs (电子书/杂志/纸质书)
 
     @ViewBuilder
-    private var recentReadingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("最近阅读")
-                    .font(.headline)
-                    .fontWeight(.bold)
-
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 16)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(readingHistory.prefix(10)) { item in
-                        NavigationLink(destination: BookDetailView(
-                            bookType: item.itemType == "ebook" ? .ebook : .magazine,
-                            bookId: item.itemId
-                        )) {
-                            RecentReadingCard(item: item)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal)
-            }
+    private var typeTabsView: some View {
+        Picker(L10n.Bookshelf.type, selection: $selectedType) {
+            Text(L10n.Bookshelf.ebook).tag(BookshelfType.ebook)
+            Text(L10n.Bookshelf.magazine).tag(BookshelfType.magazine)
+            Text(L10n.Bookshelf.physicalBook).tag(BookshelfType.physicalBook)
         }
-        .padding(.bottom, 8)
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.vertical, 12)
         .background(Color(.systemBackground))
     }
 
-    private func loadReadingHistory() async {
-        isLoadingHistory = true
-        do {
-            let response = try await APIClient.shared.getReadingHistory(limit: 10)
-            readingHistory = response.data
-        } catch {
-            Log.e("Failed to load reading history", error: error)
-        }
-        isLoadingHistory = false
-    }
-
-    // MARK: - Filter Tabs
+    // MARK: - Status Filter (最近打开/想读/在读/已读)
 
     @ViewBuilder
-    private var filterTabsView: some View {
-        VStack(spacing: 0) {
-            // Status filter
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(statusFilters, id: \.1) { status, label in
-                        Button {
-                            selectedStatus = status
-                        } label: {
-                            HStack(spacing: 4) {
-                                if let status = status {
-                                    Image(systemName: status.iconName)
-                                        .font(.caption)
-                                }
-                                Text(label)
-                                if let count = countForStatus(status) {
-                                    Text("(\(count))")
-                                        .font(.caption2)
-                                }
-                            }
-                            .font(.subheadline)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(selectedStatus == status ? Color.accentColor : Color(.systemGray6))
-                            .foregroundColor(selectedStatus == status ? .white : .primary)
-                            .clipShape(Capsule())
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
+    private var statusFilterView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterButton(filter: .recentOpen)
+                filterButton(filter: .wantToRead)
+                filterButton(filter: .reading)
+                filterButton(filter: .finished)
             }
-
-            // Type filter
-            Picker(L10n.Bookshelf.type, selection: $selectedType) {
-                Text(L10n.Common.all).tag("all")
-                Text(L10n.Bookshelf.ebook).tag("ebook")
-                Text(L10n.Bookshelf.magazine).tag("magazine")
-            }
-            .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.bottom, 8)
-
-            Divider()
+            .padding(.vertical, 8)
         }
         .background(Color(.systemBackground))
     }
 
-    private func countForStatus(_ status: BookshelfStatus?) -> Int? {
-        guard let counts = counts else { return nil }
-        switch status {
-        case nil: return counts.total
-        case .wantToRead: return counts.wantToRead
-        case .reading: return counts.reading
-        case .finished: return counts.finished
-        case .abandoned: return counts.abandoned
-        }
-    }
-
-    // MARK: - Sort Menu
-
     @ViewBuilder
-    private var sortMenu: some View {
-        Menu {
-            // Sort options
-            Section(L10n.Bookshelf.sort) {
-                ForEach(BookshelfSortOption.allCases, id: \.self) { option in
-                    Button {
-                        sortOption = option
-                    } label: {
-                        HStack {
-                            Label(option.displayName, systemImage: option.iconName)
-                            if sortOption == option {
-                                Spacer()
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
+    private func filterButton(filter: BookshelfFilter) -> some View {
+        let count: Int? = {
+            switch filter {
+            case .recentOpen: return nil  // No count for recent open
+            case .wantToRead: return counts?.wantToRead
+            case .reading: return counts?.reading
+            case .finished: return counts?.finished
             }
+        }()
 
-            Divider()
-
-            // Sort order
-            Section {
-                Button {
-                    sortOrder = .ascending
-                } label: {
-                    HStack {
-                        Label(L10n.Bookshelf.sortAsc, systemImage: "arrow.up")
-                        if sortOrder == .ascending {
-                            Spacer()
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-
-                Button {
-                    sortOrder = .descending
-                } label: {
-                    HStack {
-                        Label(L10n.Bookshelf.sortDesc, systemImage: "arrow.down")
-                        if sortOrder == .descending {
-                            Spacer()
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
+        Button {
+            selectedFilter = filter
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: sortOrder == .ascending ? "arrow.up" : "arrow.down")
-                Image(systemName: sortOption.iconName)
+                Image(systemName: filter.iconName)
+                    .font(.caption)
+                Text(filter.displayName)
+                if let count = count {
+                    Text("(\(count))")
+                        .font(.caption2)
+                }
             }
+            .font(.subheadline)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(selectedFilter == filter ? Color.accentColor : Color(.systemGray6))
+            .foregroundColor(selectedFilter == filter ? .white : .primary)
+            .clipShape(Capsule())
         }
     }
 
@@ -240,33 +118,54 @@ struct MyBookshelfView: View {
 
     @ViewBuilder
     private var emptyStateView: some View {
-        ContentUnavailableView {
-            Label(L10n.Bookshelf.empty, systemImage: "books.vertical")
-        } description: {
-            Text(selectedStatus == nil ? L10n.Bookshelf.browseBooks : L10n.Bookshelf.noBooks)
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "books.vertical")
+                .font(.system(size: 50))
+                .foregroundColor(.secondary)
+
+            Text(L10n.Bookshelf.empty)
+                .font(.headline)
+                .foregroundColor(.secondary)
+
+            Text(L10n.Bookshelf.browseBooks)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Bookshelf List
+    // MARK: - Bookshelf Grid View
 
     @ViewBuilder
-    private var bookshelfListView: some View {
-        List {
-            ForEach(items) { item in
-                NavigationLink(destination: destinationView(for: item)) {
-                    BookshelfItemRow(item: item)
+    private var bookshelfGridView: some View {
+        ScrollView {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ], spacing: 20) {
+                ForEach(items) { item in
+                    NavigationLink(destination: destinationView(for: item)) {
+                        BookshelfGridItem(item: item)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding()
 
             if hasMore {
                 Button(L10n.Notes.loadMore) {
                     Task { await loadMore() }
                 }
-                .frame(maxWidth: .infinity)
+                .padding()
                 .disabled(isLoading)
             }
         }
-        .listStyle(.plain)
         .refreshable {
             await loadBookshelf()
         }
@@ -280,6 +179,9 @@ struct MyBookshelfView: View {
 
     // MARK: - Data Loading
 
+    /// Limit for "Recent Open" filter (3x3 grid)
+    private let recentOpenLimit = 9
+
     private func resetAndReload() {
         items = []
         offset = 0
@@ -290,19 +192,36 @@ struct MyBookshelfView: View {
         isLoading = true
 
         do {
-            let statusValue = selectedStatus?.rawValue ?? "all"
-            let response = try await APIClient.shared.getMyBookshelf(
-                status: statusValue,
-                type: selectedType,
-                sort: sortOption.rawValue,
-                order: sortOrder.rawValue,
-                limit: 20,
-                offset: 0
-            )
-            items = response.data
-            counts = response.counts
-            hasMore = response.hasMore
-            offset = items.count
+            let typeValue = selectedType.apiValue
+
+            // For "Recent Open", use lastRead sort, limit to 9, and only show opened books
+            if selectedFilter == .recentOpen {
+                let response = try await APIClient.shared.getMyBookshelf(
+                    status: "all",
+                    type: typeValue,
+                    sort: "lastRead",
+                    order: "desc",
+                    limit: recentOpenLimit,
+                    offset: 0,
+                    openedOnly: true
+                )
+                items = response.data
+                counts = response.counts
+                hasMore = false  // No pagination for recent open
+            } else {
+                let response = try await APIClient.shared.getMyBookshelf(
+                    status: selectedFilter.apiValue,
+                    type: typeValue,
+                    sort: sortOption.rawValue,
+                    order: sortOrder.rawValue,
+                    limit: 20,
+                    offset: 0
+                )
+                items = response.data
+                counts = response.counts
+                hasMore = response.hasMore
+                offset = items.count
+            }
         } catch {
             Log.e("Failed to load bookshelf", error: error)
         }
@@ -311,14 +230,16 @@ struct MyBookshelfView: View {
     }
 
     private func loadMore() async {
+        // No pagination for recent open filter
+        guard selectedFilter != .recentOpen else { return }
         guard !isLoading else { return }
         isLoading = true
 
         do {
-            let statusValue = selectedStatus?.rawValue ?? "all"
+            let typeValue = selectedType.apiValue
             let response = try await APIClient.shared.getMyBookshelf(
-                status: statusValue,
-                type: selectedType,
+                status: selectedFilter.apiValue,
+                type: typeValue,
                 sort: sortOption.rawValue,
                 order: sortOrder.rawValue,
                 limit: 20,
@@ -332,6 +253,49 @@ struct MyBookshelfView: View {
         }
 
         isLoading = false
+    }
+}
+
+// MARK: - Bookshelf Type Enum
+
+enum BookshelfType: String, CaseIterable {
+    case ebook = "ebook"
+    case magazine = "magazine"
+    case physicalBook = "book"
+
+    var apiValue: String {
+        return rawValue
+    }
+}
+
+// MARK: - Bookshelf Filter Enum
+
+enum BookshelfFilter: String, CaseIterable {
+    case recentOpen = "recent_open"
+    case wantToRead = "want_to_read"
+    case reading = "reading"
+    case finished = "finished"
+
+    var displayName: String {
+        switch self {
+        case .recentOpen: return L10n.Bookshelf.recentOpen
+        case .wantToRead: return L10n.Bookshelf.wantToRead
+        case .reading: return L10n.Bookshelf.reading
+        case .finished: return L10n.Bookshelf.finished
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .recentOpen: return "clock.arrow.circlepath"
+        case .wantToRead: return "bookmark"
+        case .reading: return "book"
+        case .finished: return "checkmark.circle"
+        }
+    }
+
+    var apiValue: String {
+        return rawValue
     }
 }
 
@@ -379,7 +343,53 @@ enum BookshelfSortOrder: String {
     case descending = "desc"
 }
 
-// MARK: - Bookshelf Item Row
+// MARK: - Bookshelf Grid Item
+
+struct BookshelfGridItem: View {
+    let item: BookshelfItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Book cover with status overlay
+            ZStack(alignment: .bottomLeading) {
+                BookCoverView(coverUrl: item.book.coverUrl, title: item.book.title)
+                    .frame(height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+
+                // Progress indicator at bottom
+                if let progress = item.progress, progress > 0 {
+                    GeometryReader { geometry in
+                        VStack {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.orange)
+                                .frame(width: geometry.size.width * progress, height: 3)
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            // Book title
+            Text(item.book.title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .foregroundColor(.primary)
+
+            // Progress percentage or status
+            if let progress = item.progress, progress > 0 {
+                Text(String(format: "%.0f%%", progress * 100))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Bookshelf Item Row (for list view)
 
 struct BookshelfItemRow: View {
     let item: BookshelfItem
@@ -441,43 +451,6 @@ struct BookshelfItemRow: View {
         case .reading: return .orange
         case .finished: return .green
         case .abandoned: return .gray
-        }
-    }
-}
-
-// MARK: - Recent Reading Card
-
-struct RecentReadingCard: View {
-    let item: ReadingHistoryItem
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Book cover
-            BookCoverView(coverUrl: item.coverUrl, title: item.title)
-                .frame(width: 80, height: 112)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-
-            // Book title
-            Text(item.title)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(width: 80, alignment: .leading)
-
-            // Progress
-            if let progress = item.progress {
-                HStack(spacing: 4) {
-                    ProgressView(value: progress)
-                        .tint(.orange)
-                        .frame(width: 50)
-
-                    Text("\(Int(progress * 100))%")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
         }
     }
 }
