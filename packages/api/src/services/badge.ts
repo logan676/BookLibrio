@@ -308,6 +308,59 @@ class BadgeService {
   }
 
   /**
+   * Award welcome badge to new user
+   */
+  async awardWelcomeBadge(userId: number): Promise<EarnedBadge | null> {
+    // Find the welcome badge (category: special, conditionType: new_user)
+    const [welcomeBadge] = await db
+      .select()
+      .from(badges)
+      .where(eq(badges.conditionType, 'new_user'))
+      .limit(1)
+
+    if (!welcomeBadge) {
+      console.log('Welcome badge not found in database')
+      return null
+    }
+
+    // Check if user already has this badge
+    const [existing] = await db
+      .select()
+      .from(userBadges)
+      .where(eq(userBadges.userId, userId))
+      .limit(1)
+
+    if (existing && existing.badgeId === welcomeBadge.id) {
+      return null // Already has badge
+    }
+
+    // Award the badge
+    await db.insert(userBadges).values({
+      userId,
+      badgeId: welcomeBadge.id,
+    })
+
+    // Update earned count
+    await db
+      .update(badges)
+      .set({ earnedCount: sql`${badges.earnedCount} + 1` })
+      .where(eq(badges.id, welcomeBadge.id))
+
+    return {
+      id: welcomeBadge.id,
+      category: welcomeBadge.category,
+      level: welcomeBadge.level || 1,
+      name: welcomeBadge.name,
+      description: welcomeBadge.description,
+      requirement: welcomeBadge.requirement,
+      iconUrl: welcomeBadge.iconUrl,
+      backgroundColor: welcomeBadge.backgroundColor,
+      earnedAt: new Date(),
+      earnedCount: (welcomeBadge.earnedCount || 0) + 1,
+    }
+  }
+
+  /**
    * Get all badges grouped by category
    */
   async getAllBadges() {
@@ -330,17 +383,18 @@ class BadgeService {
   }
 
   /**
-   * Initialize default badges
+   * Initialize default badges (adds any missing badges)
    */
   async initializeDefaultBadges() {
-    const existingCount = await db
-      .select({ count: sql<number>`count(*)` })
+    // Get existing badges to check which ones need to be added
+    const existingBadges = await db
+      .select({ category: badges.category, level: badges.level, conditionType: badges.conditionType })
       .from(badges)
 
-    if (existingCount[0].count > 0) {
-      console.log('Badges already initialized')
-      return
-    }
+    // Create a Set of existing badge keys for quick lookup
+    const existingKeys = new Set(
+      existingBadges.map(b => `${b.category}-${b.level}-${b.conditionType}`)
+    )
 
     const defaultBadges = [
       // Reading Streak
@@ -373,13 +427,27 @@ class BadgeService {
       { category: 'books_finished', level: 4, name: '200 Books Finished', requirement: 'Finish reading 200 books', conditionType: 'books_finished', conditionValue: 200, description: 'Bookworm elite' },
       { category: 'books_finished', level: 5, name: '500 Books Finished', requirement: 'Finish reading 500 books', conditionType: 'books_finished', conditionValue: 500, description: 'Library conqueror' },
       { category: 'books_finished', level: 6, name: '1000 Books Finished', requirement: 'Finish reading 1000 books', conditionType: 'books_finished', conditionValue: 1000, description: 'The ultimate bibliophile' },
+
+      // Special - Welcome Badge
+      { category: 'special', level: 1, name: '新旅程', requirement: '注册成为书邮会员', conditionType: 'new_user', conditionValue: 1, description: '欢迎加入书邮，开启您的阅读之旅！' },
     ]
 
+    // Insert only missing badges
+    let addedCount = 0
     for (const badge of defaultBadges) {
-      await db.insert(badges).values(badge)
+      const key = `${badge.category}-${badge.level}-${badge.conditionType}`
+      if (!existingKeys.has(key)) {
+        await db.insert(badges).values(badge)
+        addedCount++
+        console.log(`Added badge: ${badge.name}`)
+      }
     }
 
-    console.log(`Initialized ${defaultBadges.length} default badges`)
+    if (addedCount > 0) {
+      console.log(`Added ${addedCount} new badges`)
+    } else {
+      console.log('All badges already exist')
+    }
   }
 }
 

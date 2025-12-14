@@ -20,13 +20,10 @@ struct HomeView: View {
                                 HStack(spacing: 12) {
                                     ForEach(viewModel.readingHistory) { entry in
                                         ReadingHistoryCard(entry: entry) {
-                                            switch entry.type {
-                                            case .ebook:
+                                            if entry.itemType == "ebook" {
                                                 selectedEbookId = entry.itemId
-                                            case .magazine:
+                                            } else if entry.itemType == "magazine" {
                                                 selectedMagazineId = entry.itemId
-                                            case .book:
-                                                break // TODO
                                             }
                                         }
                                     }
@@ -101,26 +98,26 @@ struct HomeView: View {
 }
 
 struct ReadingHistoryCard: View {
-    let entry: ReadingHistoryEntry
+    let entry: ReadingHistoryItem
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading) {
-                BookCoverView(coverUrl: entry.coverUrl, title: entry.title ?? "")
+                BookCoverView(coverUrl: entry.coverUrl, title: entry.title)
                     .frame(width: 120, height: 160)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .shadow(radius: 2)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.title ?? L10n.Common.unknownTitle)
+                    Text(entry.title)
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                         .lineLimit(2)
 
-                    if let lastPage = entry.lastPage {
-                        Text(L10n.Home.page(lastPage))
+                    if let progress = entry.progress {
+                        Text(String(format: "%.0f%%", progress * 100))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }

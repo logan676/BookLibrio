@@ -6,6 +6,22 @@ enum ItemType: String, Codable {
     case book
 }
 
+/// Item for recent reading display
+struct ReadingHistoryItem: Codable, Identifiable {
+    let id: Int
+    let itemType: String
+    let itemId: Int
+    let title: String
+    let coverUrl: String?
+    let progress: Double?
+    let lastReadAt: String?
+}
+
+/// Response for reading history list
+struct ReadingHistoryItemResponse: Codable {
+    let data: [ReadingHistoryItem]
+}
+
 struct ReadingHistoryEntry: Codable, Identifiable {
     let id: Int
     let userId: Int?

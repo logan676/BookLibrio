@@ -41,7 +41,14 @@ import com.bookpost.ui.screen.home.HomeScreen
 import com.bookpost.ui.screen.magazines.MagazineDetailScreen
 import com.bookpost.ui.screen.magazines.MagazinesScreen
 import com.bookpost.ui.screen.profile.ProfileScreen
+import com.bookpost.ui.screen.reader.EpubReaderScreen
 import com.bookpost.ui.screen.reader.PdfReaderScreen
+import com.bookpost.ui.screen.goals.DailyGoalsScreen
+import com.bookpost.ui.screen.badges.BadgesScreen
+import com.bookpost.ui.screen.stats.ReadingStatsScreen
+import com.bookpost.ui.screen.booklists.BookListsScreen
+import com.bookpost.ui.screen.booklists.BookListDetailScreen
+import com.bookpost.ui.screen.booklists.CreateBookListScreen
 
 sealed class Screen(val route: String) {
     data object Login : Screen("login")
@@ -60,6 +67,17 @@ sealed class Screen(val route: String) {
     data object PdfReader : Screen("pdf_reader/{type}/{id}") {
         fun createRoute(type: String, id: Int) = "pdf_reader/$type/$id"
     }
+    data object EpubReader : Screen("epub_reader/{id}") {
+        fun createRoute(id: Int) = "epub_reader/$id"
+    }
+    data object DailyGoals : Screen("daily_goals")
+    data object Badges : Screen("badges")
+    data object ReadingStats : Screen("reading_stats")
+    data object BookLists : Screen("book_lists")
+    data object BookListDetail : Screen("book_list/{id}") {
+        fun createRoute(id: Int) = "book_list/$id"
+    }
+    data object CreateBookList : Screen("create_book_list")
 }
 
 data class BottomNavItem(
@@ -203,8 +221,9 @@ fun BookPostNavigation(
                     onReadClick = { id, isPdf ->
                         if (isPdf) {
                             navController.navigate(Screen.PdfReader.createRoute("ebook", id))
+                        } else {
+                            navController.navigate(Screen.EpubReader.createRoute(id))
                         }
-                        // TODO: Handle EPUB reader
                     }
                 )
             }
@@ -241,6 +260,18 @@ fun BookPostNavigation(
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onNavigateToGoals = {
+                        navController.navigate(Screen.DailyGoals.route)
+                    },
+                    onNavigateToBadges = {
+                        navController.navigate(Screen.Badges.route)
+                    },
+                    onNavigateToStats = {
+                        navController.navigate(Screen.ReadingStats.route)
+                    },
+                    onNavigateToBookLists = {
+                        navController.navigate(Screen.BookLists.route)
                     }
                 )
             }
@@ -258,6 +289,76 @@ fun BookPostNavigation(
                     type = type,
                     id = id,
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.EpubReader.route,
+                arguments = listOf(navArgument("id") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val ebookId = backStackEntry.arguments?.getInt("id") ?: return@composable
+                EpubReaderScreen(
+                    ebookId = ebookId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.DailyGoals.route) {
+                DailyGoalsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Badges.route) {
+                BadgesScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.ReadingStats.route) {
+                ReadingStatsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.BookLists.route) {
+                BookListsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onListClick = { id ->
+                        navController.navigate(Screen.BookListDetail.createRoute(id))
+                    },
+                    onCreateClick = {
+                        navController.navigate(Screen.CreateBookList.route)
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.BookListDetail.route,
+                arguments = listOf(navArgument("id") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val listId = backStackEntry.arguments?.getInt("id") ?: return@composable
+                BookListDetailScreen(
+                    listId = listId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onBookClick = { bookId, bookType ->
+                        if (bookType == "ebook") {
+                            navController.navigate(Screen.EbookDetail.createRoute(bookId))
+                        } else {
+                            navController.navigate(Screen.MagazineDetail.createRoute(bookId))
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.CreateBookList.route) {
+                CreateBookListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onCreated = { newListId ->
+                        navController.navigate(Screen.BookListDetail.createRoute(newListId)) {
+                            popUpTo(Screen.BookLists.route)
+                        }
+                    }
                 )
             }
         }

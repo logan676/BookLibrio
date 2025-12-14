@@ -6,7 +6,11 @@ import com.bookpost.data.remote.api.AuthApi
 import com.bookpost.data.remote.api.EbooksApi
 import com.bookpost.data.remote.api.MagazinesApi
 import com.bookpost.data.remote.api.ReadingHistoryApi
+import com.bookpost.data.remote.api.BadgesApi
 import com.bookpost.data.remote.api.BooksApi
+import com.bookpost.data.remote.api.ReadingSessionApi
+import com.bookpost.data.remote.api.ReadingStatsApi
+import com.bookpost.data.remote.api.BookListsApi
 import com.bookpost.data.remote.interceptor.AuthInterceptor
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -98,5 +102,29 @@ object NetworkModule {
     @Singleton
     fun provideBooksApi(retrofit: Retrofit): BooksApi {
         return retrofit.create(BooksApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideReadingSessionApi(retrofit: Retrofit): ReadingSessionApi {
+        return retrofit.create(ReadingSessionApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBadgesApi(retrofit: Retrofit): BadgesApi {
+        return retrofit.create(BadgesApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideReadingStatsApi(retrofit: Retrofit): ReadingStatsApi {
+        return retrofit.create(ReadingStatsApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBookListsApi(retrofit: Retrofit): BookListsApi {
+        return retrofit.create(BookListsApi::class.java)
     }
 }

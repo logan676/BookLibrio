@@ -8,39 +8,56 @@ import SwiftUI
 struct BadgesView: View {
     @StateObject private var viewModel = BadgesViewModel()
     @State private var selectedCategory: BadgeCategory?
+    @State private var selectedBadge: BadgeItem?
+    @Namespace private var badgeNamespace
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Header summary
-                badgeSummaryCard
+        ZStack {
+            // Main content
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Header summary
+                    badgeSummaryCard
 
-                // Category pills
-                categorySelector
+                    // Category pills
+                    categorySelector
 
-                // Badges list
-                if let category = selectedCategory {
-                    categoryBadgesSection(category)
-                } else {
-                    allBadgesSection
+                    // Badges list
+                    if let category = selectedCategory {
+                        categoryBadgesSection(category)
+                    } else {
+                        allBadgesSection
+                    }
                 }
+                .padding()
             }
-            .padding()
-        }
-        .navigationTitle("My Badges")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await viewModel.loadBadges()
-        }
-        .refreshable {
-            await viewModel.loadBadges()
-        }
-        .alert("New Badge Earned!", isPresented: $viewModel.showNewBadgeAlert) {
-            Button("Awesome!") {
-                viewModel.showNewBadgeAlert = false
+            .navigationTitle("My Badges")
+            .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await viewModel.loadBadges()
             }
-        } message: {
-            Text(viewModel.newBadges.map { $0.name }.joined(separator: ", "))
+            .refreshable {
+                await viewModel.loadBadges()
+            }
+            .alert("New Badge Earned!", isPresented: $viewModel.showNewBadgeAlert) {
+                Button("Awesome!") {
+                    viewModel.showNewBadgeAlert = false
+                }
+            } message: {
+                Text(viewModel.newBadges.map { $0.name }.joined(separator: ", "))
+            }
+
+            // Badge detail overlay with transition animation
+            if let badge = selectedBadge {
+                BadgeDetailOverlay(
+                    badge: badge,
+                    namespace: badgeNamespace
+                ) {
+                    selectedBadge = nil
+                }
+                .zIndex(100)
+                .transition(.opacity)
+            }
         }
     }
 
@@ -189,7 +206,15 @@ struct BadgesView: View {
                 GridItem(.flexible())
             ], spacing: 16) {
                 ForEach(badges) { badge in
-                    BadgeCardView(badge: badge)
+                    BadgeCardWithTransition(
+                        badge: badge,
+                        namespace: badgeNamespace,
+                        isSelected: selectedBadge?.id == badge.id
+                    ) {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            selectedBadge = badge
+                        }
+                    }
                 }
             }
         }
@@ -316,16 +341,7 @@ struct BadgeCardView: View {
     }
 
     private func categoryColor(_ category: BadgeCategory) -> Color {
-        switch category {
-        case .readingStreak: return .orange
-        case .readingDuration: return .blue
-        case .readingDays: return .green
-        case .booksFinished: return .purple
-        case .weeklyChallenge: return .cyan
-        case .monthlyChallenge: return .yellow
-        case .social: return .pink
-        case .special: return .indigo
-        }
+        category.color
     }
 }
 
@@ -610,17 +626,7 @@ struct EnhancedBadgeDetailSheet: View {
         case .earned(let b): category = b.badgeCategory
         case .inProgress(let b): category = b.badge.badgeCategory
         }
-
-        switch category {
-        case .readingStreak: return .orange
-        case .readingDuration: return .blue
-        case .readingDays: return .green
-        case .booksFinished: return .purple
-        case .weeklyChallenge: return .cyan
-        case .monthlyChallenge: return .yellow
-        case .social: return .pink
-        case .special: return .indigo
-        }
+        return category.color
     }
 
     private var rarity: String {
@@ -820,17 +826,7 @@ struct BadgeShareCardView: View {
         case .earned(let b): category = b.badgeCategory
         case .inProgress(let b): category = b.badge.badgeCategory
         }
-
-        switch category {
-        case .readingStreak: return .orange
-        case .readingDuration: return .blue
-        case .readingDays: return .green
-        case .booksFinished: return .purple
-        case .weeklyChallenge: return .cyan
-        case .monthlyChallenge: return .yellow
-        case .social: return .pink
-        case .special: return .indigo
-        }
+        return category.color
     }
 }
 

@@ -8,10 +8,16 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import type { ExtendedRootStackParamList } from '../types'
+
+type NavigationProp = NativeStackNavigationProp<ExtendedRootStackParamList>
 
 export default function MeScreen() {
+  const navigation = useNavigation<NavigationProp>()
   const { user, logout } = useAuth()
   const [serverUrl, setServerUrl] = useState('http://localhost:3000/api')
 
@@ -60,6 +66,53 @@ export default function MeScreen() {
           </View>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* My Reading Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>My Reading</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('ReadingStats')}
+          >
+            <View style={styles.menuIconContainer}>
+              <Text style={styles.menuIcon}>📊</Text>
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Reading Stats</Text>
+              <Text style={styles.menuDescription}>View your reading progress and history</Text>
+            </View>
+            <Text style={styles.menuArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Badges')}
+          >
+            <View style={styles.menuIconContainer}>
+              <Text style={styles.menuIcon}>🏅</Text>
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>My Badges</Text>
+              <Text style={styles.menuDescription}>Achievements and rewards</Text>
+            </View>
+            <Text style={styles.menuArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.menuItem, styles.menuItemLast]}
+            onPress={() => navigation.navigate('BookLists')}
+          >
+            <View style={styles.menuIconContainer}>
+              <Text style={styles.menuIcon}>📚</Text>
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Book Lists</Text>
+              <Text style={styles.menuDescription}>Create and discover curated lists</Text>
+            </View>
+            <Text style={styles.menuArrow}>›</Text>
           </TouchableOpacity>
         </View>
 
@@ -226,5 +279,45 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 16,
     fontWeight: '600',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
+  },
+  menuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuIcon: {
+    fontSize: 20,
+  },
+  menuContent: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 2,
+  },
+  menuDescription: {
+    fontSize: 13,
+    color: '#64748b',
+  },
+  menuArrow: {
+    fontSize: 24,
+    color: '#94a3b8',
+    fontWeight: '300',
   },
 })

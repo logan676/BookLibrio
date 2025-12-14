@@ -233,3 +233,311 @@ export interface UpdateReadingHistoryRequest {
   coverUrl?: string
   lastPage?: number
 }
+
+// ======================================
+// Reading Session Types
+// ======================================
+export interface ReadingSession {
+  id: number
+  user_id: number
+  book_id: number
+  book_type: 'ebook' | 'magazine'
+  start_time: string
+  end_time?: string
+  duration_minutes: number
+  pages_read: number
+  status: 'active' | 'paused' | 'completed'
+  created_at: string
+}
+
+export interface StartSessionRequest {
+  bookId: number
+  bookType: 'ebook' | 'magazine'
+  bookTitle?: string
+}
+
+export interface StartSessionResponse {
+  sessionId: number
+  startTime: string
+}
+
+export interface EndSessionRequest {
+  pagesRead?: number
+}
+
+export interface TodayDurationResponse {
+  duration: number
+  formattedDuration: string
+  sessionsCount: number
+}
+
+// ======================================
+// Reading Goals Types
+// ======================================
+export interface ReadingGoal {
+  id: number
+  user_id: number
+  daily_minutes: number
+  weekly_books: number
+  monthly_pages: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DailyProgress {
+  date: string
+  minutes_read: number
+  goal_minutes: number
+  completed: boolean
+  streak: number
+}
+
+// ======================================
+// Badge Types
+// ======================================
+export type BadgeCategory =
+  | 'first_steps'
+  | 'bookworm'
+  | 'speed_reader'
+  | 'night_owl'
+  | 'early_bird'
+  | 'marathon'
+  | 'consistent'
+  | 'explorer'
+  | 'collector'
+  | 'social'
+  | 'reviewer'
+  | 'challenger'
+  | 'seasonal'
+  | 'milestone'
+  | 'special'
+  | 'secret'
+
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum'
+
+export interface Badge {
+  id: number
+  category: BadgeCategory
+  tier: BadgeTier
+  name: string
+  description: string
+  icon: string
+  requirement_value: number
+  requirement_description: string
+  points: number
+  is_secret: boolean
+  created_at: string
+}
+
+export interface UserBadge {
+  id: number
+  user_id: number
+  badge_id: number
+  earned_at: string
+  progress: number
+  badge: Badge
+}
+
+export interface BadgeProgress {
+  badge: Badge
+  current_progress: number
+  target_value: number
+  percentage: number
+  is_earned: boolean
+  earned_at?: string
+}
+
+export interface CheckBadgesResponse {
+  newBadges: UserBadge[]
+  updatedProgress: BadgeProgress[]
+}
+
+// ======================================
+// Reading Stats Types
+// ======================================
+export type StatsDimension = 'week' | 'month' | 'year' | 'total' | 'calendar'
+
+export interface DateRange {
+  start: string
+  end: string
+}
+
+export interface DayDuration {
+  date: string
+  duration: number
+  label: string
+}
+
+export interface WeekStats {
+  range: DateRange
+  totalMinutes: number
+  totalBooks: number
+  totalPages: number
+  averageMinutesPerDay: number
+  dailyDurations: DayDuration[]
+  longestStreak: number
+  currentStreak: number
+}
+
+export interface MonthStats {
+  year: number
+  month: number
+  totalMinutes: number
+  totalBooks: number
+  totalPages: number
+  averageMinutesPerDay: number
+  dailyDurations: DayDuration[]
+}
+
+export interface YearStats {
+  year: number
+  totalMinutes: number
+  totalBooks: number
+  totalPages: number
+  monthlyDurations: { month: number; duration: number; label: string }[]
+  topCategories: { category: string; count: number }[]
+}
+
+export interface TotalStats {
+  totalMinutes: number
+  totalBooks: number
+  totalPages: number
+  memberSince: string
+  longestStreak: number
+  currentStreak: number
+  favoriteCategory?: string
+  averageMinutesPerDay: number
+  milestones: ReadingMilestone[]
+}
+
+export interface ReadingMilestone {
+  type: string
+  value: number
+  reachedAt: string
+  description: string
+}
+
+export interface CalendarDay {
+  date: string
+  duration: number
+  level: 0 | 1 | 2 | 3 | 4
+}
+
+export interface CalendarStats {
+  year: number
+  month: number
+  days: CalendarDay[]
+  totalMinutes: number
+  activeDays: number
+}
+
+// ======================================
+// Book List Types
+// ======================================
+export type BookListCategory =
+  | 'all'
+  | 'literature'
+  | 'history'
+  | 'science'
+  | 'philosophy'
+  | 'art'
+  | 'business'
+  | 'technology'
+  | 'lifestyle'
+  | 'other'
+
+export type BookListSortOption = 'latest' | 'popular' | 'most_followed' | 'most_books'
+
+export interface BookListCreator {
+  id: number
+  username: string
+  avatar?: string
+}
+
+export interface BookListBook {
+  id: number
+  title: string
+  author?: string
+  coverUrl?: string
+  rating?: number
+  bookType: 'ebook' | 'magazine'
+}
+
+export interface BookListItem {
+  id: number
+  list_id: number
+  book_id: number
+  book_type: 'ebook' | 'magazine'
+  note?: string
+  added_at: string
+  book?: BookListBook
+}
+
+export interface BookList {
+  id: number
+  title: string
+  description?: string
+  cover_url?: string
+  user_id: number
+  is_public: boolean
+  category?: BookListCategory
+  tags?: string[]
+  item_count: number
+  follower_count: number
+  is_following?: boolean
+  creator?: BookListCreator
+  preview_books?: BookListItem[]
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateBookListRequest {
+  title: string
+  description?: string
+  isPublic?: boolean
+  category?: BookListCategory
+  tags?: string[]
+}
+
+export interface AddBookToListRequest {
+  bookId: number
+  bookType: 'ebook' | 'magazine'
+  note?: string
+}
+
+export interface BookListsResponse {
+  lists: BookList[]
+  total: number
+  hasMore: boolean
+}
+
+// ======================================
+// Reader Settings Types
+// ======================================
+export type ReaderFont = 'system' | 'serif' | 'sans-serif' | 'monospace'
+export type ReaderTheme = 'light' | 'sepia' | 'green' | 'dark'
+export type ReaderLineSpacing = 'compact' | 'normal' | 'relaxed' | 'loose'
+export type ReaderMargin = 'small' | 'medium' | 'large'
+
+export interface ReaderSettings {
+  font: ReaderFont
+  fontSize: number
+  theme: ReaderTheme
+  lineSpacing: ReaderLineSpacing
+  margin: ReaderMargin
+  brightness: number
+  keepScreenOn: boolean
+}
+
+// ======================================
+// Navigation Types Extension
+// ======================================
+export type ExtendedRootStackParamList = RootStackParamList & {
+  DailyGoals: undefined
+  Badges: undefined
+  BadgeDetail: { badgeId: number }
+  ReadingStats: undefined
+  BookLists: undefined
+  BookListDetail: { listId: number }
+  CreateBookList: undefined
+}

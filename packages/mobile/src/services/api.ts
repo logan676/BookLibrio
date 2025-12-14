@@ -1,4 +1,11 @@
-import type { Book, Post, EbookCategory, Ebook, EbookDetail, EbookContent, Publisher, Magazine, MagazineDetail, User, AuthResponse, Note, NoteContent, NoteYear, NoteUnderline, NoteIdea, ReadingHistoryEntry, UpdateReadingHistoryRequest } from '../types'
+import type {
+  Book, Post, EbookCategory, Ebook, EbookDetail, EbookContent, Publisher, Magazine, MagazineDetail, User, AuthResponse, Note, NoteContent, NoteYear, NoteUnderline, NoteIdea, ReadingHistoryEntry, UpdateReadingHistoryRequest,
+  // New types
+  StartSessionRequest, StartSessionResponse, TodayDurationResponse, ReadingGoal, DailyProgress,
+  Badge, UserBadge, BadgeProgress, CheckBadgesResponse,
+  WeekStats, YearStats, TotalStats, CalendarStats,
+  BookList, BookListItem, CreateBookListRequest, AddBookToListRequest, BookListsResponse, BookListCategory, BookListSortOption
+} from '../types'
 import Constants from 'expo-constants'
 
 // Production API URL (Fly.io)
@@ -281,6 +288,211 @@ class ApiService {
   // Posts
   async getPost(bookId: number, postId: number): Promise<Post> {
     return this.fetch<Post>(`/books/${bookId}/posts/${postId}`)
+  }
+
+  // ======================================
+  // Reading Sessions
+  // ======================================
+  async startReadingSession(data: StartSessionRequest): Promise<StartSessionResponse> {
+    return this.fetch<StartSessionResponse>('/reading-sessions/start', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async sendHeartbeat(sessionId: number): Promise<void> {
+    await this.fetch(`/reading-sessions/${sessionId}/heartbeat`, {
+      method: 'POST',
+    })
+  }
+
+  async pauseSession(sessionId: number): Promise<void> {
+    await this.fetch(`/reading-sessions/${sessionId}/pause`, {
+      method: 'POST',
+    })
+  }
+
+  async resumeSession(sessionId: number): Promise<void> {
+    await this.fetch(`/reading-sessions/${sessionId}/resume`, {
+      method: 'POST',
+    })
+  }
+
+  async endReadingSession(sessionId: number, pagesRead?: number): Promise<void> {
+    await this.fetch(`/reading-sessions/${sessionId}/end`, {
+      method: 'POST',
+      body: JSON.stringify({ pagesRead }),
+    })
+  }
+
+  async getTodayDuration(): Promise<TodayDurationResponse> {
+    return this.fetch<TodayDurationResponse>('/reading-sessions/today-duration')
+  }
+
+  // ======================================
+  // Reading Goals
+  // ======================================
+  async getReadingGoal(): Promise<ReadingGoal | null> {
+    try {
+      return await this.fetch<ReadingGoal>('/reading-goals')
+    } catch {
+      return null
+    }
+  }
+
+  async updateReadingGoal(goal: Partial<ReadingGoal>): Promise<ReadingGoal> {
+    return this.fetch<ReadingGoal>('/reading-goals', {
+      method: 'PUT',
+      body: JSON.stringify(goal),
+    })
+  }
+
+  async getDailyProgress(date?: string): Promise<DailyProgress> {
+    const params = date ? `?date=${date}` : ''
+    return this.fetch<DailyProgress>(`/reading-goals/progress${params}`)
+  }
+
+  // ======================================
+  // Badges
+  // ======================================
+  async getAllBadges(): Promise<Badge[]> {
+    return this.fetch<Badge[]>('/badges')
+  }
+
+  async getUserBadges(): Promise<UserBadge[]> {
+    return this.fetch<UserBadge[]>('/badges/user')
+  }
+
+  async getBadgeProgress(): Promise<BadgeProgress[]> {
+    return this.fetch<BadgeProgress[]>('/badges/progress')
+  }
+
+  async checkNewBadges(): Promise<CheckBadgesResponse> {
+    return this.fetch<CheckBadgesResponse>('/badges/check-new', {
+      method: 'POST',
+    })
+  }
+
+  // ======================================
+  // Reading Stats
+  // ======================================
+  async getWeekStats(date?: string): Promise<WeekStats> {
+    const params = date ? `?date=${date}` : ''
+    return this.fetch<WeekStats>(`/reading-stats/week${params}`)
+  }
+
+  async getMonthStats(year?: number, month?: number): Promise<WeekStats> {
+    const params = new URLSearchParams()
+    if (year) params.set('year', year.toString())
+    if (month) params.set('month', month.toString())
+    const query = params.toString()
+    return this.fetch<WeekStats>(`/reading-stats/month${query ? `?${query}` : ''}`)
+  }
+
+  async getYearStats(year?: number): Promise<YearStats> {
+    const params = year ? `?year=${year}` : ''
+    return this.fetch<YearStats>(`/reading-stats/year${params}`)
+  }
+
+  async getTotalStats(): Promise<TotalStats> {
+    return this.fetch<TotalStats>('/reading-stats/total')
+  }
+
+  async getCalendarStats(year?: number, month?: number): Promise<CalendarStats> {
+    const params = new URLSearchParams()
+    if (year) params.set('year', year.toString())
+    if (month) params.set('month', month.toString())
+    const query = params.toString()
+    return this.fetch<CalendarStats>(`/reading-stats/calendar${query ? `?${query}` : ''}`)
+  }
+
+  // ======================================
+  // Book Lists
+  // ======================================
+  async getBookLists(
+    category?: BookListCategory,
+    sort?: BookListSortOption,
+    limit?: number,
+    offset?: number
+  ): Promise<BookListsResponse> {
+    const params = new URLSearchParams()
+    if (category && category !== 'all') params.set('category', category)
+    if (sort) params.set('sort', sort)
+    if (limit) params.set('limit', limit.toString())
+    if (offset) params.set('offset', offset.toString())
+    const query = params.toString()
+    return this.fetch<BookListsResponse>(`/book-lists${query ? `?${query}` : ''}`)
+  }
+
+  async getMyBookLists(): Promise<BookList[]> {
+    return this.fetch<BookList[]>('/book-lists/my')
+  }
+
+  async getFollowedBookLists(): Promise<BookList[]> {
+    return this.fetch<BookList[]>('/book-lists/followed')
+  }
+
+  async getBookList(id: number): Promise<BookList> {
+    return this.fetch<BookList>(`/book-lists/${id}`)
+  }
+
+  async getBookListItems(
+    id: number,
+    limit = 20,
+    offset = 0
+  ): Promise<{ items: BookListItem[]; hasMore: boolean }> {
+    const items = await this.fetch<BookListItem[]>(
+      `/book-lists/${id}/items?limit=${limit}&offset=${offset}`
+    )
+    return {
+      items,
+      hasMore: items.length >= limit,
+    }
+  }
+
+  async createBookList(data: CreateBookListRequest): Promise<BookList> {
+    return this.fetch<BookList>('/book-lists', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateBookList(id: number, data: Partial<CreateBookListRequest>): Promise<BookList> {
+    return this.fetch<BookList>(`/book-lists/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteBookList(id: number): Promise<void> {
+    await this.fetch(`/book-lists/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async addBookToList(listId: number, data: AddBookToListRequest): Promise<BookListItem> {
+    return this.fetch<BookListItem>(`/book-lists/${listId}/items`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async removeBookFromList(listId: number, itemId: number): Promise<void> {
+    await this.fetch(`/book-lists/${listId}/items/${itemId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async followBookList(id: number): Promise<void> {
+    await this.fetch(`/book-lists/${id}/follow`, {
+      method: 'POST',
+    })
+  }
+
+  async unfollowBookList(id: number): Promise<void> {
+    await this.fetch(`/book-lists/${id}/follow`, {
+      method: 'DELETE',
+    })
   }
 }
 

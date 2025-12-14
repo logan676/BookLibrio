@@ -30,6 +30,9 @@ coil = "2.7.0"
 # PDF
 pdfViewer = "3.2.0-beta.1"
 
+# EPUB (Readium)
+readium = "3.0.0"
+
 # Coroutines
 coroutines = "1.9.0"
 
@@ -86,6 +89,11 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 # PDF Viewer
 pdf-viewer = { group = "com.github.barteksc", name = "android-pdf-viewer", version.ref = "pdfViewer" }
+
+# EPUB Reader (Readium)
+readium-shared = { group = "org.readium.kotlin-toolkit", name = "readium-shared", version.ref = "readium" }
+readium-streamer = { group = "org.readium.kotlin-toolkit", name = "readium-streamer", version.ref = "readium" }
+readium-navigator = { group = "org.readium.kotlin-toolkit", name = "readium-navigator", version.ref = "readium" }
 
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }

@@ -276,16 +276,7 @@ enum BadgeDetailContent {
     }
 
     var color: Color {
-        switch category {
-        case .readingStreak: return .orange
-        case .readingDuration: return .blue
-        case .readingDays: return .green
-        case .booksFinished: return .purple
-        case .weeklyChallenge: return .yellow
-        case .monthlyChallenge: return .pink
-        case .social: return .cyan
-        case .special: return .indigo
-        }
+        category.color
     }
 
     var levelColor: Color {

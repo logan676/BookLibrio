@@ -62,18 +62,31 @@ class EPUBReaderViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        Log.i("📖 Starting EPUB load for \(bookType) id=\(bookId), title=\(bookTitle)")
+
         do {
             // Check cache first
             let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
             let cachedFile = cacheDir.appendingPathComponent("epubs/\(bookType)s/\(bookId).epub")
 
+            Log.d("📂 Cache path: \(cachedFile.path)")
+
             var fileURL: URL
 
             if FileManager.default.fileExists(atPath: cachedFile.path) {
+                Log.i("✅ Found cached EPUB file")
                 fileURL = cachedFile
             } else {
+                Log.i("⬇️ Downloading EPUB file from API...")
                 // Download from API with correct file type
                 fileURL = try await APIClient.shared.downloadEbookFile(id: bookId, fileType: "epub")
+                Log.i("✅ Download complete: \(fileURL.path)")
+
+                // Check file size
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
+                   let fileSize = attrs[.size] as? Int64 {
+                    Log.d("📦 Downloaded file size: \(fileSize) bytes")
+                }
 
                 // Cache the file
                 try? FileManager.default.createDirectory(
@@ -81,9 +94,11 @@ class EPUBReaderViewModel: ObservableObject {
                     withIntermediateDirectories: true
                 )
                 try? FileManager.default.copyItem(at: fileURL, to: cachedFile)
+                Log.d("📂 Cached EPUB to: \(cachedFile.path)")
             }
 
             #if canImport(ReadiumShared) && canImport(ReadiumStreamer) && canImport(ReadiumNavigator)
+            Log.i("📚 Readium framework available, parsing EPUB...")
             // Create HTTP server for serving publication resources
             self.httpServer = GCDHTTPServer(assetRetriever: AssetRetriever(httpClient: DefaultHTTPClient()))
 
@@ -93,12 +108,14 @@ class EPUBReaderViewModel: ObservableObject {
             // Load saved reading position
             await loadSavedPosition()
             #else
+            Log.e("❌ Readium framework not available!")
             errorMessage = "EPUB support requires Readium framework"
             #endif
 
             await startReadingSession()
 
         } catch {
+            Log.e("❌ EPUB download/load failed", error: error)
             errorMessage = error.localizedDescription
         }
 
@@ -107,6 +124,7 @@ class EPUBReaderViewModel: ObservableObject {
 
     #if canImport(ReadiumShared) && canImport(ReadiumStreamer) && canImport(ReadiumNavigator)
     private func parseEPUB(at url: URL) async {
+        Log.d("📚 parseEPUB starting for: \(url.path)")
         do {
             // Readium 3.x: Create HTTP server and open publication
             let httpClient = DefaultHTTPClient()
@@ -115,11 +133,14 @@ class EPUBReaderViewModel: ObservableObject {
             // Create absolute URL from file URL
             guard let absoluteURL = url.absoluteURL as URL?,
                   let readiumURL = ReadiumShared.FileURL(url: absoluteURL) else {
+                Log.e("❌ Invalid file URL: \(url)")
                 errorMessage = "Invalid file URL"
                 return
             }
 
+            Log.d("📂 Retrieving asset from: \(readiumURL)")
             let asset = try await assetRetriever.retrieve(url: readiumURL).get()
+            Log.d("✅ Asset retrieved successfully")
 
             let parser = DefaultPublicationParser(
                 httpClient: httpClient,
@@ -129,15 +150,19 @@ class EPUBReaderViewModel: ObservableObject {
             let opener = PublicationOpener(parser: parser)
             self.publicationOpener = opener
 
+            Log.d("📖 Opening publication...")
             let publication = try await opener.open(asset: asset, allowUserInteraction: false).get()
             self.publication = publication
+            Log.i("✅ EPUB opened: \(publication.metadata.title ?? "Unknown")")
 
             // Extract table of contents
             await extractTOC(from: publication)
 
             totalChapters = publication.readingOrder.count
+            Log.i("📑 Total chapters: \(totalChapters)")
 
         } catch {
+            Log.e("❌ Failed to parse EPUB", error: error)
             errorMessage = "Failed to open EPUB: \(error.localizedDescription)"
         }
     }
@@ -254,19 +279,82 @@ class EPUBReaderViewModel: ObservableObject {
         #endif
     }
 
+    #if canImport(ReadiumShared) && canImport(ReadiumNavigator)
+    /// Navigate to a specific locator (used for search results and TOC)
+    @Published var targetLocator: Locator?
+
     func navigateToTOCItem(_ item: EPUBTOCItem) {
-        currentLocation = item.href
-        // Navigation will be handled by the navigator view
+        guard let publication = publication else {
+            currentLocation = item.href
+            return
+        }
+
+        // Find the matching link in the publication's table of contents or reading order
+        Task {
+            // Try to find the link that matches this TOC item's href
+            let tocResult = await publication.tableOfContents()
+
+            if case .success(let links) = tocResult {
+                // Search for the link in TOC (including children)
+                if let link = findLink(in: links, href: item.href) {
+                    // Use publication.locate(link:) to create a proper Locator
+                    // locate() returns Locator? directly in Readium 3.x
+                    if let locator = await publication.locate(link) {
+                        await MainActor.run {
+                            self.targetLocator = locator
+                            self.currentLocation = item.href
+                            self.currentChapterTitle = item.title
+                        }
+                        return
+                    }
+                }
+            }
+
+            // Fallback: try to find in reading order
+            for link in publication.readingOrder {
+                let linkHref = String(describing: link.href)
+                if linkHref == item.href || linkHref.contains(item.href) || item.href.contains(linkHref) {
+                    if let locator = await publication.locate(link) {
+                        await MainActor.run {
+                            self.targetLocator = locator
+                            self.currentLocation = item.href
+                            self.currentChapterTitle = item.title
+                        }
+                        return
+                    }
+                }
+            }
+
+            // If no matching link found, just update the current location
+            await MainActor.run {
+                self.currentLocation = item.href
+            }
+        }
     }
 
-    #if canImport(ReadiumShared) && canImport(ReadiumNavigator)
-    /// Navigate to a specific locator (used for search results)
-    @Published var targetLocator: Locator?
+    /// Recursively find a Link in the TOC that matches the given href
+    private func findLink(in links: [ReadiumShared.Link], href: String) -> ReadiumShared.Link? {
+        for link in links {
+            let linkHref = String(describing: link.href)
+            if linkHref == href || linkHref.contains(href) || href.contains(linkHref) {
+                return link
+            }
+            // Check children
+            if let found = findLink(in: link.children, href: href) {
+                return found
+            }
+        }
+        return nil
+    }
 
     func navigateToLocator(_ locator: Locator) {
         targetLocator = locator
         currentLocation = String(describing: locator.href)
         currentChapterTitle = locator.title
+    }
+    #else
+    func navigateToTOCItem(_ item: EPUBTOCItem) {
+        currentLocation = item.href
     }
     #endif
 

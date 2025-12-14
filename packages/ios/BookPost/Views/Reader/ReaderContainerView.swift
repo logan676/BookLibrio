@@ -26,9 +26,13 @@ struct ReaderContainerView: View {
                 EnhancedPDFReaderView(
                     type: bookType,
                     id: bookId,
-                    title: title
+                    title: title,
+                    coverUrl: coverUrl
                 )
             }
+        }
+        .onAppear {
+            Log.i("📖 ReaderContainerView opened: bookType=\(bookType), id=\(bookId), fileType=\(fileType), title=\(title)")
         }
     }
 }

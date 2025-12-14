@@ -57,12 +57,31 @@ struct HeartbeatResponse: Codable {
     let sessionId: Int
     let durationSeconds: Int
     let todayDuration: Int
-    let totalBookDuration: Double  // API returns Double
+    let totalBookDuration: Double  // API may return String or Number
     let isPaused: Bool?
 
     // Convenience property to get Int value
     var totalBookDurationSeconds: Int {
         Int(totalBookDuration)
+    }
+
+    // Custom decoding to handle String or Number for totalBookDuration
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sessionId = try container.decode(Int.self, forKey: .sessionId)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        todayDuration = try container.decode(Int.self, forKey: .todayDuration)
+        isPaused = try container.decodeIfPresent(Bool.self, forKey: .isPaused)
+
+        // Try decoding as Double first, then as String
+        if let doubleValue = try? container.decode(Double.self, forKey: .totalBookDuration) {
+            totalBookDuration = doubleValue
+        } else if let stringValue = try? container.decode(String.self, forKey: .totalBookDuration),
+                  let doubleValue = Double(stringValue) {
+            totalBookDuration = doubleValue
+        } else {
+            totalBookDuration = 0
+        }
     }
 }
 
@@ -91,13 +110,32 @@ struct Milestone: Identifiable, Codable {
 struct EndSessionResponse: Codable {
     let sessionId: Int
     let durationSeconds: Int
-    let totalBookDuration: Double  // API returns Double
+    let totalBookDuration: Double  // API may return String or Number
     let todayDuration: Int
     let milestonesAchieved: [Milestone]
 
     // Convenience property to get Int value
     var totalBookDurationSeconds: Int {
         Int(totalBookDuration)
+    }
+
+    // Custom decoding to handle String or Number for totalBookDuration
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sessionId = try container.decode(Int.self, forKey: .sessionId)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        todayDuration = try container.decode(Int.self, forKey: .todayDuration)
+        milestonesAchieved = try container.decodeIfPresent([Milestone].self, forKey: .milestonesAchieved) ?? []
+
+        // Try decoding as Double first, then as String
+        if let doubleValue = try? container.decode(Double.self, forKey: .totalBookDuration) {
+            totalBookDuration = doubleValue
+        } else if let stringValue = try? container.decode(String.self, forKey: .totalBookDuration),
+                  let doubleValue = Double(stringValue) {
+            totalBookDuration = doubleValue
+        } else {
+            totalBookDuration = 0
+        }
     }
 }
 

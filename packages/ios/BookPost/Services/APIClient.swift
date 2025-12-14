@@ -221,27 +221,94 @@ class APIClient {
         return try await perform(request)
     }
 
+    // MARK: - Categories API (Enhanced)
+
+    /// Get all categories with hierarchy
+    /// - Parameters:
+    ///   - bookType: Filter by book type ('ebook', 'magazine', or 'all')
+    ///   - flat: If true, returns flat list without hierarchy
+    func getCategories(bookType: String = "all", flat: Bool = false) async throws -> CategoriesResponse {
+        var queryItems: [URLQueryItem] = []
+        queryItems.append(URLQueryItem(name: "bookType", value: bookType))
+        if flat {
+            queryItems.append(URLQueryItem(name: "flat", value: "true"))
+        }
+
+        let request = try buildRequest(path: "/api/categories", queryItems: queryItems)
+        return try await perform(request)
+    }
+
+    /// Get category details by ID
+    func getCategory(id: Int) async throws -> CategoryDetailResponse {
+        let request = try buildRequest(path: "/api/categories/\(id)")
+        return try await perform(request)
+    }
+
+    /// Get books in a category
+    /// - Parameters:
+    ///   - categoryId: The category ID
+    ///   - bookType: 'ebook' or 'magazine'
+    ///   - page: Page number (1-indexed)
+    ///   - limit: Items per page (max 50)
+    ///   - sort: Sort order ('newest', 'popular', 'rating')
+    ///   - includeChildren: Include books from child categories
+    func getCategoryBooks(
+        categoryId: Int,
+        bookType: String = "ebook",
+        page: Int = 1,
+        limit: Int = 20,
+        sort: String = "newest",
+        includeChildren: Bool = true
+    ) async throws -> CategoryBooksResponse {
+        var queryItems: [URLQueryItem] = []
+        queryItems.append(URLQueryItem(name: "bookType", value: bookType))
+        queryItems.append(URLQueryItem(name: "page", value: "\(page)"))
+        queryItems.append(URLQueryItem(name: "limit", value: "\(limit)"))
+        queryItems.append(URLQueryItem(name: "sort", value: sort))
+        if includeChildren {
+            queryItems.append(URLQueryItem(name: "includeChildren", value: "true"))
+        }
+
+        let request = try buildRequest(path: "/api/categories/\(categoryId)/books", queryItems: queryItems)
+        return try await perform(request)
+    }
+
     func downloadEbookFile(id: Int, fileType: String? = nil) async throws -> URL {
+        Log.i("⬇️ downloadEbookFile: id=\(id), requestedType=\(fileType ?? "auto")")
         let request = try buildRequest(path: "/api/ebooks/\(id)/file", requiresAuth: true)
+        Log.d("📡 Request URL: \(request.url?.absoluteString ?? "nil")")
+
         let (tempURL, response) = try await session.download(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.serverError((response as? HTTPURLResponse)?.statusCode ?? 0, nil)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            Log.e("❌ Invalid response type")
+            throw APIError.invalidResponse
+        }
+
+        Log.d("📥 Response status: \(httpResponse.statusCode)")
+        Log.d("📄 Content-Type: \(httpResponse.value(forHTTPHeaderField: "Content-Type") ?? "nil")")
+        Log.d("📦 Content-Length: \(httpResponse.value(forHTTPHeaderField: "Content-Length") ?? "nil")")
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            Log.e("❌ Server error: \(httpResponse.statusCode)")
+            throw APIError.serverError(httpResponse.statusCode, nil)
         }
 
         // Determine file type from parameter, Content-Type header, or default to pdf
         let actualFileType: String
         if let type = fileType?.lowercased(), !type.isEmpty {
             actualFileType = type
+            Log.d("📁 Using requested file type: \(actualFileType)")
         } else if let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") {
             if contentType.contains("epub") {
                 actualFileType = "epub"
             } else {
                 actualFileType = "pdf"
             }
+            Log.d("📁 File type from Content-Type: \(actualFileType)")
         } else {
             actualFileType = "pdf"
+            Log.d("📁 Defaulting to pdf")
         }
 
         // Move to cache directory with correct extension
@@ -254,6 +321,12 @@ class APIClient {
             try FileManager.default.removeItem(at: destURL)
         }
         try FileManager.default.moveItem(at: tempURL, to: destURL)
+
+        // Verify file was saved
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: destURL.path),
+           let fileSize = attrs[.size] as? Int64 {
+            Log.i("✅ File saved: \(destURL.lastPathComponent), size: \(fileSize) bytes")
+        }
 
         return destURL
     }
@@ -322,7 +395,7 @@ class APIClient {
 
     // MARK: - Reading History API
 
-    func getReadingHistory(limit: Int? = nil) async throws -> ReadingHistoryResponse {
+    func getReadingHistory(limit: Int? = nil) async throws -> ReadingHistoryItemResponse {
         var queryItems: [URLQueryItem] = []
         if let limit = limit { queryItems.append(URLQueryItem(name: "limit", value: "\(limit)")) }
 

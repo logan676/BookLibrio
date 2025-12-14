@@ -241,6 +241,56 @@ app.openapi(checkBadgesRoute, async (c) => {
   })
 })
 
+// POST /api/badges/welcome - Award welcome badge to current user
+const awardWelcomeBadgeRoute = createRoute({
+  method: 'post',
+  path: '/welcome',
+  tags: ['Badges'],
+  summary: 'Award welcome badge to current user (if not already earned)',
+  security: [{ Bearer: [] }],
+  responses: {
+    200: {
+      description: 'Welcome badge awarded',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.object({
+              badge: EarnedBadgeSchema.nullable(),
+              message: z.string(),
+            }),
+          }),
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: ErrorSchema,
+        },
+      },
+    },
+  },
+})
+
+app.openapi(awardWelcomeBadgeRoute, async (c) => {
+  const userId = c.get('userId')
+
+  const badge = await badgeService.awardWelcomeBadge(userId)
+
+  return c.json({
+    data: {
+      badge: badge
+        ? {
+            ...badge,
+            earnedAt: badge.earnedAt.toISOString(),
+          }
+        : null,
+      message: badge ? 'Welcome badge awarded!' : 'Welcome badge already earned or not available',
+    },
+  })
+})
+
 // POST /api/badges/init - Initialize default badges (admin only)
 const initBadgesRoute = createRoute({
   method: 'post',

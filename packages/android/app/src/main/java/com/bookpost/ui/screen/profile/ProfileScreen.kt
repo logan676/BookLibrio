@@ -14,6 +14,10 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,6 +48,10 @@ import com.bookpost.ui.screen.auth.AuthViewModel
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
+    onNavigateToGoals: () -> Unit = {},
+    onNavigateToBadges: () -> Unit = {},
+    onNavigateToStats: () -> Unit = {},
+    onNavigateToBookLists: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -133,6 +141,62 @@ fun ProfileScreen(
                             Icon(Icons.Default.History, contentDescription = null)
                         }
                     )
+
+                    Card(
+                        onClick = onNavigateToGoals,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        ListItem(
+                            headlineContent = { Text("阅读目标") },
+                            leadingContent = {
+                                Icon(Icons.Default.Flag, contentDescription = null)
+                            }
+                        )
+                    }
+
+                    Card(
+                        onClick = onNavigateToBadges,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        ListItem(
+                            headlineContent = { Text("我的徽章") },
+                            leadingContent = {
+                                Icon(Icons.Default.EmojiEvents, contentDescription = null)
+                            }
+                        )
+                    }
+
+                    Card(
+                        onClick = onNavigateToStats,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        ListItem(
+                            headlineContent = { Text("阅读统计") },
+                            leadingContent = {
+                                Icon(Icons.Default.BarChart, contentDescription = null)
+                            }
+                        )
+                    }
+
+                    Card(
+                        onClick = onNavigateToBookLists,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        ListItem(
+                            headlineContent = { Text("我的书单") },
+                            leadingContent = {
+                                Icon(Icons.Default.CollectionsBookmark, contentDescription = null)
+                            }
+                        )
+                    }
 
                     ListItem(
                         headlineContent = { Text(stringResource(R.string.settings)) },

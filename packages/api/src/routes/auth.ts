@@ -4,6 +4,7 @@ import { users, sessions } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { randomBytes, pbkdf2Sync } from 'crypto'
 import { log } from '../utils/logger'
+import { badgeService } from '../services/badge'
 
 const authLog = log.child('Auth')
 const app = new OpenAPIHono()
@@ -132,6 +133,17 @@ app.openapi(registerRoute, async (c) => {
     refreshExpiresAt,
   })
 
+  // Award welcome badge to new user
+  let welcomeBadge = null
+  try {
+    welcomeBadge = await badgeService.awardWelcomeBadge(user.id)
+    if (welcomeBadge) {
+      authLog.i(`Welcome badge awarded to new user: ${user.id}`)
+    }
+  } catch (error) {
+    authLog.e(`Failed to award welcome badge: ${error}`)
+  }
+
   return c.json({
     data: {
       user: {
@@ -143,6 +155,12 @@ app.openapi(registerRoute, async (c) => {
       },
       accessToken,
       refreshToken,
+      welcomeBadge: welcomeBadge ? {
+        id: welcomeBadge.id,
+        name: welcomeBadge.name,
+        description: welcomeBadge.description,
+        category: welcomeBadge.category,
+      } : null,
     },
   }, 201)
 })

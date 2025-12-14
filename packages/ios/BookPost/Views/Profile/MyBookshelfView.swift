@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// User's personal bookshelf with filtering by status and book type
+/// Now includes recent reading section at the top
 struct MyBookshelfView: View {
     @State private var items: [BookshelfItem] = []
     @State private var counts: BookshelfCounts?
@@ -11,6 +12,10 @@ struct MyBookshelfView: View {
     @State private var selectedType: String = "all"
     @State private var sortOption: BookshelfSortOption = .added
     @State private var sortOrder: BookshelfSortOrder = .descending
+
+    // Recent reading history
+    @State private var readingHistory: [ReadingHistoryItem] = []
+    @State private var isLoadingHistory = false
 
     private var statusFilters: [(BookshelfStatus?, String)] {
         [
@@ -24,6 +29,11 @@ struct MyBookshelfView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Recent reading section (only show when no filter is applied)
+            if selectedStatus == nil && !readingHistory.isEmpty {
+                recentReadingSection
+            }
+
             // Filter tabs
             filterTabsView
 
@@ -45,6 +55,7 @@ struct MyBookshelfView: View {
         }
         .task {
             await loadBookshelf()
+            await loadReadingHistory()
         }
         .onChange(of: selectedStatus) { _, _ in
             resetAndReload()
@@ -58,6 +69,51 @@ struct MyBookshelfView: View {
         .onChange(of: sortOrder) { _, _ in
             resetAndReload()
         }
+    }
+
+    // MARK: - Recent Reading Section
+
+    @ViewBuilder
+    private var recentReadingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("最近阅读")
+                    .font(.headline)
+                    .fontWeight(.bold)
+
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.top, 16)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(readingHistory.prefix(10)) { item in
+                        NavigationLink(destination: BookDetailView(
+                            bookType: item.itemType == "ebook" ? .ebook : .magazine,
+                            bookId: item.itemId
+                        )) {
+                            RecentReadingCard(item: item)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+        .padding(.bottom, 8)
+        .background(Color(.systemBackground))
+    }
+
+    private func loadReadingHistory() async {
+        isLoadingHistory = true
+        do {
+            let response = try await APIClient.shared.getReadingHistory(limit: 10)
+            readingHistory = response.data
+        } catch {
+            Log.e("Failed to load reading history", error: error)
+        }
+        isLoadingHistory = false
     }
 
     // MARK: - Filter Tabs
@@ -385,6 +441,43 @@ struct BookshelfItemRow: View {
         case .reading: return .orange
         case .finished: return .green
         case .abandoned: return .gray
+        }
+    }
+}
+
+// MARK: - Recent Reading Card
+
+struct RecentReadingCard: View {
+    let item: ReadingHistoryItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Book cover
+            BookCoverView(coverUrl: item.coverUrl, title: item.title)
+                .frame(width: 80, height: 112)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+
+            // Book title
+            Text(item.title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(width: 80, alignment: .leading)
+
+            // Progress
+            if let progress = item.progress {
+                HStack(spacing: 4) {
+                    ProgressView(value: progress)
+                        .tint(.orange)
+                        .frame(width: 50)
+
+                    Text("\(Int(progress * 100))%")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
     }
 }

@@ -167,7 +167,7 @@ struct ReadingTabView: View {
             VStack(spacing: 0) {
                 ForEach(viewModel.readingHistory.prefix(5)) { entry in
                     RecentReadingRow(entry: entry) {
-                        selectedBookType = entry.type == .ebook ? .ebook : .magazine
+                        selectedBookType = entry.itemType == "ebook" ? .ebook : .magazine
                         selectedBookId = entry.itemId
                     }
 
@@ -308,34 +308,34 @@ struct ContinueReadingCard: View {
 // MARK: - Recent Reading Row
 
 struct RecentReadingRow: View {
-    let entry: ReadingHistoryEntry
+    let entry: ReadingHistoryItem
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 // Cover
-                BookCoverView(coverUrl: entry.coverUrl, title: entry.title ?? "")
+                BookCoverView(coverUrl: entry.coverUrl, title: entry.title)
                     .frame(width: 50, height: 68)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
 
                 // Info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.title ?? "未知标题")
+                    Text(entry.title)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                         .lineLimit(1)
 
                     HStack(spacing: 8) {
-                        if let lastPage = entry.lastPage {
-                            Text("第\(lastPage)页")
+                        if let progress = entry.progress {
+                            Text(String(format: "%.0f%%", progress * 100))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
 
-                        if let lastReadAt = entry.lastReadDate {
-                            Text(lastReadAt, style: .relative)
+                        if let lastReadAt = entry.lastReadAt {
+                            Text(lastReadAt)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -360,7 +360,7 @@ struct RecentReadingRow: View {
 @MainActor
 class ReadingTabViewModel: ObservableObject {
     @Published var currentlyReading: [BookshelfItem] = []
-    @Published var readingHistory: [ReadingHistoryEntry] = []
+    @Published var readingHistory: [ReadingHistoryItem] = []
     @Published var todayReadingTime: String = "0分钟"
     @Published var todayMinutesRead: Int = 0
     @Published var dailyGoalMinutes: Int = 30

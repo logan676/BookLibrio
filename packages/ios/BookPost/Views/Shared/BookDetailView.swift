@@ -169,7 +169,10 @@ struct BookDetailView: View {
 
     @ViewBuilder
     private func readButton(book: BookMetadata) -> some View {
-        Button(action: { showReader = true }) {
+        Button(action: {
+            Log.i("📖 Read button tapped: id=\(book.id), title=\(book.title), fileType=\(book.fileType ?? "nil")")
+            showReader = true
+        }) {
             HStack {
                 Image(systemName: "book.fill")
                 Text(L10n.Ebooks.startReading)

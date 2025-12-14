@@ -115,6 +115,11 @@ dependencies {
     // PDF Viewer
     implementation(libs.pdf.viewer)
 
+    // EPUB Reader (Readium)
+    implementation(libs.readium.shared)
+    implementation(libs.readium.streamer)
+    implementation(libs.readium.navigator)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 

@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 class HomeViewModel: ObservableObject {
-    @Published var readingHistory: [ReadingHistoryEntry] = []
+    @Published var readingHistory: [ReadingHistoryItem] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 

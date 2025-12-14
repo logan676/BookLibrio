@@ -216,7 +216,7 @@ struct StoreItem: Identifiable, Hashable {
         self.title = ebook.title
         self.subtitle = nil
         self.coverUrl = ebook.coverUrl
-        self.badge = ebook.fileType?.uppercased()
+        self.badge = nil  // Don't show file type badge for ebooks
         self.isFree = isFree
         self.isMemberExclusive = isMemberExclusive
     }

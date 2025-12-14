@@ -25,10 +25,15 @@ import {
   LoginScreen,
   ThinkingScreen,
   NoteDetailScreen,
+  BadgesScreen,
+  ReadingStatsScreen,
+  BookListsScreen,
+  BookListDetailScreen,
+  CreateBookListScreen,
 } from './src/screens'
-import type { RootStackParamList } from './src/types'
+import type { ExtendedRootStackParamList } from './src/types'
 
-const Stack = createNativeStackNavigator<RootStackParamList>()
+const Stack = createNativeStackNavigator<ExtendedRootStackParamList>()
 const Tab = createBottomTabNavigator()
 
 // Tab icons using emoji
@@ -173,6 +178,31 @@ function AppNavigator() {
             name="NoteDetail"
             component={NoteDetailScreen}
             options={{ title: 'Note' }}
+          />
+          <Stack.Screen
+            name="Badges"
+            component={BadgesScreen}
+            options={{ title: 'My Badges' }}
+          />
+          <Stack.Screen
+            name="ReadingStats"
+            component={ReadingStatsScreen}
+            options={{ title: 'Reading Stats' }}
+          />
+          <Stack.Screen
+            name="BookLists"
+            component={BookListsScreen}
+            options={{ title: 'Book Lists' }}
+          />
+          <Stack.Screen
+            name="BookListDetail"
+            component={BookListDetailScreen}
+            options={{ title: 'Book List' }}
+          />
+          <Stack.Screen
+            name="CreateBookList"
+            component={CreateBookListScreen}
+            options={{ title: 'Create Book List' }}
           />
         </>
       )}

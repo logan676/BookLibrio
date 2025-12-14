@@ -5,7 +5,7 @@ import SwiftUI
 /// User preferences for reading experience
 /// Persisted via @AppStorage for automatic sync
 struct ReadingSettings: Codable, Equatable {
-    var fontSize: CGFloat = 18
+    var fontSize: CGFloat = 22
     var fontFamily: FontFamily = .system
     var colorMode: ColorMode = .light
     var lineSpacing: LineSpacing = .normal
@@ -193,6 +193,17 @@ enum HighlightColor: String, Codable, CaseIterable, Identifiable {
         case .pink: return Color(hex: "#E91E63")
         case .purple: return Color(hex: "#9C27B0")
         case .orange: return Color(hex: "#FF9800")
+        }
+    }
+
+    var uiColor: UIColor {
+        switch self {
+        case .yellow: return UIColor(red: 1.0, green: 0.92, blue: 0.23, alpha: 0.5)
+        case .green: return UIColor(red: 0.30, green: 0.69, blue: 0.31, alpha: 0.5)
+        case .blue: return UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 0.5)
+        case .pink: return UIColor(red: 0.91, green: 0.12, blue: 0.39, alpha: 0.5)
+        case .purple: return UIColor(red: 0.61, green: 0.15, blue: 0.69, alpha: 0.5)
+        case .orange: return UIColor(red: 1.0, green: 0.60, blue: 0.0, alpha: 0.5)
         }
     }
 
