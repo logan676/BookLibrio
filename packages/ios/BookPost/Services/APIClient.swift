@@ -583,8 +583,8 @@ class APIClient {
         return try await perform(request)
     }
 
-    func getMyBookshelf(status: String = "all", type: String = "all", sort: String = "added", order: String = "desc", limit: Int = 50, offset: Int = 0) async throws -> BookshelfListResponse {
-        let queryItems = [
+    func getMyBookshelf(status: String = "all", type: String = "all", sort: String = "added", order: String = "desc", limit: Int = 50, offset: Int = 0, openedOnly: Bool = false) async throws -> BookshelfListResponse {
+        var queryItems = [
             URLQueryItem(name: "status", value: status),
             URLQueryItem(name: "type", value: type),
             URLQueryItem(name: "sort", value: sort),
@@ -592,6 +592,9 @@ class APIClient {
             URLQueryItem(name: "limit", value: "\(limit)"),
             URLQueryItem(name: "offset", value: "\(offset)")
         ]
+        if openedOnly {
+            queryItems.append(URLQueryItem(name: "openedOnly", value: "true"))
+        }
         let request = try buildRequest(
             path: "/api/user/bookshelf",
             queryItems: queryItems,
