@@ -184,8 +184,12 @@ struct EPUBReaderView: View {
                 currentHref: viewModel.currentLocation,
                 onSelectTOCItem: { item in
                     if let href = item.href {
-                        viewModel.currentLocation = href
+                        // Find the matching EPUBTOCItem and navigate properly
+                        if let epubItem = findEPUBTOCItem(in: viewModel.tableOfContents, href: href) {
+                            viewModel.navigateToTOCItem(epubItem)
+                        }
                     }
+                    showNavTabs = false
                 }
             )
         }
@@ -225,21 +229,89 @@ struct EPUBReaderView: View {
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.5)
+        ZStack {
+            VStack(spacing: 24) {
+                // Book cover placeholder
+                if let coverUrl = coverUrl {
+                    BookCoverView(coverUrl: coverUrl, title: title)
+                        .frame(width: 120, height: 168)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .shadow(radius: 4)
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 120, height: 168)
+                        .overlay(
+                            Image(systemName: "book.closed")
+                                .font(.system(size: 32))
+                                .foregroundColor(.gray)
+                        )
+                }
 
-            if viewModel.downloadProgress > 0 {
-                ProgressView(value: viewModel.downloadProgress)
-                    .frame(width: 200)
+                // Book title
+                Text(title)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.horizontal)
 
-                Text("\(Int(viewModel.downloadProgress * 100))%")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            } else {
-                Text(L10n.Reader.loading)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                VStack(spacing: 12) {
+                    // Loading spinner
+                    ProgressView()
+                        .scaleEffect(1.2)
+
+                    // Progress bar (if available)
+                    if viewModel.downloadProgress > 0 {
+                        VStack(spacing: 6) {
+                            ProgressView(value: viewModel.downloadProgress)
+                                .frame(width: 200)
+                                .tint(.orange)
+
+                            Text("\(Int(viewModel.downloadProgress * 100))%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Text(L10n.Reader.loading)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                // Cancel button
+                Button {
+                    dismiss()
+                } label: {
+                    Text(L10n.Common.cancel)
+                        .font(.subheadline)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(20)
+                }
+                .padding(.top, 8)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Top-left close button for quick access
+            VStack {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                    .padding(.leading, 16)
+                    .padding(.top, 60)
+                    Spacer()
+                }
+                Spacer()
             }
         }
     }
@@ -288,6 +360,11 @@ struct EPUBReaderView: View {
                     // Clear targetLocator after navigation
                     if viewModel.targetLocator != nil {
                         viewModel.targetLocator = nil
+                    }
+                },
+                onHighlightCreated: { selection, color in
+                    Task {
+                        await saveHighlight(selection: selection, color: color)
                     }
                 }
             )
@@ -567,6 +644,62 @@ struct EPUBReaderView: View {
             }
         }
     }
+
+    // MARK: - TOC Helper
+
+    /// Find an EPUBTOCItem by href (recursive search)
+    private func findEPUBTOCItem(in items: [EPUBTOCItem], href: String) -> EPUBTOCItem? {
+        for item in items {
+            if item.href == href || item.href.contains(href) || href.contains(item.href) {
+                return item
+            }
+            if let found = findEPUBTOCItem(in: item.children, href: href) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Highlight Saving
+
+    #if canImport(ReadiumShared) && canImport(ReadiumNavigator)
+    private func saveHighlight(selection: EPUBSelection, color: HighlightColor) async {
+        do {
+            // Get CFI range from locator if available
+            let cfiRange = selection.locator.locations.otherLocations["cssSelector"] as? String
+
+            let response: UnderlineResponse
+            if bookType == "magazine" {
+                response = try await APIClient.shared.createMagazineUnderline(
+                    magazineId: id,
+                    text: selection.text,
+                    pageNumber: nil,
+                    startOffset: nil,
+                    endOffset: nil,
+                    color: color.rawValue,
+                    note: nil
+                )
+            } else {
+                response = try await APIClient.shared.createEbookUnderline(
+                    ebookId: id,
+                    text: selection.text,
+                    pageNumber: nil,
+                    chapterIndex: viewModel.currentChapterIndex,
+                    paragraphIndex: nil,
+                    startOffset: nil,
+                    endOffset: nil,
+                    cfiRange: cfiRange,
+                    color: color.rawValue,
+                    note: nil
+                )
+            }
+
+            Log.i("✅ Highlight saved: id=\(response.data.id), text=\(selection.text.prefix(30))...")
+        } catch {
+            Log.e("❌ Failed to save highlight: \(error)")
+        }
+    }
+    #endif
 }
 
 // MARK: - Readium Navigator integration is in EPUBNavigatorViewController.swift

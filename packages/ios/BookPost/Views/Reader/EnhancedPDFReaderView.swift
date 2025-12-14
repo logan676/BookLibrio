@@ -174,55 +174,91 @@ struct EnhancedPDFReaderView: View {
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 24) {
-            // Book cover or placeholder
-            if let coverUrl = coverUrl {
-                BookCoverView(coverUrl: coverUrl, title: title)
-                    .frame(width: 120, height: 168)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .shadow(radius: 4)
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 120, height: 168)
-                    .overlay(
-                        Image(systemName: "doc.richtext")
-                            .font(.system(size: 32))
-                            .foregroundColor(.gray)
-                    )
-            }
+        ZStack {
+            VStack(spacing: 24) {
+                // Book cover or placeholder
+                if let coverUrl = coverUrl {
+                    BookCoverView(coverUrl: coverUrl, title: title)
+                        .frame(width: 120, height: 168)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .shadow(radius: 4)
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 120, height: 168)
+                        .overlay(
+                            Image(systemName: "doc.richtext")
+                                .font(.system(size: 32))
+                                .foregroundColor(.gray)
+                        )
+                }
 
-            // Book title
-            Text(title)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .padding(.horizontal)
+                // Book title
+                Text(title)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.horizontal)
 
-            VStack(spacing: 12) {
-                // Loading spinner
-                ProgressView()
-                    .scaleEffect(1.2)
+                VStack(spacing: 12) {
+                    // Loading spinner
+                    ProgressView()
+                        .scaleEffect(1.2)
 
-                // Progress bar (if available)
-                if downloadProgress > 0 {
-                    VStack(spacing: 6) {
-                        ProgressView(value: downloadProgress)
-                            .frame(width: 200)
-                            .tint(.orange)
+                    // Progress bar (if available)
+                    if downloadProgress > 0 {
+                        VStack(spacing: 6) {
+                            ProgressView(value: downloadProgress)
+                                .frame(width: 200)
+                                .tint(.orange)
 
-                        Text("\(Int(downloadProgress * 100))%")
-                            .font(.caption)
+                            Text("\(Int(downloadProgress * 100))%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Text(L10n.Common.loading)
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                } else {
-                    Text(L10n.Common.loading)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
                 }
+
+                // Cancel button
+                Button {
+                    dismiss()
+                } label: {
+                    Text(L10n.Common.cancel)
+                        .font(.subheadline)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(20)
+                }
+                .padding(.top, 8)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Top-left close button for quick access
+            VStack {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                    .padding(.leading, 16)
+                    .padding(.top, 60)
+                    Spacer()
+                }
+                Spacer()
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - PDF Content View
