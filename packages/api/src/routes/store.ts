@@ -366,6 +366,22 @@ app.openapi(externalRankingsRoute, async (c) => {
         }
       }
 
+      // Fallback: if no preview covers found, get random ebook covers
+      if (previewCovers.length === 0) {
+        const randomBooks = await db
+          .select({ coverUrl: ebooks.coverUrl })
+          .from(ebooks)
+          .where(isNotNull(ebooks.coverUrl))
+          .orderBy(sql`RANDOM()`)
+          .limit(3)
+
+        for (const book of randomBooks) {
+          if (book.coverUrl) {
+            previewCovers.push(book.coverUrl)
+          }
+        }
+      }
+
       return {
         ...ranking,
         lastUpdated: ranking.lastUpdated?.toISOString() ?? null,
