@@ -26,6 +26,7 @@ enum L10n {
         static var progress: String { NSLocalizedString("common.progress", comment: "") }
         static var share: String { NSLocalizedString("common.share", comment: "") }
         static var save: String { NSLocalizedString("common.save", comment: "") }
+        static var delete: String { NSLocalizedString("common.delete", comment: "") }
     }
 
     // MARK: - Tab Bar
@@ -120,12 +121,14 @@ enum L10n {
         static var empty: String { NSLocalizedString("bookshelf.empty", comment: "") }
         static var browseBooks: String { NSLocalizedString("bookshelf.browseBooks", comment: "") }
         static var noBooks: String { NSLocalizedString("bookshelf.noBooks", comment: "") }
+        static var recentOpen: String { NSLocalizedString("bookshelf.recentOpen", comment: "") }
         static var wantToRead: String { NSLocalizedString("bookshelf.wantToRead", comment: "") }
         static var reading: String { NSLocalizedString("bookshelf.reading", comment: "") }
         static var finished: String { NSLocalizedString("bookshelf.finished", comment: "") }
         static var abandoned: String { NSLocalizedString("bookshelf.abandoned", comment: "") }
         static var ebook: String { NSLocalizedString("bookshelf.ebook", comment: "") }
         static var magazine: String { NSLocalizedString("bookshelf.magazine", comment: "") }
+        static var physicalBook: String { NSLocalizedString("bookshelf.physicalBook", comment: "") }
         static var sortByAdded: String { NSLocalizedString("bookshelf.sortByAdded", comment: "") }
         static var sortByUpdated: String { NSLocalizedString("bookshelf.sortByUpdated", comment: "") }
         static var sortByTitle: String { NSLocalizedString("bookshelf.sortByTitle", comment: "") }
@@ -166,6 +169,11 @@ enum L10n {
         static func commentCount(_ count: Int) -> String {
             String(format: NSLocalizedString("notes.commentCount", comment: ""), count)
         }
+
+        // Ideas
+        static var addIdea: String { NSLocalizedString("notes.addIdea", comment: "") }
+        static var noIdeas: String { NSLocalizedString("notes.noIdeas", comment: "") }
+        static var skip: String { NSLocalizedString("notes.skip", comment: "") }
     }
 
     // MARK: - Goals
@@ -799,6 +807,12 @@ enum L10n {
         static func sampleDefinition(_ word: String) -> String {
             String(format: NSLocalizedString("ai.sampleDefinition", comment: ""), word)
         }
+
+        // AI Meaning/Explanation
+        static var meaning: String { NSLocalizedString("ai.meaning", comment: "") }
+        static var analyzing: String { NSLocalizedString("ai.analyzing", comment: "") }
+        static var imageAnalysis: String { NSLocalizedString("ai.imageAnalysis", comment: "") }
+        static var analyzingImage: String { NSLocalizedString("ai.analyzingImage", comment: "") }
     }
 
     // MARK: - Social / Publishing
@@ -1307,6 +1321,74 @@ enum L10n {
 
         static func booksInList(_ count: Int) -> String {
             String(format: NSLocalizedString("storeSection.booksInList", comment: ""), count)
+        }
+    }
+
+    // MARK: - Badges
+    enum Badges {
+        static var title: String { NSLocalizedString("badges.title", comment: "") }
+        static var badgesEarned: String { NSLocalizedString("badges.badgesEarned", comment: "") }
+        static var all: String { NSLocalizedString("badges.all", comment: "") }
+        static var earned: String { NSLocalizedString("badges.earned", comment: "") }
+        static var inProgress: String { NSLocalizedString("badges.inProgress", comment: "") }
+        static var noBadgesInCategory: String { NSLocalizedString("badges.noBadgesInCategory", comment: "") }
+        static var newBadgeEarned: String { NSLocalizedString("badges.newBadgeEarned", comment: "") }
+        static var awesome: String { NSLocalizedString("badges.awesome", comment: "") }
+        static var progress: String { NSLocalizedString("badges.progress", comment: "") }
+        static var community: String { NSLocalizedString("badges.community", comment: "") }
+        static var readersEarned: String { NSLocalizedString("badges.readersEarned", comment: "") }
+        static var rarity: String { NSLocalizedString("badges.rarity", comment: "") }
+        static var shareAchievement: String { NSLocalizedString("badges.shareAchievement", comment: "") }
+        static var shareBadge: String { NSLocalizedString("badges.shareBadge", comment: "") }
+        static var saveToPhotos: String { NSLocalizedString("badges.saveToPhotos", comment: "") }
+        static var saved: String { NSLocalizedString("badges.saved", comment: "") }
+        static var achievementUnlocked: String { NSLocalizedString("badges.achievementUnlocked", comment: "") }
+        static var interactionHint: String { NSLocalizedString("badges.interactionHint", comment: "") }
+
+        // Rarity levels
+        static var rarityLegendary: String { NSLocalizedString("badges.rarity.legendary", comment: "") }
+        static var rarityEpic: String { NSLocalizedString("badges.rarity.epic", comment: "") }
+        static var rarityRare: String { NSLocalizedString("badges.rarity.rare", comment: "") }
+        static var rarityUncommon: String { NSLocalizedString("badges.rarity.uncommon", comment: "") }
+        static var rarityCommon: String { NSLocalizedString("badges.rarity.common", comment: "") }
+
+        // Category names
+        static var categoryReading: String { NSLocalizedString("badges.category.reading", comment: "") }
+        static var categoryStreak: String { NSLocalizedString("badges.category.streak", comment: "") }
+        static var categorySocial: String { NSLocalizedString("badges.category.social", comment: "") }
+        static var categoryCollection: String { NSLocalizedString("badges.category.collection", comment: "") }
+        static var categorySpecial: String { NSLocalizedString("badges.category.special", comment: "") }
+        static var categoryReadingStreak: String { NSLocalizedString("badges.category.readingStreak", comment: "") }
+        static var categoryReadingDuration: String { NSLocalizedString("badges.category.readingDuration", comment: "") }
+        static var categoryReadingDays: String { NSLocalizedString("badges.category.readingDays", comment: "") }
+        static var categoryBooksFinished: String { NSLocalizedString("badges.category.booksFinished", comment: "") }
+        static var categoryWeeklyChallenge: String { NSLocalizedString("badges.category.weeklyChallenge", comment: "") }
+        static var categoryMonthlyChallenge: String { NSLocalizedString("badges.category.monthlyChallenge", comment: "") }
+        static var categoryEarlyBird: String { NSLocalizedString("badges.category.earlyBird", comment: "") }
+        static var categoryNightOwl: String { NSLocalizedString("badges.category.nightOwl", comment: "") }
+        static var categorySpeedReader: String { NSLocalizedString("badges.category.speedReader", comment: "") }
+        static var categoryReviewer: String { NSLocalizedString("badges.category.reviewer", comment: "") }
+        static var categoryCollector: String { NSLocalizedString("badges.category.collector", comment: "") }
+        static var categoryExplorer: String { NSLocalizedString("badges.category.explorer", comment: "") }
+        static var categoryMilestone: String { NSLocalizedString("badges.category.milestone", comment: "") }
+        static var categorySeasonal: String { NSLocalizedString("badges.category.seasonal", comment: "") }
+        // New categories for 100-badge system
+        static var categoryTimeHabit: String { NSLocalizedString("badges.category.timeHabit", comment: "") }
+        static var categoryGenre: String { NSLocalizedString("badges.category.genre", comment: "") }
+        static var categoryAchievement: String { NSLocalizedString("badges.category.achievement", comment: "") }
+        static var categoryPersistence: String { NSLocalizedString("badges.category.persistence", comment: "") }
+        static var categorySeries: String { NSLocalizedString("badges.category.series", comment: "") }
+
+        // Material levels (for badge rarity display)
+        static var materialIron: String { NSLocalizedString("badges.material.iron", comment: "") }
+        static var materialBronze: String { NSLocalizedString("badges.material.bronze", comment: "") }
+        static var materialSilver: String { NSLocalizedString("badges.material.silver", comment: "") }
+        static var materialGold: String { NSLocalizedString("badges.material.gold", comment: "") }
+        static var materialPlatinum: String { NSLocalizedString("badges.material.platinum", comment: "") }
+        static var materialDiamond: String { NSLocalizedString("badges.material.diamond", comment: "") }
+
+        static func earnedOn(_ date: String) -> String {
+            String(format: NSLocalizedString("badges.earnedOn", comment: ""), date)
         }
     }
 

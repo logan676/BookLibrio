@@ -24,6 +24,7 @@
 "common.progress" = "进度";
 "common.share" = "分享";
 "common.save" = "保存";
+"common.delete" = "删除";
 
 // MARK: - Tab Bar
 "tab.home" = "首页";
@@ -87,12 +88,14 @@
 "bookshelf.empty" = "书架为空";
 "bookshelf.browseBooks" = "浏览书籍并添加到书架";
 "bookshelf.noBooks" = "没有此状态的书籍";
+"bookshelf.recentOpen" = "最近打开";
 "bookshelf.wantToRead" = "想读";
 "bookshelf.reading" = "在读";
 "bookshelf.finished" = "已读";
 "bookshelf.abandoned" = "放弃";
 "bookshelf.ebook" = "电子书";
 "bookshelf.magazine" = "杂志";
+"bookshelf.physicalBook" = "纸质书";
 "bookshelf.sortByAdded" = "添加时间";
 "bookshelf.sortByUpdated" = "更新时间";
 "bookshelf.sortByTitle" = "书名";
@@ -122,6 +125,9 @@
 "notes.year" = "%d年";
 "notes.underlineCount" = "划线 (%d)";
 "notes.commentCount" = "评论 (%d)";
+"notes.addIdea" = "添加你的想法...";
+"notes.noIdeas" = "暂无想法";
+"notes.skip" = "跳过";
 
 // MARK: - Goals
 "goals.title" = "阅读目标";
@@ -650,6 +656,10 @@
 "ai.addToVocabulary" = "添加到生词本";
 "ai.definitionPrefix" = "【释义】";
 "ai.sampleDefinition" = "【释义】这是 \"%@\" 的示例释义。在实际应用中，这里会显示从词典API获取的真实释义内容。";
+"ai.meaning" = "AI释义";
+"ai.analyzing" = "分析中...";
+"ai.imageAnalysis" = "图片分析";
+"ai.analyzingImage" = "正在分析图片...";
 
 // MARK: - Reader Settings
 "reader.settings" = "阅读设置";
@@ -1131,6 +1141,69 @@
 "storeSection.addToShelf" = "加入书架";
 "storeSection.startReading" = "开始阅读";
 
+// MARK: - Badges
+"badges.title" = "我的徽章";
+"badges.badgesEarned" = "已获得徽章";
+"badges.all" = "全部";
+"badges.earned" = "已获得";
+"badges.inProgress" = "进行中";
+"badges.noBadgesInCategory" = "该分类暂无徽章";
+"badges.newBadgeEarned" = "获得新徽章！";
+"badges.awesome" = "太棒了！";
+"badges.progress" = "进度";
+"badges.community" = "社区";
+"badges.readersEarned" = "人已获得";
+"badges.rarity" = "稀有度";
+"badges.shareAchievement" = "分享成就";
+"badges.shareBadge" = "分享徽章";
+"badges.saveToPhotos" = "保存到相册";
+"badges.saved" = "已保存！";
+"badges.achievementUnlocked" = "🎉 成就解锁！";
+"badges.interactionHint" = "拖拽旋转 • 双击翻转";
+"badges.earnedOn" = "获得于 %@";
+
+// Rarity levels
+"badges.rarity.legendary" = "传奇";
+"badges.rarity.epic" = "史诗";
+"badges.rarity.rare" = "稀有";
+"badges.rarity.uncommon" = "优秀";
+"badges.rarity.common" = "普通";
+
+// Category names
+"badges.category.reading" = "阅读";
+"badges.category.streak" = "连续";
+"badges.category.social" = "社交";
+"badges.category.collection" = "收藏";
+"badges.category.special" = "特殊";
+"badges.category.readingStreak" = "阅读连续";
+"badges.category.readingDuration" = "阅读时长";
+"badges.category.readingDays" = "阅读天数";
+"badges.category.booksFinished" = "读完书籍";
+"badges.category.weeklyChallenge" = "周挑战";
+"badges.category.monthlyChallenge" = "月挑战";
+"badges.category.earlyBird" = "早起鸟儿";
+"badges.category.nightOwl" = "夜猫子";
+"badges.category.speedReader" = "速读达人";
+"badges.category.reviewer" = "书评人";
+"badges.category.collector" = "收藏家";
+"badges.category.explorer" = "探索者";
+"badges.category.milestone" = "里程碑";
+"badges.category.seasonal" = "季节限定";
+// New categories for 100-badge system
+"badges.category.timeHabit" = "时段习惯";
+"badges.category.genre" = "阅读类型";
+"badges.category.achievement" = "成就挑战";
+"badges.category.persistence" = "坚持与恢复";
+"badges.category.series" = "系列完成";
+
+// Material levels
+"badges.material.iron" = "铁";
+"badges.material.bronze" = "铜";
+"badges.material.silver" = "银";
+"badges.material.gold" = "金";
+"badges.material.platinum" = "铂金";
+"badges.material.diamond" = "钻石";
+
 // MARK: - Book Detail Enhancements
 // AI Guide
 "bookDetail.aiGuide" = "AI 阅读导读";
@@ -1150,3 +1223,83 @@
 // Related Lists
 "bookDetail.relatedLists" = "收录书单";
 "bookDetail.relatedListsSubtitle" = "包含本书的推荐书单";
+
+// MARK: - Curated Lists
+// Main titles
+"curatedLists.title" = "精选书单";
+"curatedLists.seeAll" = "查看全部";
+"curatedLists.homeTitle" = "纽约时报、亚马逊、比尔盖茨等";
+"curatedLists.homeSubtitle" = "探索顶级来源的书籍推荐";
+
+// Filters
+"curatedLists.filterAll" = "全部";
+"curatedLists.filterYear" = "年份";
+"curatedLists.allYears" = "所有年份";
+
+// List types
+"curatedLists.type.bestseller" = "畅销榜";
+"curatedLists.type.recommendation" = "推荐";
+"curatedLists.type.award" = "获奖";
+"curatedLists.type.annual" = "年度";
+"curatedLists.type.celebrity" = "名人推荐";
+"curatedLists.type.editor" = "编辑精选";
+"curatedLists.type.critic" = "评论精选";
+"curatedLists.type.media" = "媒体";
+
+// Source names
+"curatedLists.source.nyt" = "纽约时报";
+"curatedLists.source.amazon" = "亚马逊";
+"curatedLists.source.billGates" = "比尔·盖茨";
+"curatedLists.source.goodreads" = "Goodreads";
+"curatedLists.source.pulitzer" = "普利策奖";
+"curatedLists.source.booker" = "布克奖";
+"curatedLists.source.nationalBook" = "美国国家图书奖";
+"curatedLists.source.oprah" = "奥普拉读书俱乐部";
+"curatedLists.source.reese" = "瑞茜读书俱乐部";
+"curatedLists.source.obama" = "奥巴马阅读清单";
+"curatedLists.source.time" = "时代周刊";
+"curatedLists.source.npr" = "NPR";
+"curatedLists.source.guardian" = "卫报";
+"curatedLists.source.economist" = "经济学人";
+"curatedLists.source.ft" = "金融时报";
+
+// List detail
+"curatedLists.featured" = "精选";
+"curatedLists.books" = "本书";
+"curatedLists.views" = "浏览";
+"curatedLists.saves" = "收藏";
+"curatedLists.unavailableCount" = "%d 本书（共 %d 本）暂未上架";
+"curatedLists.loading" = "加载中...";
+"curatedLists.failedToLoad" = "加载失败";
+"curatedLists.noLists" = "未找到书单";
+"curatedLists.noListsDesc" = "没有符合筛选条件的书单";
+
+// Book availability
+"curatedLists.notAvailable" = "暂未上架";
+"curatedLists.unavailableMessage" = "该书籍暂未在我们的图书馆上架";
+
+// Unavailable book detail
+"curatedLists.bookDetails" = "书籍详情";
+"curatedLists.bookInfo" = "书籍信息";
+"curatedLists.source" = "来源";
+"curatedLists.externalLinks" = "外部链接";
+"curatedLists.actions" = "操作";
+"curatedLists.viewOnAmazon" = "在亚马逊查看";
+"curatedLists.viewOnGoodreads" = "在 Goodreads 查看";
+"curatedLists.copyISBN" = "复制 ISBN";
+"curatedLists.linkToExisting" = "关联已有书籍";
+"curatedLists.done" = "完成";
+
+// Editor's note
+"curatedLists.editorNote" = "编辑推荐语";
+
+// Admin panel
+"curatedLists.admin.title" = "待上架书籍";
+"curatedLists.admin.noUnavailable" = "无待上架书籍";
+"curatedLists.admin.allAvailable" = "书单中的所有书籍均已上架";
+"curatedLists.admin.noResults" = "无结果";
+"curatedLists.admin.tryDifferent" = "请尝试其他搜索词";
+"curatedLists.admin.searchPlaceholder" = "按书名、作者或ISBN搜索";
+"curatedLists.admin.lists" = "书单数";
+"curatedLists.admin.totalBooks" = "书籍总数";
+"curatedLists.admin.unavailable" = "待上架";

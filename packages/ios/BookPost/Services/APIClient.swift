@@ -976,6 +976,92 @@ class APIClient {
         return try await perform(request)
     }
 
+    // MARK: - Ideas API
+
+    /// Get ideas for an ebook underline
+    func getEbookUnderlineIdeas(underlineId: Int) async throws -> [Idea] {
+        let request = try buildRequest(path: "/api/ebook-underlines/\(underlineId)/ideas", requiresAuth: true)
+        let response: IdeasListResponse = try await perform(request)
+        return response.data ?? []
+    }
+
+    /// Create idea for an ebook underline
+    func createEbookUnderlineIdea(underlineId: Int, content: String) async throws -> IdeaResponse {
+        let body = try JSONEncoder().encode(IdeaRequest(content: content))
+        let request = try buildRequest(path: "/api/ebook-underlines/\(underlineId)/ideas", method: "POST", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
+    /// Update an ebook idea
+    func updateEbookIdea(ideaId: Int, content: String) async throws -> IdeaResponse {
+        let body = try JSONEncoder().encode(IdeaRequest(content: content))
+        let request = try buildRequest(path: "/api/ebook-ideas/\(ideaId)", method: "PATCH", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
+    /// Delete an ebook idea
+    func deleteEbookIdea(ideaId: Int) async throws -> DeleteResponse {
+        let request = try buildRequest(path: "/api/ebook-ideas/\(ideaId)", method: "DELETE", requiresAuth: true)
+        return try await perform(request)
+    }
+
+    /// Get ideas for a magazine underline
+    func getMagazineUnderlineIdeas(underlineId: Int) async throws -> [Idea] {
+        let request = try buildRequest(path: "/api/magazines/magazine-underlines/\(underlineId)/ideas", requiresAuth: true)
+        let response: IdeasListResponse = try await perform(request)
+        return response.data ?? []
+    }
+
+    /// Create idea for a magazine underline
+    func createMagazineUnderlineIdea(underlineId: Int, content: String) async throws -> IdeaResponse {
+        let body = try JSONEncoder().encode(IdeaRequest(content: content))
+        let request = try buildRequest(path: "/api/magazines/magazine-underlines/\(underlineId)/ideas", method: "POST", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
+    /// Update a magazine idea
+    func updateMagazineIdea(ideaId: Int, content: String) async throws -> IdeaResponse {
+        let body = try JSONEncoder().encode(IdeaRequest(content: content))
+        let request = try buildRequest(path: "/api/magazines/magazine-ideas/\(ideaId)", method: "PATCH", body: body, requiresAuth: true)
+        return try await perform(request)
+    }
+
+    /// Delete a magazine idea
+    func deleteMagazineIdea(ideaId: Int) async throws -> DeleteResponse {
+        let request = try buildRequest(path: "/api/magazines/magazine-ideas/\(ideaId)", method: "DELETE", requiresAuth: true)
+        return try await perform(request)
+    }
+
+    // MARK: - AI API
+
+    /// Get AI meaning/explanation for selected text
+    /// - Parameters:
+    ///   - text: The selected text to explain
+    ///   - paragraph: The full paragraph containing the text (for context)
+    ///   - targetLanguage: Target language for explanation ("en" or "zh")
+    /// - Returns: AI-generated explanation in markdown format
+    func getMeaning(text: String, paragraph: String, targetLanguage: String) async throws -> String {
+        let payload = MeaningRequest(text: text, paragraph: paragraph, targetLanguage: targetLanguage)
+        let body = try JSONEncoder().encode(payload)
+        let request = try buildRequest(path: "/api/ai/meaning", method: "POST", body: body, requiresAuth: true)
+        let response: AIMeaningAPIResponse = try await perform(request)
+        return response.meaning
+    }
+
+    /// Get AI explanation for an image
+    /// - Parameters:
+    ///   - imageData: The image data to analyze
+    ///   - targetLanguage: Target language for explanation ("en" or "zh")
+    /// - Returns: AI-generated image analysis
+    func explainImage(imageData: Data, targetLanguage: String) async throws -> String {
+        let base64Image = "data:image/jpeg;base64," + imageData.base64EncodedString()
+        let payload = ImageExplainRequest(imageUrl: base64Image, targetLanguage: targetLanguage)
+        let body = try JSONEncoder().encode(payload)
+        let request = try buildRequest(path: "/api/ai/explain-image", method: "POST", body: body, requiresAuth: true)
+        let response: ImageExplainResponse = try await perform(request)
+        return response.explanation
+    }
+
     // MARK: - Generic API Methods
 
     func get<T: Decodable>(_ path: String, queryItems: [URLQueryItem]? = nil, requiresAuth: Bool = true) async throws -> APIResponse<T> {
@@ -992,6 +1078,210 @@ class APIClient {
     func post<T: Decodable, B: Encodable>(_ path: String, body: B, requiresAuth: Bool = true) async throws -> APIResponse<T> {
         let bodyData = try JSONEncoder().encode(body)
         let request = try buildRequest(path: "/api" + path, method: "POST", body: bodyData, requiresAuth: requiresAuth)
+        return try await perform(request)
+    }
+
+    // MARK: - User Profile API
+
+    /// Upload user avatar image
+    func uploadAvatar(imageData: Data) async throws -> String {
+        guard let url = URL(string: baseURL + "/api/user/profile/avatar") else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        // Add auth header
+        if let token = AuthManager.shared.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        // Create multipart form data
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        // Add image data
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"avatar.jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        do {
+            let (data, response) = try await session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+
+            if httpResponse.statusCode == 401 {
+                throw APIError.unauthorized
+            }
+
+            if httpResponse.statusCode >= 400 {
+                throw APIError.serverError(httpResponse.statusCode, nil)
+            }
+
+            // Parse response
+            struct AvatarResponse: Codable {
+                struct Data: Codable {
+                    let avatarUrl: String
+                }
+                let data: Data
+            }
+
+            let avatarResponse = try decoder.decode(AvatarResponse.self, from: data)
+            return avatarResponse.data.avatarUrl
+        } catch let error as APIError {
+            throw error
+        } catch {
+            throw APIError.networkError(error)
+        }
+    }
+
+    // MARK: - Curated Lists API
+
+    /// Get curated lists (external book lists like NYT, Amazon, Bill Gates, etc.)
+    func getCuratedLists(
+        type: String? = nil,
+        year: Int? = nil,
+        category: String? = nil,
+        featured: Bool? = nil,
+        limit: Int = 20,
+        offset: Int = 0
+    ) async throws -> CuratedListsResponse {
+        var queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        if let type = type {
+            queryItems.append(URLQueryItem(name: "type", value: type))
+        }
+        if let year = year {
+            queryItems.append(URLQueryItem(name: "year", value: "\(year)"))
+        }
+        if let category = category {
+            queryItems.append(URLQueryItem(name: "category", value: category))
+        }
+        if let featured = featured, featured {
+            queryItems.append(URLQueryItem(name: "featured", value: "true"))
+        }
+
+        let request = try buildRequest(
+            path: "/api/curated-lists",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get curated list detail with books
+    func getCuratedList(id: Int) async throws -> CuratedListDetailResponse {
+        let request = try buildRequest(path: "/api/curated-lists/\(id)")
+        return try await perform(request)
+    }
+
+    /// Get available list types
+    func getCuratedListTypes() async throws -> CuratedListTypesResponse {
+        let request = try buildRequest(path: "/api/curated-lists/types")
+        return try await perform(request)
+    }
+
+    /// Get unavailable books (admin)
+    func getUnavailableBooks(limit: Int = 50, offset: Int = 0) async throws -> UnavailableBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/curated-lists/admin/unavailable-books",
+            queryItems: queryItems,
+            requiresAuth: true
+        )
+        return try await perform(request)
+    }
+
+    /// Get curated lists statistics (admin)
+    func getCuratedListStats() async throws -> CuratedListStatsResponse {
+        let request = try buildRequest(
+            path: "/api/curated-lists/admin/stats",
+            requiresAuth: true
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Store API
+
+    /// Get books grouped by publication year
+    /// - Parameters:
+    ///   - bookType: 'ebook' or 'magazine'
+    ///   - limit: Number of books per year
+    ///   - years: Optional comma-separated years (defaults to last 3 years)
+    func getBooksByYear(bookType: String = "ebook", limit: Int = 10, years: String? = nil) async throws -> BooksByYearResponse {
+        var queryItems = [
+            URLQueryItem(name: "bookType", value: bookType),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+        if let years = years {
+            queryItems.append(URLQueryItem(name: "years", value: years))
+        }
+        let request = try buildRequest(
+            path: "/api/store/books-by-year",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get highest rated books
+    /// - Parameters:
+    ///   - bookType: 'ebook' or 'magazine'
+    ///   - limit: Number of books to return
+    ///   - minRatingCount: Minimum number of ratings required
+    func getTopRatedBooks(bookType: String = "ebook", limit: Int = 10, minRatingCount: Int = 10) async throws -> TopRatedResponse {
+        let queryItems = [
+            URLQueryItem(name: "bookType", value: bookType),
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "minRatingCount", value: "\(minRatingCount)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/top-rated",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get external ranking lists (NYT, Amazon, etc.)
+    /// - Parameter bookType: 'ebook' or 'magazine'
+    func getExternalRankings(bookType: String = "ebook") async throws -> ExternalRankingsResponse {
+        let queryItems = [
+            URLQueryItem(name: "bookType", value: bookType)
+        ]
+        let request = try buildRequest(
+            path: "/api/store/external-rankings",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get external ranking detail with books
+    /// - Parameters:
+    ///   - id: Ranking ID
+    ///   - limit: Number of books to return
+    ///   - offset: Offset for pagination
+    func getExternalRankingDetail(id: Int, limit: Int = 50, offset: Int = 0) async throws -> ExternalRankingDetailResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/external-rankings/\(id)",
+            queryItems: queryItems
+        )
         return try await perform(request)
     }
 }

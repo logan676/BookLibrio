@@ -24,6 +24,7 @@
 "common.progress" = "Progress";
 "common.share" = "Share";
 "common.save" = "Save";
+"common.delete" = "Delete";
 
 // MARK: - Tab Bar
 "tab.home" = "Home";
@@ -87,12 +88,14 @@
 "bookshelf.empty" = "Bookshelf is empty";
 "bookshelf.browseBooks" = "Browse books and add to shelf";
 "bookshelf.noBooks" = "No books with this status";
+"bookshelf.recentOpen" = "Recent";
 "bookshelf.wantToRead" = "Want to Read";
 "bookshelf.reading" = "Reading";
 "bookshelf.finished" = "Finished";
 "bookshelf.abandoned" = "Abandoned";
 "bookshelf.ebook" = "Ebook";
 "bookshelf.magazine" = "Magazine";
+"bookshelf.physicalBook" = "Physical";
 "bookshelf.sortByAdded" = "Date Added";
 "bookshelf.sortByUpdated" = "Date Updated";
 "bookshelf.sortByTitle" = "Title";
@@ -122,6 +125,9 @@
 "notes.year" = "%d";
 "notes.underlineCount" = "Highlights (%d)";
 "notes.commentCount" = "Comments (%d)";
+"notes.addIdea" = "Add your thoughts...";
+"notes.noIdeas" = "No ideas yet";
+"notes.skip" = "Skip";
 
 // MARK: - Goals
 "goals.title" = "Reading Goals";
@@ -650,6 +656,10 @@
 "ai.addToVocabulary" = "Add to Vocabulary";
 "ai.definitionPrefix" = "[Definition]";
 "ai.sampleDefinition" = "[Definition] This is a sample definition for \"%@\". In actual use, this would display the real definition from a dictionary API.";
+"ai.meaning" = "Meaning";
+"ai.analyzing" = "Analyzing...";
+"ai.imageAnalysis" = "Image Analysis";
+"ai.analyzingImage" = "Analyzing image...";
 
 // MARK: - Reader Settings
 "reader.settings" = "Reading Settings";
@@ -1131,6 +1141,69 @@
 "storeSection.addToShelf" = "Add to Shelf";
 "storeSection.startReading" = "Start Reading";
 
+// MARK: - Badges
+"badges.title" = "My Badges";
+"badges.badgesEarned" = "Badges Earned";
+"badges.all" = "All";
+"badges.earned" = "Earned";
+"badges.inProgress" = "In Progress";
+"badges.noBadgesInCategory" = "No badges in this category yet";
+"badges.newBadgeEarned" = "New Badge Earned!";
+"badges.awesome" = "Awesome!";
+"badges.progress" = "Progress";
+"badges.community" = "Community";
+"badges.readersEarned" = "readers earned";
+"badges.rarity" = "rarity";
+"badges.shareAchievement" = "Share Achievement";
+"badges.shareBadge" = "Share Badge";
+"badges.saveToPhotos" = "Save to Photos";
+"badges.saved" = "Saved!";
+"badges.achievementUnlocked" = "🎉 Achievement Unlocked!";
+"badges.interactionHint" = "Drag to rotate • Double tap to flip";
+"badges.earnedOn" = "Earned on %@";
+
+// Rarity levels
+"badges.rarity.legendary" = "Legendary";
+"badges.rarity.epic" = "Epic";
+"badges.rarity.rare" = "Rare";
+"badges.rarity.uncommon" = "Uncommon";
+"badges.rarity.common" = "Common";
+
+// Category names
+"badges.category.reading" = "Reading";
+"badges.category.streak" = "Streak";
+"badges.category.social" = "Social";
+"badges.category.collection" = "Collection";
+"badges.category.special" = "Special";
+"badges.category.readingStreak" = "Reading Streak";
+"badges.category.readingDuration" = "Reading Time";
+"badges.category.readingDays" = "Reading Days";
+"badges.category.booksFinished" = "Books Finished";
+"badges.category.weeklyChallenge" = "Weekly Challenge";
+"badges.category.monthlyChallenge" = "Monthly Challenge";
+"badges.category.earlyBird" = "Early Bird";
+"badges.category.nightOwl" = "Night Owl";
+"badges.category.speedReader" = "Speed Reader";
+"badges.category.reviewer" = "Reviewer";
+"badges.category.collector" = "Collector";
+"badges.category.explorer" = "Explorer";
+"badges.category.milestone" = "Milestone";
+"badges.category.seasonal" = "Seasonal";
+// New categories for 100-badge system
+"badges.category.timeHabit" = "Time Habits";
+"badges.category.genre" = "Genre";
+"badges.category.achievement" = "Achievement";
+"badges.category.persistence" = "Persistence";
+"badges.category.series" = "Series";
+
+// Material levels
+"badges.material.iron" = "Iron";
+"badges.material.bronze" = "Bronze";
+"badges.material.silver" = "Silver";
+"badges.material.gold" = "Gold";
+"badges.material.platinum" = "Platinum";
+"badges.material.diamond" = "Diamond";
+
 // MARK: - Book Detail Enhancements
 // AI Guide
 "bookDetail.aiGuide" = "AI Reading Guide";
@@ -1150,3 +1223,83 @@
 // Related Lists
 "bookDetail.relatedLists" = "Featured in Lists";
 "bookDetail.relatedListsSubtitle" = "Book lists that include this title";
+
+// MARK: - Curated Lists
+// Main titles
+"curatedLists.title" = "Curated Lists";
+"curatedLists.seeAll" = "See All";
+"curatedLists.homeTitle" = "NYT, Amazon, Bill Gates & More";
+"curatedLists.homeSubtitle" = "Explore book recommendations from top sources";
+
+// Filters
+"curatedLists.filterAll" = "All";
+"curatedLists.filterYear" = "Year";
+"curatedLists.allYears" = "All Years";
+
+// List types
+"curatedLists.type.bestseller" = "Bestseller";
+"curatedLists.type.recommendation" = "Recommendation";
+"curatedLists.type.award" = "Award";
+"curatedLists.type.annual" = "Annual";
+"curatedLists.type.celebrity" = "Celebrity Pick";
+"curatedLists.type.editor" = "Editor's Choice";
+"curatedLists.type.critic" = "Critic's Pick";
+"curatedLists.type.media" = "Media";
+
+// Source names
+"curatedLists.source.nyt" = "New York Times";
+"curatedLists.source.amazon" = "Amazon";
+"curatedLists.source.billGates" = "Bill Gates";
+"curatedLists.source.goodreads" = "Goodreads";
+"curatedLists.source.pulitzer" = "Pulitzer Prize";
+"curatedLists.source.booker" = "Booker Prize";
+"curatedLists.source.nationalBook" = "National Book Award";
+"curatedLists.source.oprah" = "Oprah's Book Club";
+"curatedLists.source.reese" = "Reese's Book Club";
+"curatedLists.source.obama" = "Obama's Reading List";
+"curatedLists.source.time" = "TIME Magazine";
+"curatedLists.source.npr" = "NPR";
+"curatedLists.source.guardian" = "The Guardian";
+"curatedLists.source.economist" = "The Economist";
+"curatedLists.source.ft" = "Financial Times";
+
+// List detail
+"curatedLists.featured" = "Featured";
+"curatedLists.books" = "Books";
+"curatedLists.views" = "Views";
+"curatedLists.saves" = "Saves";
+"curatedLists.unavailableCount" = "%d of %d books not yet available in our library";
+"curatedLists.loading" = "Loading...";
+"curatedLists.failedToLoad" = "Failed to Load";
+"curatedLists.noLists" = "No Lists Found";
+"curatedLists.noListsDesc" = "No curated lists match your filters";
+
+// Book availability
+"curatedLists.notAvailable" = "Not Available";
+"curatedLists.unavailableMessage" = "This book is not yet available in our library";
+
+// Unavailable book detail
+"curatedLists.bookDetails" = "Book Details";
+"curatedLists.bookInfo" = "Book Information";
+"curatedLists.source" = "Source";
+"curatedLists.externalLinks" = "External Links";
+"curatedLists.actions" = "Actions";
+"curatedLists.viewOnAmazon" = "View on Amazon";
+"curatedLists.viewOnGoodreads" = "View on Goodreads";
+"curatedLists.copyISBN" = "Copy ISBN";
+"curatedLists.linkToExisting" = "Link to Existing Book";
+"curatedLists.done" = "Done";
+
+// Editor's note
+"curatedLists.editorNote" = "Editor's Note";
+
+// Admin panel
+"curatedLists.admin.title" = "Unavailable Books";
+"curatedLists.admin.noUnavailable" = "No Unavailable Books";
+"curatedLists.admin.allAvailable" = "All books from curated lists are available";
+"curatedLists.admin.noResults" = "No Results";
+"curatedLists.admin.tryDifferent" = "Try a different search term";
+"curatedLists.admin.searchPlaceholder" = "Search by title, author, or ISBN";
+"curatedLists.admin.lists" = "Lists";
+"curatedLists.admin.totalBooks" = "Total Books";
+"curatedLists.admin.unavailable" = "Unavailable";

@@ -369,6 +369,105 @@ struct ReadingPosition: Codable, Equatable {
     }
 }
 
+// MARK: - AI Meaning Models
+
+/// Request for AI text meaning/explanation
+struct MeaningRequest: Encodable {
+    let text: String
+    let paragraph: String
+    let targetLanguage: String  // "en" or "zh"
+}
+
+/// Response from AI meaning API
+struct MeaningResponse: Decodable {
+    let meaning: String
+}
+
+/// Response wrapper for AI meaning API
+struct AIMeaningAPIResponse: Decodable {
+    let meaning: String
+}
+
+/// Request for AI image explanation
+struct ImageExplainRequest: Encodable {
+    let imageUrl: String  // Base64 encoded image
+    let targetLanguage: String
+}
+
+/// Response from AI image explanation API
+struct ImageExplainResponse: Decodable {
+    let explanation: String
+}
+
+// MARK: - Ideas Models
+
+/// Represents an idea/thought associated with an underline
+struct Idea: Identifiable, Codable {
+    let id: Int
+    let underlineId: Int
+    let content: String
+    let createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case underlineId = "underline_id"
+        case content
+        case createdAt = "created_at"
+    }
+}
+
+/// Response for ideas list
+struct IdeasListResponse: Decodable {
+    let data: [Idea]?
+
+    // Handle both array response and wrapped response
+    init(from decoder: Decoder) throws {
+        // Try to decode as array first
+        if let array = try? [Idea](from: decoder) {
+            self.data = array
+            return
+        }
+        // Otherwise try wrapped format
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.data = try container.decodeIfPresent([Idea].self, forKey: .data)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case data
+    }
+}
+
+/// Response for single idea
+struct IdeaResponse: Decodable {
+    let id: Int
+    let underlineId: Int
+    let content: String
+    let createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case underlineId = "underline_id"
+        case content
+        case createdAt = "created_at"
+    }
+}
+
+/// Request to create/update an idea
+struct IdeaRequest: Encodable {
+    let content: String
+}
+
+// MARK: - Bubble Menu State
+
+/// State machine for text selection bubble menu
+enum BubbleMenuState: Equatable {
+    case hidden
+    case confirm(text: String, rect: CGRect)           // New text selected
+    case existing(underlineId: Int, text: String, rect: CGRect)  // Clicked existing underline
+    case ideaInput(underlineId: Int, text: String, rect: CGRect) // Adding idea
+    case meaning(text: String, paragraph: String, rect: CGRect)  // Showing AI meaning
+}
+
 // MARK: - Settings Storage Helper
 
 /// Helper class for persisting reading settings

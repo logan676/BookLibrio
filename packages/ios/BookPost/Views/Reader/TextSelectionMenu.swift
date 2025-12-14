@@ -1,61 +1,157 @@
 import SwiftUI
 
+// MARK: - Menu State Types
+
+/// The type of bubble menu to display
+enum TextSelectionMenuType {
+    case confirm       // New text selected - show Underline, Meaning, Copy, Share
+    case existing      // Clicked existing underline - show Ideas, Add Idea, Meaning, Delete
+    case ideaInput     // Adding idea - show text input
+}
+
 /// Menu that appears when text is selected in the reader
-/// Provides options to highlight, copy, add notes, and share
+/// Provides options to highlight, copy, add notes, AI meaning, and share
 struct TextSelectionMenu: View {
     let selectedText: String
     let currentPage: Int
+    let menuType: TextSelectionMenuType
+    let ideaCount: Int
     let onHighlight: (HighlightColor) -> Void
     let onCopy: () -> Void
     let onAddNote: () -> Void
     let onShare: () -> Void
+    let onMeaning: () -> Void
+    let onViewIdeas: () -> Void
+    let onDelete: () -> Void
     let onDismiss: () -> Void
 
     @State private var showColorPicker = false
 
+    init(
+        selectedText: String,
+        currentPage: Int,
+        menuType: TextSelectionMenuType = .confirm,
+        ideaCount: Int = 0,
+        onHighlight: @escaping (HighlightColor) -> Void,
+        onCopy: @escaping () -> Void,
+        onAddNote: @escaping () -> Void,
+        onShare: @escaping () -> Void,
+        onMeaning: @escaping () -> Void = {},
+        onViewIdeas: @escaping () -> Void = {},
+        onDelete: @escaping () -> Void = {},
+        onDismiss: @escaping () -> Void
+    ) {
+        self.selectedText = selectedText
+        self.currentPage = currentPage
+        self.menuType = menuType
+        self.ideaCount = ideaCount
+        self.onHighlight = onHighlight
+        self.onCopy = onCopy
+        self.onAddNote = onAddNote
+        self.onShare = onShare
+        self.onMeaning = onMeaning
+        self.onViewIdeas = onViewIdeas
+        self.onDelete = onDelete
+        self.onDismiss = onDismiss
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Main action buttons
-            HStack(spacing: 0) {
-                menuButton(icon: "highlighter", label: L10n.Notes.underlines) {
-                    showColorPicker.toggle()
-                }
-
-                Divider()
-                    .frame(height: 40)
-
-                menuButton(icon: "doc.on.doc", label: L10n.AI.copy) {
-                    onCopy()
-                    onDismiss()
-                }
-
-                Divider()
-                    .frame(height: 40)
-
-                menuButton(icon: "square.and.pencil", label: L10n.Stats.ideas) {
-                    onAddNote()
-                }
-
-                Divider()
-                    .frame(height: 40)
-
-                menuButton(icon: "square.and.arrow.up", label: L10n.Common.share) {
-                    onShare()
-                }
+            // Main action buttons based on menu type
+            switch menuType {
+            case .confirm:
+                confirmMenuContent
+            case .existing:
+                existingMenuContent
+            case .ideaInput:
+                EmptyView() // Handled separately by IdeaInputBubble
             }
-            .frame(height: 56)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
 
-            // Color picker (shown when highlight is tapped)
-            if showColorPicker {
+            // Color picker (shown when highlight is tapped in confirm mode)
+            if showColorPicker && menuType == .confirm {
                 colorPickerRow
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showColorPicker)
     }
+
+    // MARK: - Confirm Menu (New Selection)
+
+    private var confirmMenuContent: some View {
+        HStack(spacing: 0) {
+            // Highlight button with color picker
+            menuButton(icon: "highlighter", label: L10n.Notes.underlines) {
+                showColorPicker.toggle()
+            }
+
+            Divider().frame(height: 40)
+
+            // AI Meaning button
+            menuButton(icon: "sparkles", label: L10n.AI.meaning) {
+                onMeaning()
+            }
+
+            Divider().frame(height: 40)
+
+            // Copy button
+            menuButton(icon: "doc.on.doc", label: L10n.AI.copy) {
+                onCopy()
+                onDismiss()
+            }
+
+            Divider().frame(height: 40)
+
+            // Share button
+            menuButton(icon: "square.and.arrow.up", label: L10n.Common.share) {
+                onShare()
+            }
+        }
+        .frame(height: 56)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+    }
+
+    // MARK: - Existing Underline Menu
+
+    private var existingMenuContent: some View {
+        HStack(spacing: 0) {
+            // View Ideas button (if has ideas)
+            if ideaCount > 0 {
+                menuButton(icon: "lightbulb.fill", label: "\(L10n.Stats.ideas)(\(ideaCount))") {
+                    onViewIdeas()
+                }
+                Divider().frame(height: 40)
+            }
+
+            // Add Idea button
+            menuButton(icon: "plus.bubble", label: L10n.Notes.addIdea) {
+                onAddNote()
+            }
+
+            Divider().frame(height: 40)
+
+            // AI Meaning button
+            menuButton(icon: "sparkles", label: L10n.AI.meaning) {
+                onMeaning()
+            }
+
+            Divider().frame(height: 40)
+
+            // Delete button
+            menuButton(icon: "trash", label: L10n.Common.delete) {
+                onDelete()
+            }
+            .foregroundColor(.red)
+        }
+        .frame(height: 56)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+    }
+
+    // MARK: - Components
 
     private func menuButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -64,9 +160,12 @@ struct TextSelectionMenu: View {
                     .font(.system(size: 18))
                 Text(label)
                     .font(.caption2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .foregroundColor(.primary)
             .frame(maxWidth: .infinity)
+            .frame(minWidth: 60)
         }
     }
 
@@ -87,7 +186,7 @@ struct TextSelectionMenu: View {
     private func colorButton(color: HighlightColor) -> some View {
         Button {
             onHighlight(color)
-            onDismiss()
+            // Don't dismiss - will transition to idea input
         } label: {
             Circle()
                 .fill(color.color)
@@ -101,16 +200,50 @@ struct TextSelectionMenu: View {
     }
 }
 
-/// Overlay view that manages text selection state and menu positioning
+/// Enhanced overlay view that manages text selection state, menu positioning, and all interactions
 struct TextSelectionOverlay: View {
     @Binding var selectedText: String?
     @Binding var selectionRect: CGRect?
     let currentPage: Int
+    let bookType: String  // "ebook" or "magazine"
+    let bookId: Int
+    let existingUnderline: Highlight?  // If clicking an existing underline
     let onHighlight: (String, HighlightColor) -> Void
     let onAddNote: (String) -> Void
+    let onDeleteUnderline: (Int) -> Void
+    let onUnderlineCreated: (Int) -> Void  // Called with new underline ID
 
+    @State private var menuType: TextSelectionMenuType = .confirm
     @State private var showNoteSheet = false
     @State private var noteText = ""
+    @State private var showMeaningPopup = false
+    @State private var showIdeasPopup = false
+    @State private var showIdeaInput = false
+    @State private var currentUnderlineId: Int?
+
+    init(
+        selectedText: Binding<String?>,
+        selectionRect: Binding<CGRect?>,
+        currentPage: Int,
+        bookType: String = "ebook",
+        bookId: Int = 0,
+        existingUnderline: Highlight? = nil,
+        onHighlight: @escaping (String, HighlightColor) -> Void,
+        onAddNote: @escaping (String) -> Void,
+        onDeleteUnderline: @escaping (Int) -> Void = { _ in },
+        onUnderlineCreated: @escaping (Int) -> Void = { _ in }
+    ) {
+        self._selectedText = selectedText
+        self._selectionRect = selectionRect
+        self.currentPage = currentPage
+        self.bookType = bookType
+        self.bookId = bookId
+        self.existingUnderline = existingUnderline
+        self.onHighlight = onHighlight
+        self.onAddNote = onAddNote
+        self.onDeleteUnderline = onDeleteUnderline
+        self.onUnderlineCreated = onUnderlineCreated
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -121,27 +254,68 @@ struct TextSelectionOverlay: View {
                         dismissSelection()
                     }
 
-                // Selection menu positioned above or below the selection
-                TextSelectionMenu(
-                    selectedText: text,
-                    currentPage: currentPage,
-                    onHighlight: { color in
-                        onHighlight(text, color)
-                    },
-                    onCopy: {
-                        UIPasteboard.general.string = text
-                    },
-                    onAddNote: {
-                        showNoteSheet = true
-                    },
-                    onShare: {
-                        shareText(text)
-                    },
-                    onDismiss: {
-                        dismissSelection()
+                // Menu content based on current state
+                Group {
+                    if showIdeaInput, let underlineId = currentUnderlineId {
+                        // Idea input bubble
+                        IdeaInputBubble(
+                            onSave: { ideaContent in
+                                Task {
+                                    await saveIdea(underlineId: underlineId, content: ideaContent)
+                                }
+                                dismissSelection()
+                            },
+                            onSkip: {
+                                dismissSelection()
+                            }
+                        )
+                        .position(menuPosition(for: rect, in: geometry.size))
+                    } else {
+                        // Selection menu
+                        TextSelectionMenu(
+                            selectedText: text,
+                            currentPage: currentPage,
+                            menuType: existingUnderline != nil ? .existing : .confirm,
+                            ideaCount: existingUnderline?.ideaCount ?? 0,
+                            onHighlight: { color in
+                                onHighlight(text, color)
+                                // After highlight, transition to idea input
+                                // Note: The actual underline ID will be set by parent after API call
+                            },
+                            onCopy: {
+                                UIPasteboard.general.string = text
+                            },
+                            onAddNote: {
+                                if let underline = existingUnderline {
+                                    // For existing underline, show idea input directly
+                                    currentUnderlineId = underline.id
+                                    showIdeaInput = true
+                                } else {
+                                    showNoteSheet = true
+                                }
+                            },
+                            onShare: {
+                                shareText(text)
+                            },
+                            onMeaning: {
+                                showMeaningPopup = true
+                            },
+                            onViewIdeas: {
+                                showIdeasPopup = true
+                            },
+                            onDelete: {
+                                if let underline = existingUnderline {
+                                    onDeleteUnderline(underline.id)
+                                    dismissSelection()
+                                }
+                            },
+                            onDismiss: {
+                                dismissSelection()
+                            }
+                        )
+                        .position(menuPosition(for: rect, in: geometry.size))
                     }
-                )
-                .position(menuPosition(for: rect, in: geometry.size))
+                }
             }
         }
         .sheet(isPresented: $showNoteSheet) {
@@ -159,10 +333,37 @@ struct TextSelectionOverlay: View {
                 }
             )
         }
+        .sheet(isPresented: $showMeaningPopup) {
+            MeaningPopupSheet(
+                selectedText: selectedText ?? "",
+                onDismiss: {
+                    showMeaningPopup = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showIdeasPopup) {
+            if let underline = existingUnderline {
+                IdeasPopupSheet(
+                    underlineId: underline.id,
+                    bookType: bookType,
+                    selectedText: selectedText ?? "",
+                    onDismiss: {
+                        showIdeasPopup = false
+                    }
+                )
+                .presentationDetents([.medium])
+            }
+        }
+        .onChange(of: existingUnderline?.id) { _, _ in
+            // Reset state when underline changes
+            showIdeaInput = false
+            currentUnderlineId = existingUnderline?.id
+        }
     }
 
     private func menuPosition(for rect: CGRect, in size: CGSize) -> CGPoint {
-        let menuWidth: CGFloat = 280
+        let menuWidth: CGFloat = 300
         let menuHeight: CGFloat = 56
 
         // Center horizontally on selection, but keep within bounds
@@ -185,6 +386,8 @@ struct TextSelectionOverlay: View {
         selectedText = nil
         selectionRect = nil
         noteText = ""
+        showIdeaInput = false
+        currentUnderlineId = nil
     }
 
     private func shareText(_ text: String) {
@@ -199,6 +402,79 @@ struct TextSelectionOverlay: View {
         }
 
         dismissSelection()
+    }
+
+    private func saveIdea(underlineId: Int, content: String) async {
+        do {
+            if bookType == "ebook" {
+                _ = try await APIClient.shared.createEbookUnderlineIdea(underlineId: underlineId, content: content)
+            } else {
+                _ = try await APIClient.shared.createMagazineUnderlineIdea(underlineId: underlineId, content: content)
+            }
+        } catch {
+            Log.e("Failed to save idea: \(error)")
+        }
+    }
+
+    /// Call this method after creating an underline to show idea input
+    func showIdeaInputForUnderline(underlineId: Int) {
+        currentUnderlineId = underlineId
+        showIdeaInput = true
+    }
+}
+
+// MARK: - Sheet Wrappers
+
+/// Sheet wrapper for MeaningPopupView
+struct MeaningPopupSheet: View {
+    let selectedText: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                MeaningPopupView(
+                    selectedText: selectedText,
+                    onDismiss: onDismiss
+                )
+                .padding()
+            }
+            .navigationTitle(L10n.AI.meaning)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L10n.Reader.done) { onDismiss() }
+                }
+            }
+        }
+    }
+}
+
+/// Sheet wrapper for IdeasPopupView
+struct IdeasPopupSheet: View {
+    let underlineId: Int
+    let bookType: String
+    let selectedText: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            IdeasPopupView(
+                underlineId: underlineId,
+                bookType: bookType,
+                selectedText: selectedText,
+                onDismiss: onDismiss,
+                onIdeaCountChanged: { _ in }
+            )
+            .padding()
+            .navigationTitle(L10n.Stats.ideas)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L10n.Reader.done) { onDismiss() }
+                }
+            }
+        }
     }
 }
 
