@@ -51,13 +51,13 @@ jobs:
         run: npm ci
 
       - name: Lint web
-        run: npm run lint --workspace=@bookpost/web
+        run: npm run lint --workspace=@booklibrio/web
 
       - name: Build web
-        run: npm run build --workspace=@bookpost/web
+        run: npm run build --workspace=@booklibrio/web
 
       - name: Test web
-        run: npm run test --workspace=@bookpost/web --if-present
+        run: npm run test --workspace=@booklibrio/web --if-present
 
   # Lint and build API package
   api:
@@ -77,7 +77,7 @@ jobs:
         run: npm ci
 
       - name: Build API
-        run: npm run build --workspace=@bookpost/api
+        run: npm run build --workspace=@booklibrio/api
 
   # Type check mobile package (Expo)
   mobile:
