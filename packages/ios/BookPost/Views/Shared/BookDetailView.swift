@@ -351,8 +351,6 @@ struct BookDetailView: View {
         do {
             _ = try await APIClient.shared.addToBookshelf(type: bookType, id: bookId, status: status)
             bookshelfStatus = status
-            // Refresh detail to update stats
-            await loadDetail()
         } catch {
             Log.e("Failed to add to bookshelf", error: error)
         }
@@ -364,8 +362,6 @@ struct BookDetailView: View {
         do {
             _ = try await APIClient.shared.updateBookshelf(type: bookType, id: bookId, status: status)
             bookshelfStatus = status
-            // Refresh detail to update stats
-            await loadDetail()
         } catch {
             Log.e("Failed to update bookshelf status", error: error)
         }
@@ -377,8 +373,6 @@ struct BookDetailView: View {
         do {
             _ = try await APIClient.shared.removeFromBookshelf(type: bookType, id: bookId)
             bookshelfStatus = nil
-            // Refresh detail to update stats
-            await loadDetail()
         } catch {
             Log.e("Failed to remove from bookshelf", error: error)
         }
