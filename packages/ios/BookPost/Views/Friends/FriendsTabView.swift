@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Friends tab (书友) - Social feed showing friends' reading activities
+/// Friends tab - Social feed showing friends' reading activities
 /// Includes activity feed, trending topics, and option to share thoughts
 struct FriendsTabView: View {
     @State private var selectedSegment: FeedSegment = .following

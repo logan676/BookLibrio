@@ -83,7 +83,7 @@ struct Badge3DView: View {
         }
     }
 
-    // MARK: - Outer Ring (金属外框)
+    // MARK: - Outer Ring
     private var outerRing: some View {
         ZStack {
             // Base ring
@@ -128,7 +128,7 @@ struct Badge3DView: View {
         }
     }
 
-    // MARK: - Main Badge Body (主体部分)
+    // MARK: - Main Badge Body
     private var mainBadgeBody: some View {
         ZStack {
             // Base color with metallic gradient
@@ -186,7 +186,7 @@ struct Badge3DView: View {
         .shadow(color: isEarned ? color.opacity(0.5) : .clear, radius: size * 0.15, x: 0, y: size * 0.05)
     }
 
-    // MARK: - Inner Emboss (内凹效果)
+    // MARK: - Inner Emboss
     private var innerEmboss: some View {
         ZStack {
             // Inner circle cutout effect
@@ -244,7 +244,7 @@ struct Badge3DView: View {
             .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
     }
 
-    // MARK: - Top Shine (顶部高光)
+    // MARK: - Top Shine
     private var topShine: some View {
         Ellipse()
             .fill(

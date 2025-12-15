@@ -6,7 +6,7 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Badge Tier (材质等级)
+// MARK: - Badge Tier (Material Level)
 enum BadgeTier: String, Codable, CaseIterable {
     case gold
     case silver
@@ -22,7 +22,7 @@ enum BadgeTier: String, Codable, CaseIterable {
         }
     }
 
-    /// 金属渐变色
+    /// Metal gradient colors
     var gradientColors: [Color] {
         switch self {
         case .gold:
@@ -52,7 +52,7 @@ enum BadgeTier: String, Codable, CaseIterable {
         }
     }
 
-    /// 边框颜色
+    /// Border color
     var borderColor: Color {
         switch self {
         case .gold: return Color(red: 0.85, green: 0.65, blue: 0.13)
@@ -63,7 +63,7 @@ enum BadgeTier: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Badge Rarity (稀有度)
+// MARK: - Badge Rarity
 enum BadgeRarity: String, Codable, CaseIterable {
     case legendary
     case epic
@@ -97,7 +97,7 @@ enum BadgeRarity: String, Codable, CaseIterable {
         }
     }
 
-    /// 对应的材质等级
+    /// Corresponding material tier
     var tier: BadgeTier {
         switch self {
         case .legendary: return .gold
@@ -108,7 +108,7 @@ enum BadgeRarity: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Badge Requirement (单条需求)
+// MARK: - Badge Requirement
 struct BadgeRequirement: Identifiable, Codable {
     let id: Int
     let description: String
@@ -124,7 +124,7 @@ struct BadgeRequirement: Identifiable, Codable {
         return min(Double(current) / Double(target) * 100, 100)
     }
 
-    // 用于解码时提供默认ID
+    // Provides default ID during decoding
     enum CodingKeys: String, CodingKey {
         case id, description, current, target
     }
@@ -262,7 +262,7 @@ struct Badge: Identifiable, Codable {
     let backgroundColor: String?
     let earnedCount: Int
 
-    // 新增字段 (可选，后端可能尚未支持)
+    // New fields (optional, backend may not support yet)
     let tier: String?
     let rarity: String?
     let lore: String?
@@ -274,12 +274,12 @@ struct Badge: Identifiable, Codable {
         BadgeCategory(rawValue: category) ?? .special
     }
 
-    /// 勋章材质等级 (基于稀有度或level计算)
+    /// Badge material tier (calculated based on rarity or level)
     var badgeTier: BadgeTier {
         if let tierStr = tier, let t = BadgeTier(rawValue: tierStr) {
             return t
         }
-        // 根据level推断材质
+        // Infer material from level
         switch level {
         case 5...: return .gold
         case 3...4: return .silver
@@ -288,31 +288,31 @@ struct Badge: Identifiable, Codable {
         }
     }
 
-    /// 勋章稀有度 (基于rarity或earnedCount计算)
+    /// Badge rarity (calculated based on rarity or earnedCount)
     var badgeRarity: BadgeRarity {
         if let rarityStr = rarity, let r = BadgeRarity(rawValue: rarityStr) {
             return r
         }
-        // 根据earnedCount推断稀有度
+        // Infer rarity from earnedCount
         if earnedCount < 100 { return .legendary }
         if earnedCount < 500 { return .epic }
         if earnedCount < 2000 { return .rare }
         return .common
     }
 
-    /// 获取需求列表 (如果后端没有提供，则使用单一requirement生成)
+    /// Get requirements list (if backend doesn't provide, generate from single requirement)
     var badgeRequirements: [BadgeRequirement] {
         if let reqs = requirements, !reqs.isEmpty {
             return reqs
         }
-        // 兼容旧数据：将单一requirement转换为列表
+        // Backward compatibility: convert single requirement to list
         if let req = requirement {
             return [BadgeRequirement(id: 0, description: req, current: 0, target: 1)]
         }
         return []
     }
 
-    // 自定义解码以支持可选新字段
+    // Custom decoding to support optional new fields
     enum CodingKeys: String, CodingKey {
         case id, category, level, name, description, requirement
         case iconUrl, backgroundColor, earnedCount
@@ -330,7 +330,7 @@ struct Badge: Identifiable, Codable {
         iconUrl = try container.decodeIfPresent(String.self, forKey: .iconUrl)
         backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
         earnedCount = try container.decodeIfPresent(Int.self, forKey: .earnedCount) ?? 0
-        // 新字段
+        // New fields
         tier = try container.decodeIfPresent(String.self, forKey: .tier)
         rarity = try container.decodeIfPresent(String.self, forKey: .rarity)
         lore = try container.decodeIfPresent(String.self, forKey: .lore)
@@ -372,7 +372,7 @@ struct EarnedBadge: Identifiable, Codable {
     let earnedAt: String
     let earnedCount: Int
 
-    // 新增字段 (可选，后端可能尚未支持)
+    // New fields (optional, backend may not support yet)
     let tier: String?
     let rarity: String?
     let lore: String?
@@ -388,7 +388,7 @@ struct EarnedBadge: Identifiable, Codable {
         BadgeCategory(rawValue: category) ?? .special
     }
 
-    /// 勋章材质等级
+    /// Badge material tier
     var badgeTier: BadgeTier {
         if let tierStr = tier, let t = BadgeTier(rawValue: tierStr) {
             return t
@@ -401,7 +401,7 @@ struct EarnedBadge: Identifiable, Codable {
         }
     }
 
-    /// 勋章稀有度
+    /// Badge rarity
     var badgeRarity: BadgeRarity {
         if let rarityStr = rarity, let r = BadgeRarity(rawValue: rarityStr) {
             return r
@@ -412,25 +412,25 @@ struct EarnedBadge: Identifiable, Codable {
         return .common
     }
 
-    /// 获取需求列表
+    /// Get requirements list
     var badgeRequirements: [BadgeRequirement] {
         if let reqs = requirements, !reqs.isEmpty {
             return reqs
         }
         if let req = requirement {
-            // 已完成的徽章，需求进度显示为已完成
+            // Completed badge, show requirement progress as completed
             return [BadgeRequirement(id: 0, description: req, current: 1, target: 1)]
         }
         return []
     }
 
-    /// 开始日期
+    /// Start date
     var badgeStartDate: Date? {
         guard let dateStr = startDate else { return nil }
         return ISO8601DateFormatter().date(from: dateStr)
     }
 
-    // 成员初始化器 (用于 Preview 和手动创建)
+    // Member initializer (for Preview and manual creation)
     init(
         id: Int,
         category: String,
@@ -467,7 +467,7 @@ struct EarnedBadge: Identifiable, Codable {
         self.startDate = startDate
     }
 
-    // 自定义解码
+    // Custom decoding
     enum CodingKeys: String, CodingKey {
         case id, category, level, name, description, requirement
         case iconUrl, backgroundColor, earnedAt, earnedCount
@@ -486,7 +486,7 @@ struct EarnedBadge: Identifiable, Codable {
         backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
         earnedAt = try container.decode(String.self, forKey: .earnedAt)
         earnedCount = try container.decodeIfPresent(Int.self, forKey: .earnedCount) ?? 0
-        // 新字段
+        // New fields
         tier = try container.decodeIfPresent(String.self, forKey: .tier)
         rarity = try container.decodeIfPresent(String.self, forKey: .rarity)
         lore = try container.decodeIfPresent(String.self, forKey: .lore)

@@ -1,5 +1,5 @@
 /**
- * Book List (豆列) Models
+ * Book List Models
  * Data models for user-curated book lists and related operations
  */
 
@@ -7,7 +7,7 @@ import Foundation
 
 // MARK: - Book List
 
-/// A user-curated book list (豆列)
+/// A user-curated book list
 /// Can be public or private, followed by other users
 struct BookList: Codable, Identifiable, Hashable {
     let id: Int

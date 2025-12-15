@@ -14,10 +14,10 @@ struct MyBookshelfView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Type tabs (电子书/杂志/纸质书)
+            // Type tabs (Ebook/Magazine/Physical Book)
             typeTabsView
 
-            // Status filter (最近打开/想读/在读/已读)
+            // Status filter (Recent/Want to Read/Reading/Finished)
             statusFilterView
 
             Divider()
@@ -50,7 +50,7 @@ struct MyBookshelfView: View {
         }
     }
 
-    // MARK: - Type Tabs (电子书/杂志/纸质书)
+    // MARK: - Type Tabs
 
     @ViewBuilder
     private var typeTabsView: some View {
@@ -65,7 +65,7 @@ struct MyBookshelfView: View {
         .background(Color(.systemBackground))
     }
 
-    // MARK: - Status Filter (最近打开/想读/在读/已读)
+    // MARK: - Status Filter
 
     @ViewBuilder
     private var statusFilterView: some View {

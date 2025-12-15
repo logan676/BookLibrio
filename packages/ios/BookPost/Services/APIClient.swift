@@ -770,7 +770,7 @@ class APIClient {
         return try await perform(request)
     }
 
-    // MARK: - Book Lists (豆列) API
+    // MARK: - Book Lists API
 
     /// Browse public book lists with filtering and sorting
     func getBookLists(
