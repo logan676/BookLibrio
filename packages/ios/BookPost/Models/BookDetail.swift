@@ -277,14 +277,14 @@ struct RemoveFromBookshelfResponse: Codable {
 
 // MARK: - User Bookshelf List Types
 
-struct BookshelfListResponse: Decodable {
+struct BookshelfListResponse: Codable {
     let data: [BookshelfItem]
     let total: Int
     let hasMore: Bool
     let counts: BookshelfCounts
 }
 
-struct BookshelfItem: Decodable, Identifiable {
+struct BookshelfItem: Codable, Identifiable {
     var id: String { "\(bookType)-\(bookId)" }
 
     let bookType: String
@@ -296,9 +296,13 @@ struct BookshelfItem: Decodable, Identifiable {
     let finishedAt: String?
     let addedAt: String?  // Optional since API might return null
     let book: BookshelfBookInfo
+
+    enum CodingKeys: String, CodingKey {
+        case bookType, bookId, status, progress, currentPage, startedAt, finishedAt, addedAt, book
+    }
 }
 
-struct BookshelfBookInfo: Decodable {
+struct BookshelfBookInfo: Codable {
     let title: String
     let coverUrl: String?
     let author: String?
@@ -308,15 +312,28 @@ struct BookshelfBookInfo: Decodable {
         case title, coverUrl, author
     }
 
+    init(title: String, coverUrl: String?, author: String?) {
+        self.title = title
+        self.coverUrl = coverUrl
+        self.author = author
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? "Unknown"
         coverUrl = try container.decodeIfPresent(String.self, forKey: .coverUrl)
         author = try container.decodeIfPresent(String.self, forKey: .author)
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(coverUrl, forKey: .coverUrl)
+        try container.encodeIfPresent(author, forKey: .author)
+    }
 }
 
-struct BookshelfCounts: Decodable {
+struct BookshelfCounts: Codable {
     let wantToRead: Int
     let reading: Int
     let finished: Int
@@ -327,6 +344,13 @@ struct BookshelfCounts: Decodable {
         case reading
         case finished
         case all  // API returns "all" for total count
+    }
+
+    init(wantToRead: Int, reading: Int, finished: Int, total: Int) {
+        self.wantToRead = wantToRead
+        self.reading = reading
+        self.finished = finished
+        self.total = total
     }
 
     // Custom decoder to handle API returning "all" instead of "total"
@@ -341,5 +365,13 @@ struct BookshelfCounts: Decodable {
         } else {
             total = wantToRead + reading + finished
         }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(wantToRead, forKey: .wantToRead)
+        try container.encode(reading, forKey: .reading)
+        try container.encode(finished, forKey: .finished)
+        try container.encode(total, forKey: .all)
     }
 }

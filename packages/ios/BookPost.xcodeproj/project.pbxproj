@@ -38,6 +38,9 @@
 		A0C8D0E9D75850C9723B0FE1 /* BookListCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E543190226CF26DFB2035E2 /* BookListCard.swift */; };
 		A5216516691E9DC5F1BE0F11 /* BookCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79DA62E99A6FCDF623EECB9 /* BookCacheManager.swift */; };
 		AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7B638A54971E152540E95 /* ImageCache.swift */; };
+		DATACACHE002 /* DataCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DATACACHE001 /* DataCacheManager.swift */; };
+		CACHEKEYS002 /* CacheKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CACHEKEYS001 /* CacheKeys.swift */; };
+		APICACHE002 /* APIClient+Caching.swift in Sources */ = {isa = PBXBuildFile; fileRef = APICACHE001 /* APIClient+Caching.swift */; };
 		AFFEF6DF842BDE20EA56191C /* BookDetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C39C4F1E2EC2A2CB3F29B3 /* BookDetailSections.swift */; };
 		B04C80A914E0606D49A0D9A9 /* EPUBNavigatorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 375ADCF9C4345084422C66BA /* EPUBNavigatorViewController.swift */; };
 		B8B55B4235D34ED8DFA53586 /* ReadingRecordsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33500B76637EEC8CF6A111E /* ReadingRecordsGridView.swift */; };
@@ -191,6 +194,9 @@
 		D21FB403E5AA97FA742AE374 /* CuratedList.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookPost/Models/CuratedList.swift; sourceTree = SOURCE_ROOT; };
 		D2654754B0E31AF7876E9C79 /* BookListDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BookListDetailView.swift; path = BookListDetailView.swift; sourceTree = "<group>"; };
 		D2F7B638A54971E152540E95 /* ImageCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
+		DATACACHE001 /* DataCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCacheManager.swift; sourceTree = "<group>"; };
+		CACHEKEYS001 /* CacheKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheKeys.swift; sourceTree = "<group>"; };
+		APICACHE001 /* APIClient+Caching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Caching.swift"; sourceTree = "<group>"; };
 		D9D86A0A5F010A50F5F6055C /* CuratedListDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookPost/Views/CuratedLists/CuratedListDetailView.swift; sourceTree = SOURCE_ROOT; };
 		E33500B76637EEC8CF6A111E /* ReadingRecordsGridView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReadingRecordsGridView.swift; path = ReadingRecordsGridView.swift; sourceTree = "<group>"; };
 		E5C8F5067F67D13B385D6486 /* FriendThoughtsOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FriendThoughtsOverlay.swift; path = FriendThoughtsOverlay.swift; sourceTree = "<group>"; };
@@ -405,10 +411,13 @@
 			isa = PBXGroup;
 			children = (
 				S012 /* APIClient.swift */,
+				APICACHE001 /* APIClient+Caching.swift */,
 				S013 /* AuthManager.swift */,
 				S014 /* ReadingSessionManager.swift */,
 				D2F7B638A54971E152540E95 /* ImageCache.swift */,
 				B79DA62E99A6FCDF623EECB9 /* BookCacheManager.swift */,
+				DATACACHE001 /* DataCacheManager.swift */,
+				CACHEKEYS001 /* CacheKeys.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -866,6 +875,9 @@
 				F086 /* RedeemCodeView.swift in Sources */,
 				F087 /* PublishThoughtView.swift in Sources */,
 				AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */,
+				DATACACHE002 /* DataCacheManager.swift in Sources */,
+				CACHEKEYS002 /* CacheKeys.swift in Sources */,
+				APICACHE002 /* APIClient+Caching.swift in Sources */,
 				5C1D93A28845FA2F2C5F6BB5 /* CachedAsyncImage.swift in Sources */,
 				F060B7918DF8E043CD587840 /* BookList.swift in Sources */,
 				1F38A44902AA10DAEADE4D72 /* Bookmark.swift in Sources */,

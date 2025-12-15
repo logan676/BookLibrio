@@ -3,6 +3,7 @@ import SwiftUI
 
 /// ViewModel for the unified Store module
 /// Manages ebooks, magazines, categories, and rankings
+/// Uses DataCacheManager for caching to reduce API calls and improve responsiveness
 @MainActor
 class StoreViewModel: ObservableObject {
     // MARK: - Published Properties
@@ -30,10 +31,16 @@ class StoreViewModel: ObservableObject {
     // MARK: - Data Loading
 
     func loadHomeData() async {
-        isLoading = true
+        // First, try to load from cache for instant display
+        let hasCache = await loadFromCacheIfAvailable()
+
+        // Only show loading if no cached data
+        if !hasCache {
+            isLoading = true
+        }
         errorMessage = nil
 
-        // Load all sections in parallel
+        // Load all sections in parallel (using cached APIs with SWR)
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.loadRecommendations() }
             group.addTask { await self.loadNewArrivals() }
@@ -49,24 +56,65 @@ class StoreViewModel: ObservableObject {
         isLoading = false
     }
 
+    /// Load cached data immediately for instant UI response
+    private func loadFromCacheIfAvailable() async -> Bool {
+        let cache = DataCacheManager.shared
+        var hasAnyCache = false
+
+        // Load cached ebooks for recommendations/new arrivals
+        if let cachedEbooks: EbooksResponse = await cache.get(EbooksResponse.self, forKey: CacheKeys.storeEbooks(limit: 10, offset: 0)) {
+            newArrivals = cachedEbooks.data.map { StoreItem(from: $0) }
+            hasAnyCache = true
+        }
+
+        // Load cached magazines for hot books
+        if let cachedMagazines: MagazinesResponse = await cache.get(MagazinesResponse.self, forKey: CacheKeys.storeMagazines(limit: 10, offset: 0)) {
+            hotBooks = cachedMagazines.data.map { StoreItem(from: $0) }
+            hasAnyCache = true
+        }
+
+        // Load cached categories
+        if let cachedCategories: EbookCategoriesResponse = await cache.get(EbookCategoriesResponse.self, forKey: CacheKeys.ebookCategories()) {
+            categories = cachedCategories.data
+            hasAnyCache = true
+        }
+
+        // Load cached book lists
+        if let cachedLists: BookListsResponse = await cache.get(BookListsResponse.self, forKey: CacheKeys.bookLists(sort: "popular", limit: 6)) {
+            popularBookLists = cachedLists.data
+            hasAnyCache = true
+        }
+
+        return hasAnyCache
+    }
+
     func refresh() async {
+        await loadHomeData()
+    }
+
+    /// Force refresh - clears cache first
+    func forceRefresh() async {
+        await apiClient.invalidateStoreCache()
+        isLoading = true
         await loadHomeData()
     }
 
     /// Refresh only the recommendations section
     func refreshRecommendations() async {
         isRefreshingRecommendations = true
+        // Clear recommendations cache
+        await DataCacheManager.shared.remove(forKey: CacheKeys.storeRecommended())
         await loadRecommendations()
         isRefreshingRecommendations = false
     }
 
-    // MARK: - Section Loading
+    // MARK: - Section Loading (Using Cached APIs)
 
     private func loadRecommendations() async {
         do {
-            // Load random selection of ebooks and magazines
-            let ebooks = try await apiClient.getEbooks(limit: 6)
-            let magazines = try await apiClient.getMagazines(limit: 4)
+            // Load random selection of ebooks and magazines using cached APIs
+            let ebooks = try await apiClient.getEbooksCached(limit: 6)
+            let magazines = try await apiClient.getMagazinesCached(limit: 4)
 
             let items = ebooks.data.shuffled().prefix(4).map { StoreItem(from: $0) } +
                         magazines.data.shuffled().prefix(2).map { StoreItem(from: $0) }
@@ -79,8 +127,8 @@ class StoreViewModel: ObservableObject {
 
     private func loadNewArrivals() async {
         do {
-            // Load latest ebooks
-            let ebooks = try await apiClient.getEbooks(limit: 10)
+            // Load latest ebooks using cached API
+            let ebooks = try await apiClient.getEbooksCached(limit: 10)
             newArrivals = ebooks.data.map { StoreItem(from: $0) }
         } catch {
             print("Failed to load new arrivals: \(error)")
@@ -89,8 +137,8 @@ class StoreViewModel: ObservableObject {
 
     private func loadHotBooks() async {
         do {
-            // Load popular magazines
-            let magazines = try await apiClient.getMagazines(limit: 10)
+            // Load popular magazines using cached API
+            let magazines = try await apiClient.getMagazinesCached(limit: 10)
             hotBooks = magazines.data.map { StoreItem(from: $0) }
         } catch {
             print("Failed to load hot books: \(error)")
@@ -99,9 +147,9 @@ class StoreViewModel: ObservableObject {
 
     private func loadTopRanked() async {
         do {
-            // Mix ebooks and magazines for rankings
-            let ebooks = try await apiClient.getEbooks(limit: 5)
-            let magazines = try await apiClient.getMagazines(limit: 5)
+            // Mix ebooks and magazines for rankings using cached APIs
+            let ebooks = try await apiClient.getEbooksCached(limit: 5)
+            let magazines = try await apiClient.getMagazinesCached(limit: 5)
 
             var items = ebooks.data.map { StoreItem(from: $0) } +
                         magazines.data.map { StoreItem(from: $0) }
@@ -114,7 +162,8 @@ class StoreViewModel: ObservableObject {
 
     private func loadCategories() async {
         do {
-            let response = try await apiClient.getEbookCategories()
+            // Categories rarely change, use long-cached API
+            let response = try await apiClient.getEbookCategoriesCached()
             categories = response.data
         } catch {
             print("Failed to load categories: \(error)")
@@ -123,7 +172,7 @@ class StoreViewModel: ObservableObject {
 
     private func loadBookLists() async {
         do {
-            let response = try await apiClient.getBookLists(sort: "popular", limit: 6)
+            let response = try await apiClient.getBookListsCached(sort: "popular", limit: 6)
             popularBookLists = response.data
         } catch {
             print("Failed to load book lists: \(error)")
@@ -133,7 +182,7 @@ class StoreViewModel: ObservableObject {
     private func loadFreeBooks() async {
         do {
             // In production, filter by price=0 or free=true
-            let ebooks = try await apiClient.getEbooks(limit: 8)
+            let ebooks = try await apiClient.getEbooksCached(limit: 8)
             // Simulate free books by taking a subset
             freeBooks = Array(ebooks.data.prefix(6)).map { StoreItem(from: $0, isFree: true) }
         } catch {
@@ -144,7 +193,7 @@ class StoreViewModel: ObservableObject {
     private func loadMemberExclusiveBooks() async {
         do {
             // In production, filter by memberOnly=true
-            let ebooks = try await apiClient.getEbooks(limit: 10)
+            let ebooks = try await apiClient.getEbooksCached(limit: 10)
             // Simulate member exclusive by taking different subset
             memberExclusiveBooks = Array(ebooks.data.suffix(6)).map { StoreItem(from: $0, isMemberExclusive: true) }
         } catch {
