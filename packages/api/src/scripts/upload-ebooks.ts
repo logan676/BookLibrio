@@ -87,12 +87,74 @@ interface EpubMetadata {
   publisher?: string
   language?: string
   isbn?: string
+  wordCount?: number
   coverBuffer?: Buffer
   coverMimeType?: string
 }
 
 /**
- * Extract metadata from EPUB file
+ * Count words in text (handles Chinese and English)
+ */
+function countWords(text: string): number {
+  // For Chinese text: count characters (excluding punctuation)
+  const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length
+
+  // For English text: count word boundaries
+  const englishWords = text
+    .replace(/[\u4e00-\u9fff]/g, ' ')  // Remove Chinese chars
+    .split(/\s+/)
+    .filter(word => word.length > 0 && /[a-zA-Z0-9]/.test(word))
+    .length
+
+  // Chinese characters are roughly equivalent to English words
+  return chineseChars + englishWords
+}
+
+/**
+ * Extract word count from EPUB chapters
+ */
+async function extractWordCount(epub: any): Promise<number> {
+  return new Promise((resolve) => {
+    let totalWords = 0
+    const chapters = epub.flow || []
+    let processedChapters = 0
+    const totalChapters = chapters.length
+
+    if (totalChapters === 0) {
+      resolve(0)
+      return
+    }
+
+    for (const chapter of chapters) {
+      if (!chapter.id) {
+        processedChapters++
+        if (processedChapters === totalChapters) {
+          resolve(totalWords)
+        }
+        continue
+      }
+
+      epub.getChapter(chapter.id, (err: Error | null, text: string) => {
+        processedChapters++
+
+        if (!err && text) {
+          // Strip HTML tags and decode entities
+          let cleanText = decode(text)
+          cleanText = cleanText.replace(/<[^>]*>/g, ' ')
+          cleanText = cleanText.replace(/\s+/g, ' ').trim()
+          totalWords += countWords(cleanText)
+        }
+
+        if (processedChapters === totalChapters) {
+          resolve(totalWords)
+        }
+      })
+    }
+  })
+}
+
+/**
+ * Extract metadata from EPUB file (including word count)
  */
 async function extractEpubMetadata(filePath: string): Promise<EpubMetadata | null> {
   return new Promise((resolve) => {
@@ -110,6 +172,16 @@ async function extractEpubMetadata(filePath: string): Promise<EpubMetadata | nul
       // Extract ISBN from identifiers
       if (epub.metadata.ISBN) {
         metadata.isbn = epub.metadata.ISBN
+      }
+
+      // Extract word count from chapters
+      try {
+        const wordCount = await extractWordCount(epub)
+        if (wordCount > 0) {
+          metadata.wordCount = wordCount
+        }
+      } catch (err) {
+        console.log(`  ⚠️ Could not extract word count: ${err}`)
       }
 
       // Try to extract cover image
@@ -300,6 +372,7 @@ async function processEpub(filePath: string): Promise<{ success: boolean; ebookI
     publisher: metadata.publisher,
     language: metadata.language || 'en',
     isbn: metadata.isbn,
+    wordCount: metadata.wordCount,
     s3Key: epubKey,
     filePath: epubUrl,
     fileSize: fileSize,
@@ -309,6 +382,9 @@ async function processEpub(filePath: string): Promise<{ success: boolean; ebookI
   }).returning()
 
   console.log(`  ✅ Created ebook record: ID ${insertedEbook.id}`)
+  if (metadata.wordCount) {
+    console.log(`  📊 Word count: ${metadata.wordCount.toLocaleString()}`)
+  }
 
   // 7. Link to matching external ranking entries
   const matchingRankings = await findMatchingRankings(metadata.title)
