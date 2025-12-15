@@ -12,7 +12,7 @@ struct CategoryGridView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Categories")
+                Text(L10n.Store.categories)
                     .font(.title3)
                     .fontWeight(.bold)
 
@@ -21,7 +21,7 @@ struct CategoryGridView: View {
                 NavigationLink {
                     AllCategoriesView(bookType: selectedBookType)
                 } label: {
-                    Text("View More")
+                    Text(L10n.Store.viewMore)
                         .font(.subheadline)
                         .foregroundColor(.primary)
                 }
@@ -32,7 +32,7 @@ struct CategoryGridView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: 80)
             } else if filteredCategories.isEmpty {
-                Text("No categories")
+                Text(L10n.Store.noCategories)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 80)
@@ -158,7 +158,7 @@ struct AllCategoriesView: View {
             }
             .padding()
         }
-        .navigationTitle("全部分类")
+        .navigationTitle(L10n.Store.allCategories)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.loadCategories(bookType: bookType)
@@ -187,7 +187,7 @@ struct LargeCategoryCell: View {
                 Spacer()
 
                 if category.totalBookCount > 0 {
-                    Text("\(category.totalBookCount)本")
+                    Text(L10n.Store.bookCount(category.totalBookCount))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

@@ -352,15 +352,28 @@ struct DailyListCard: View {
                     // Book covers preview
                     HStack(spacing: -12) {
                         ForEach(list.previewCovers.prefix(3), id: \.self) { coverUrl in
-                            AsyncImage(url: URL(string: coverUrl)) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
+                            AsyncImage(url: URL(string: coverUrl)) { phase in
+                                switch phase {
+                                case .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 36, height: 50)
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 36, height: 50)
+                                        .clipped()
+                                case .failure:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 36, height: 50)
+                                @unknown default:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 36, height: 50)
+                                }
                             }
-                            .frame(width: 36, height: 50)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
@@ -650,13 +663,13 @@ struct RecommendedCoversSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                Text("Recommended for You")
+                Text(L10n.Store.recommendedForYou)
                     .font(.title3)
                     .fontWeight(.bold)
 
                 Spacer()
 
-                Button("View More") {
+                Button(L10n.Store.viewMore) {
                     onShowAll?()
                 }
                 .font(.subheadline)
@@ -697,13 +710,13 @@ struct MixedYearBooksSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                Text("Books by Year")
+                Text(L10n.Store.booksByYear)
                     .font(.title3)
                     .fontWeight(.bold)
 
                 Spacer()
 
-                Button("View More") {
+                Button(L10n.Store.viewMore) {
                     onShowAll?()
                 }
                 .font(.subheadline)
@@ -763,18 +776,20 @@ struct MixedYearBookCard: View {
                     }
                 }
 
-                Text(book.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                // Fixed height text area for consistent card heights
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(book.title)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
 
-                if let author = book.author {
-                    Text(author)
+                    Text(book.author ?? " ")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
+                .frame(height: 50, alignment: .top)
             }
             .frame(width: 100)
         }
@@ -794,14 +809,25 @@ struct CuratedCollectionCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Cover image or gradient background
                 if let coverUrl = list.coverUrl, let url = URL(string: coverUrl) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        collectionPlaceholder
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            collectionPlaceholder
+                                .frame(width: 160, height: 100)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 160, height: 100)
+                                .clipped()
+                        case .failure:
+                            collectionPlaceholder
+                                .frame(width: 160, height: 100)
+                        @unknown default:
+                            collectionPlaceholder
+                                .frame(width: 160, height: 100)
+                        }
                     }
-                    .frame(width: 160, height: 100)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     collectionPlaceholder
@@ -829,7 +855,7 @@ struct CuratedCollectionCard: View {
                 HStack(spacing: 4) {
                     Image(systemName: "book.closed.fill")
                         .font(.caption2)
-                    Text("\(list.itemCount) books")
+                    Text(L10n.Store.booksCountLabel(list.itemCount))
                         .font(.caption2)
                 }
                 .foregroundColor(.secondary)
@@ -910,30 +936,35 @@ struct BookByYearCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .shadow(radius: 2)
 
-                Text(book.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                // Fixed height text area for consistent card heights
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(book.title)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
 
-                if let author = book.author {
-                    Text(author)
+                    Text(book.author ?? " ")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                }
 
-                // Rating if available
-                if let rating = book.rating {
+                    // Rating if available
                     HStack(spacing: 2) {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                        Text(String(format: "%.1f", rating))
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        if let rating = book.rating {
+                            Image(systemName: "star.fill")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            Text(String(format: "%.1f", rating))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text(" ")
+                                .font(.caption2)
+                        }
                     }
                 }
+                .frame(height: 60, alignment: .top)
             }
             .frame(width: 100)
         }
@@ -953,24 +984,13 @@ struct TopRatedSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.orange)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("高分好书")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Text("精选高评分书籍")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
+                Text(L10n.Store.topRated)
+                    .font(.title3)
+                    .fontWeight(.bold)
 
                 Spacer()
 
-                Button("View More") {
+                Button(L10n.Store.viewMore) {
                     onShowAll?()
                 }
                 .font(.subheadline)
@@ -1006,34 +1026,39 @@ struct TopRatedBookCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .shadow(radius: 3)
 
-                Text(book.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                // Fixed height text area for consistent card heights
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(book.title)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
 
-                if let author = book.author {
-                    Text(author)
+                    Text(book.author ?? " ")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                }
 
-                // Rating display below title and author
-                if let rating = book.rating {
+                    // Rating display below title and author
                     HStack(spacing: 2) {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                        Text(String(format: "%.1f", rating))
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                        Text("(\(book.ratingCountFormatted))")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        if let rating = book.rating {
+                            Image(systemName: "star.fill")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            Text(String(format: "%.1f", rating))
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            Text("(\(book.ratingCountFormatted))")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text(" ")
+                                .font(.caption2)
+                        }
                     }
                 }
+                .frame(height: 60, alignment: .top)
             }
             .frame(width: 100)
         }
@@ -1053,13 +1078,13 @@ struct ExternalRankingsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                Text("External Rankings")
+                Text(L10n.Store.externalRankings)
                     .font(.title3)
                     .fontWeight(.bold)
 
                 Spacer()
 
-                Button("View More") {
+                Button(L10n.Store.viewMore) {
                     onShowAll?()
                 }
                 .font(.subheadline)
@@ -1211,6 +1236,7 @@ struct ExternalRankingCard: View {
     }
 
     // Book cover view - always shows something (image or placeholder)
+    // IMPORTANT: Frame and clipped must be applied INSIDE the image handler for consistent sizing
     private func bookCover(url: String?, width: CGFloat, height: CGFloat) -> some View {
         Group {
             if let coverUrl = url, let imageUrl = URL(string: coverUrl) {
@@ -1218,21 +1244,26 @@ struct ExternalRankingCard: View {
                     switch phase {
                     case .empty:
                         placeholderCover
+                            .frame(width: width, height: height)
                     case .success(let image):
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
+                            .frame(width: width, height: height)
+                            .clipped()
                     case .failure:
                         placeholderCover
+                            .frame(width: width, height: height)
                     @unknown default:
                         placeholderCover
+                            .frame(width: width, height: height)
                     }
                 }
             } else {
                 placeholderCover
+                    .frame(width: width, height: height)
             }
         }
-        .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(
             RoundedRectangle(cornerRadius: 4)

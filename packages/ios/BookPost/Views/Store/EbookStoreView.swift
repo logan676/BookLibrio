@@ -120,13 +120,13 @@ struct EbookStoreView: View {
     private var curatedCollectionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Curated Collections")
+                Text(L10n.Store.curatedCollections)
                     .font(.title3)
                     .fontWeight(.bold)
 
                 Spacer()
 
-                Button("View More") {
+                Button(L10n.Store.viewMore) {
                     showBookLists = true
                 }
                 .font(.subheadline)
@@ -161,8 +161,12 @@ class EbookStoreViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let apiClient = APIClient.shared
+    private var hasLoaded = false
 
     func loadHomeData() async {
+        // Skip if already loaded (prevents reload on navigation back)
+        guard !hasLoaded else { return }
+
         isLoading = true
         errorMessage = nil
 
@@ -175,10 +179,14 @@ class EbookStoreViewModel: ObservableObject {
         }
 
         isLoading = false
+        hasLoaded = true
     }
 
     func refresh() async {
+        // Force reload on manual refresh (pull-to-refresh)
+        hasLoaded = false
         await loadHomeData()
+        hasLoaded = true
     }
 
     // EBOOK ONLY - No magazines here

@@ -46,7 +46,7 @@ struct StoreSearchView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
 
-                TextField("搜索书籍、杂志、作者...", text: $viewModel.searchQuery)
+                TextField(L10n.Store.searchPlaceholder, text: $viewModel.searchQuery)
                     .textFieldStyle(.plain)
                     .focused($isSearchFocused)
                     .submitLabel(.search)
@@ -68,7 +68,7 @@ struct StoreSearchView: View {
             .cornerRadius(10)
 
             // Cancel button
-            Button("取消") {
+            Button(L10n.Common.cancel) {
                 dismiss()
             }
             .foregroundColor(.blue)
@@ -86,10 +86,10 @@ struct StoreSearchView: View {
                 if !viewModel.searchHistory.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("搜索历史")
+                            Text(L10n.Store.searchHistory)
                                 .font(.headline)
                             Spacer()
-                            Button("清空") {
+                            Button(L10n.Store.clearHistory) {
                                 viewModel.clearHistory()
                             }
                             .font(.subheadline)
@@ -109,7 +109,7 @@ struct StoreSearchView: View {
 
                 // Hot searches
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("热门搜索")
+                    Text(L10n.Store.hotSearches)
                         .font(.headline)
 
                     StoreFlowLayout(spacing: 8) {
@@ -136,10 +136,10 @@ struct StoreSearchView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
 
-            Text("未找到相关结果")
+            Text(L10n.Store.noResults)
                 .font(.headline)
 
-            Text("试试其他关键词")
+            Text(L10n.Store.tryOtherKeywords)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -153,7 +153,7 @@ struct StoreSearchView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Results count
-                Text("共找到 \(viewModel.results.count) 个结果")
+                Text(L10n.Store.resultCount(viewModel.results.count))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
@@ -183,7 +183,7 @@ struct StoreSearchView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 FilterChip(
-                    title: "全部",
+                    title: L10n.Common.all,
                     count: viewModel.results.count,
                     isSelected: viewModel.selectedFilter == .all
                 ) {
@@ -191,7 +191,7 @@ struct StoreSearchView: View {
                 }
 
                 FilterChip(
-                    title: "电子书",
+                    title: L10n.Tab.ebooks,
                     count: viewModel.ebookCount,
                     isSelected: viewModel.selectedFilter == .ebook
                 ) {
@@ -199,7 +199,7 @@ struct StoreSearchView: View {
                 }
 
                 FilterChip(
-                    title: "杂志",
+                    title: L10n.Tab.magazines,
                     count: viewModel.magazineCount,
                     isSelected: viewModel.selectedFilter == .magazine
                 ) {

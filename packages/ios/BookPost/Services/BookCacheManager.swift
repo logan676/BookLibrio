@@ -199,10 +199,13 @@ class BookCacheManager: ObservableObject {
             throw BookCacheError.invalidFileUrl
         }
 
-        // Determine file extension
-        let fileExtension = url.pathExtension.lowercased()
-        guard ["epub", "pdf"].contains(fileExtension) else {
-            throw BookCacheError.invalidFileUrl
+        // Determine file extension from URL or default based on book type
+        // Note: API URLs like /api/ebooks/123/file don't have extensions
+        var fileExtension = url.pathExtension.lowercased()
+        if fileExtension.isEmpty || !["epub", "pdf"].contains(fileExtension) {
+            // Default extension based on book type
+            fileExtension = bookType == .magazine ? "pdf" : "epub"
+            Log.i("URL has no extension, defaulting to: \(fileExtension)")
         }
 
         // Create download task

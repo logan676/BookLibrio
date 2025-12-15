@@ -12,7 +12,7 @@ struct ExternalRankingDetailView: View {
         NavigationStack {
             Group {
                 if viewModel.isLoading {
-                    ProgressView("Loading...")
+                    ProgressView(L10n.Store.loading)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if !viewModel.books.isEmpty {
                     ScrollView {
@@ -26,15 +26,15 @@ struct ExternalRankingDetailView: View {
                     }
                 } else if let error = viewModel.errorMessage {
                     ContentUnavailableView(
-                        "Failed to Load",
+                        L10n.Store.failedToLoad,
                         systemImage: "exclamationmark.triangle",
                         description: Text(error)
                     )
                 } else {
                     ContentUnavailableView(
-                        "No Books",
+                        L10n.Store.noBooks,
                         systemImage: "book.closed",
-                        description: Text("This ranking has no books yet.")
+                        description: Text(L10n.Store.noBooksYet)
                     )
                 }
             }
@@ -42,7 +42,7 @@ struct ExternalRankingDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(L10n.Store.done) {
                         dismiss()
                     }
                 }
@@ -101,14 +101,14 @@ struct ExternalRankingDetailView: View {
             // Stats
             HStack(spacing: 16) {
                 if let bookCount = ranking.bookCount {
-                    Label("\(bookCount) books", systemImage: "book.closed")
+                    Label(L10n.Store.booksCountLabel(bookCount), systemImage: "book.closed")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 if let externalUrl = ranking.externalUrl, let url = URL(string: externalUrl) {
                     Link(destination: url) {
-                        Label("View Source", systemImage: "arrow.up.right")
+                        Label(L10n.Store.viewSource, systemImage: "arrow.up.right")
                             .font(.caption)
                     }
                 }
@@ -149,33 +149,38 @@ struct ExternalRankingDetailView: View {
                     .foregroundColor(.secondary)
                     .frame(width: 30)
 
-                // Cover
-                AsyncImage(url: URL(string: item.book.coverUrl ?? "")) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                        .overlay(
-                            Image(systemName: "book.closed")
-                                .foregroundColor(.gray)
-                        )
+                // Cover - frame applied inside for consistent sizing
+                AsyncImage(url: URL(string: item.book.coverUrl ?? "")) { phase in
+                    switch phase {
+                    case .empty:
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .overlay(
+                                Image(systemName: "book.closed")
+                                    .foregroundColor(.gray)
+                            )
+                            .frame(width: 50, height: 70)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 70)
+                            .clipped()
+                    case .failure:
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .overlay(
+                                Image(systemName: "book.closed")
+                                    .foregroundColor(.gray)
+                            )
+                            .frame(width: 50, height: 70)
+                    @unknown default:
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .frame(width: 50, height: 70)
+                    }
                 }
-                .frame(width: 50, height: 70)
                 .cornerRadius(4)
-                .overlay(
-                    // Unavailable overlay
-                    !item.book.isAvailable ?
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.black.opacity(0.3))
-                        .overlay(
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.white)
-                                .font(.caption)
-                        )
-                    : nil
-                )
 
                 // Info
                 VStack(alignment: .leading, spacing: 4) {
@@ -193,7 +198,7 @@ struct ExternalRankingDetailView: View {
                     }
 
                     if !item.book.isAvailable {
-                        Text("Not Available")
+                        Text(L10n.Store.notAvailable)
                             .font(.caption2)
                             .fontWeight(.medium)
                             .foregroundColor(.orange)
@@ -222,7 +227,6 @@ struct ExternalRankingDetailView: View {
             .padding()
         }
         .buttonStyle(.plain)
-        .disabled(!item.book.isAvailable)
     }
 }
 

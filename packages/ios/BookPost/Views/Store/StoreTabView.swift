@@ -17,7 +17,7 @@ struct StoreTabView: View {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.secondary)
 
-                        Text(selectedTab == .ebook ? "搜索电子书" : "搜索杂志")
+                        Text(selectedTab == .ebook ? L10n.Store.searchEbooks : L10n.Store.searchMagazines)
                             .foregroundColor(.secondary)
 
                         Spacer()
@@ -31,8 +31,8 @@ struct StoreTabView: View {
 
                 // Tab picker below search bar
                 Picker("", selection: $selectedTab) {
-                    Text("电子书").tag(StoreContentType.ebook)
-                    Text("杂志").tag(StoreContentType.magazine)
+                    Text(L10n.Tab.ebooks).tag(StoreContentType.ebook)
+                    Text(L10n.Tab.magazines).tag(StoreContentType.magazine)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
@@ -64,8 +64,8 @@ enum StoreContentType: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .ebook: return "电子书"
-        case .magazine: return "杂志"
+        case .ebook: return L10n.Tab.ebooks
+        case .magazine: return L10n.Tab.magazines
         }
     }
 

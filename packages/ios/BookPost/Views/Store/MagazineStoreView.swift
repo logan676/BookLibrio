@@ -291,8 +291,12 @@ class MagazineStoreViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let apiClient = APIClient.shared
+    private var hasLoaded = false
 
     func loadHomeData() async {
+        // Skip if already loaded (prevents reload on navigation back)
+        guard !hasLoaded else { return }
+
         isLoading = true
         errorMessage = nil
 
@@ -304,10 +308,14 @@ class MagazineStoreViewModel: ObservableObject {
         }
 
         isLoading = false
+        hasLoaded = true
     }
 
     func refresh() async {
+        // Force reload on manual refresh (pull-to-refresh)
+        hasLoaded = false
         await loadHomeData()
+        hasLoaded = true
     }
 
     func refreshFeatured() async {
