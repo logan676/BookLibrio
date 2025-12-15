@@ -626,7 +626,7 @@ struct BookDetailView: View {
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.getBookDetail(type: bookType, id: bookId)
+            let response = try await APIClient.shared.getBookDetailCached(type: bookType, id: bookId)
             detail = response.data
             // Sync bookshelf status from response
             bookshelfStatus = response.data.userStatus?.status

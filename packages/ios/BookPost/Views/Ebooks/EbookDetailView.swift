@@ -80,7 +80,7 @@ struct EbookDetailView: View {
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.getEbook(id: ebookId)
+            let response = try await APIClient.shared.getEbookCached(id: ebookId)
             ebook = response.data
         } catch {
             errorMessage = error.localizedDescription

@@ -86,7 +86,7 @@ struct MagazineDetailView: View {
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.getMagazine(id: magazineId)
+            let response = try await APIClient.shared.getMagazineCached(id: magazineId)
             magazine = response.data
         } catch {
             errorMessage = error.localizedDescription
