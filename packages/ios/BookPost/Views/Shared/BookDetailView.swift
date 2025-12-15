@@ -261,7 +261,7 @@ struct BookDetailView: View {
                     HStack(spacing: 12) {
                         // Change status menu
                         Menu {
-                            ForEach([BookshelfStatus.wantToRead, .reading, .finished, .abandoned], id: \.self) { status in
+                            ForEach([BookshelfStatus.wantToRead, .reading, .finished], id: \.self) { status in
                                 if status != currentStatus {
                                     Button {
                                         Task { await updateBookshelfStatus(status) }
