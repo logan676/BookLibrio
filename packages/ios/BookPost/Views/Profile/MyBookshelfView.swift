@@ -36,6 +36,12 @@ struct MyBookshelfView: View {
         .task {
             await loadBookshelf()
         }
+        .onAppear {
+            // Refresh "Recent Open" every time the view appears (e.g., returning from reader)
+            if selectedFilter == .recentOpen {
+                Task { await loadBookshelf() }
+            }
+        }
         .onChange(of: selectedFilter) { _, _ in
             resetAndReload()
         }

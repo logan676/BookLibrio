@@ -10,8 +10,9 @@ import {
   users,
   readingHistory,
   readingMilestones,
+  userBookshelves,
 } from '../db/schema'
-import { eq, and, sql } from 'drizzle-orm'
+import { eq, and, sql, isNull } from 'drizzle-orm'
 
 export interface StartSessionParams {
   userId: number
@@ -75,6 +76,22 @@ class ReadingSessionService {
         isActive: true,
       })
       .returning()
+
+    // Update bookshelf: set startedAt if not already set, always update updatedAt for "Recent Open" sorting
+    const now = new Date()
+    await db
+      .update(userBookshelves)
+      .set({
+        startedAt: sql`COALESCE(${userBookshelves.startedAt}, ${now})`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(userBookshelves.userId, params.userId),
+          eq(userBookshelves.bookType, params.bookType),
+          eq(userBookshelves.bookId, params.bookId)
+        )
+      )
 
     return session
   }
