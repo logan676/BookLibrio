@@ -261,7 +261,7 @@ struct BookshelfEntryResponse: Codable {
 
 struct BookshelfEntry: Codable, Identifiable {
     let id: Int
-    let userId: Int
+    let userId: Int?  // Optional - not returned by API
     let bookType: String
     let bookId: Int
     let status: BookshelfStatus
@@ -270,8 +270,8 @@ struct BookshelfEntry: Codable, Identifiable {
     let privateNotes: String?
     let startedAt: String?
     let finishedAt: String?
-    let addedAt: String
-    let updatedAt: String
+    let addedAt: String?  // Optional - API may return null
+    let updatedAt: String?  // Optional - not returned by API
 }
 
 struct RemoveFromBookshelfResponse: Codable {
