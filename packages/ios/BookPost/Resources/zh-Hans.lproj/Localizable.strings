@@ -25,9 +25,13 @@
 "common.share" = "分享";
 "common.save" = "保存";
 "common.delete" = "删除";
+"common.close" = "关闭";
+"common.viewAll" = "查看全部";
+"common.details" = "详情";
 
 // MARK: - Tab Bar
 "tab.home" = "首页";
+"tab.bookshelf" = "书架";
 "tab.ebooks" = "电子书";
 "tab.magazines" = "杂志";
 "tab.books" = "实体书";
@@ -58,6 +62,39 @@
 "ebooks.count" = "%d 本电子书";
 "ebooks.noEbooks" = "暂无电子书";
 "ebooks.startReading" = "开始阅读";
+// Book detail - stats bar
+"ebooks.readers" = "阅读";
+"ebooks.myReading" = "我的阅读";
+"ebooks.wordCount" = "字数";
+"ebooks.pages" = "页数";
+"ebooks.publisher" = "出版";
+// Book detail - recommendation section
+"ebooks.recommendation" = "读者推荐";
+"ebooks.recommendRate" = "推荐率";
+"ebooks.recommend" = "推荐";
+"ebooks.neutral" = "一般";
+"ebooks.notRecommend" = "不推荐";
+// Book detail - description
+"ebooks.description" = "简介";
+"ebooks.translator" = "译者";
+"ebooks.peopleRated" = "人评价";
+// Book detail - reviews
+"ebooks.reviews" = "书评";
+"ebooks.allReviews" = "全部评论";
+"ebooks.writeReview" = "写评论";
+"ebooks.editReview" = "编辑我的评论";
+"ebooks.myReview" = "我的评论";
+"ebooks.noReviews" = "暂无评论";
+"ebooks.beFirstReviewer" = "成为第一个评论的读者";
+"ebooks.me" = "我";
+"ebooks.readingProgress" = "阅读进度";
+"ebooks.featured" = "精选";
+// Review sorting
+"ebooks.sort" = "排序";
+"ebooks.sortNewest" = "最新";
+"ebooks.sortOldest" = "最早";
+"ebooks.sortHighest" = "最高分";
+"ebooks.sortHelpful" = "最有用";
 
 // MARK: - Magazines
 "magazines.title" = "杂志";
@@ -108,6 +145,11 @@
 "bookshelf.sortAsc" = "升序";
 "bookshelf.sortDesc" = "降序";
 "bookshelf.type" = "类型";
+// Book detail actions
+"bookshelf.addToShelf" = "加入书架";
+"bookshelf.removeFromShelf" = "从书架移除";
+"bookshelf.removeBook" = "移除书籍";
+"bookshelf.removeConfirmMessage" = "确定要将这本书从书架移除吗？";
 
 // MARK: - Notes
 "notes.title" = "读书笔记";
@@ -652,7 +694,29 @@
 // MARK: - Store
 "store.title" = "书城";
 "store.searchPlaceholder" = "搜索书籍、杂志...";
+"store.searchEbooks" = "搜索电子书";
+"store.searchMagazines" = "搜索杂志";
+"store.searchHistory" = "搜索历史";
+"store.clearHistory" = "清空";
+"store.hotSearches" = "热门搜索";
+"store.noResults" = "未找到相关结果";
+"store.tryOtherKeywords" = "试试其他关键词";
+"store.resultCount" = "共找到 %d 个结果";
 "store.recommendedForYou" = "为你推荐";
+"store.booksByYear" = "按年份浏览";
+"store.externalRankings" = "精选榜单";
+"store.curatedCollections" = "精选书单";
+"store.topRated" = "高分好书";
+"store.categories" = "分类";
+"store.noCategories" = "暂无分类";
+"store.loading" = "加载中...";
+"store.failedToLoad" = "加载失败";
+"store.noBooks" = "暂无书籍";
+"store.noBooksYet" = "该榜单暂无书籍";
+"store.viewSource" = "查看来源";
+"store.notAvailable" = "暂未上架";
+"store.booksCountLabel" = "%d 本书";
+"store.done" = "完成";
 "store.newArrivals" = "新书上架";
 "store.latestEbooks" = "最新电子书";
 "store.hotMagazines" = "热门杂志";
@@ -662,7 +726,22 @@
 "store.more" = "更多";
 "store.rankings" = "排行榜";
 "store.viewAll" = "查看全部";
+"store.viewMore" = "查看更多";
+"store.booksByYear" = "按年份浏览";
+"store.externalRankings" = "精选榜单";
+"store.curatedCollections" = "精选书单";
+"store.topRated" = "高分好书";
+"store.categories" = "分类";
+"store.noCategories" = "暂无分类";
+"store.loading" = "加载中...";
+"store.failedToLoad" = "加载失败";
+"store.noBooks" = "暂无书籍";
+"store.noBooksYet" = "该榜单暂无书籍";
+"store.viewSource" = "查看来源";
+"store.notAvailable" = "暂未上架";
+"store.done" = "完成";
 "store.bookCount" = "%d本";
+"store.booksCountLabel" = "%d 本书";
 
 // MARK: - AI Question
 "ai.title" = "AI 问答";

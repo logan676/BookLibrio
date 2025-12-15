@@ -27,11 +27,15 @@ enum L10n {
         static var share: String { NSLocalizedString("common.share", comment: "") }
         static var save: String { NSLocalizedString("common.save", comment: "") }
         static var delete: String { NSLocalizedString("common.delete", comment: "") }
+        static var close: String { NSLocalizedString("common.close", comment: "") }
+        static var viewAll: String { NSLocalizedString("common.viewAll", comment: "") }
+        static var details: String { NSLocalizedString("common.details", comment: "") }
     }
 
     // MARK: - Tab Bar
     enum Tab {
         static var home: String { NSLocalizedString("tab.home", comment: "") }
+        static var bookshelf: String { NSLocalizedString("tab.bookshelf", comment: "") }
         static var ebooks: String { NSLocalizedString("tab.ebooks", comment: "") }
         static var magazines: String { NSLocalizedString("tab.magazines", comment: "") }
         static var books: String { NSLocalizedString("tab.books", comment: "") }
@@ -70,6 +74,44 @@ enum L10n {
         static var title: String { NSLocalizedString("ebooks.title", comment: "") }
         static var noEbooks: String { NSLocalizedString("ebooks.noEbooks", comment: "") }
         static var startReading: String { NSLocalizedString("ebooks.startReading", comment: "") }
+
+        // Book detail - stats bar
+        static var readers: String { NSLocalizedString("ebooks.readers", comment: "") }
+        static var myReading: String { NSLocalizedString("ebooks.myReading", comment: "") }
+        static var wordCount: String { NSLocalizedString("ebooks.wordCount", comment: "") }
+        static var pages: String { NSLocalizedString("ebooks.pages", comment: "") }
+        static var publisher: String { NSLocalizedString("ebooks.publisher", comment: "") }
+
+        // Book detail - recommendation section
+        static var recommendation: String { NSLocalizedString("ebooks.recommendation", comment: "") }
+        static var recommendRate: String { NSLocalizedString("ebooks.recommendRate", comment: "") }
+        static var recommend: String { NSLocalizedString("ebooks.recommend", comment: "") }
+        static var neutral: String { NSLocalizedString("ebooks.neutral", comment: "") }
+        static var notRecommend: String { NSLocalizedString("ebooks.notRecommend", comment: "") }
+
+        // Book detail - description
+        static var description: String { NSLocalizedString("ebooks.description", comment: "") }
+        static var translator: String { NSLocalizedString("ebooks.translator", comment: "") }
+        static var peopleRated: String { NSLocalizedString("ebooks.peopleRated", comment: "") }
+
+        // Book detail - reviews
+        static var reviews: String { NSLocalizedString("ebooks.reviews", comment: "") }
+        static var allReviews: String { NSLocalizedString("ebooks.allReviews", comment: "") }
+        static var writeReview: String { NSLocalizedString("ebooks.writeReview", comment: "") }
+        static var editReview: String { NSLocalizedString("ebooks.editReview", comment: "") }
+        static var myReview: String { NSLocalizedString("ebooks.myReview", comment: "") }
+        static var noReviews: String { NSLocalizedString("ebooks.noReviews", comment: "") }
+        static var beFirstReviewer: String { NSLocalizedString("ebooks.beFirstReviewer", comment: "") }
+        static var me: String { NSLocalizedString("ebooks.me", comment: "") }
+        static var readingProgress: String { NSLocalizedString("ebooks.readingProgress", comment: "") }
+        static var featured: String { NSLocalizedString("ebooks.featured", comment: "") }
+
+        // Review sorting
+        static var sort: String { NSLocalizedString("ebooks.sort", comment: "") }
+        static var sortNewest: String { NSLocalizedString("ebooks.sortNewest", comment: "") }
+        static var sortOldest: String { NSLocalizedString("ebooks.sortOldest", comment: "") }
+        static var sortHighest: String { NSLocalizedString("ebooks.sortHighest", comment: "") }
+        static var sortHelpful: String { NSLocalizedString("ebooks.sortHelpful", comment: "") }
 
         static func count(_ number: Int) -> String {
             String(format: NSLocalizedString("ebooks.count", comment: ""), number)
@@ -141,6 +183,12 @@ enum L10n {
         static var sortAsc: String { NSLocalizedString("bookshelf.sortAsc", comment: "") }
         static var sortDesc: String { NSLocalizedString("bookshelf.sortDesc", comment: "") }
         static var type: String { NSLocalizedString("bookshelf.type", comment: "") }
+
+        // Book detail actions
+        static var addToShelf: String { NSLocalizedString("bookshelf.addToShelf", comment: "") }
+        static var removeFromShelf: String { NSLocalizedString("bookshelf.removeFromShelf", comment: "") }
+        static var removeBook: String { NSLocalizedString("bookshelf.removeBook", comment: "") }
+        static var removeConfirmMessage: String { NSLocalizedString("bookshelf.removeConfirmMessage", comment: "") }
     }
 
     // MARK: - Notes
@@ -805,6 +853,13 @@ enum L10n {
     enum Store {
         static var title: String { NSLocalizedString("store.title", comment: "") }
         static var searchPlaceholder: String { NSLocalizedString("store.searchPlaceholder", comment: "") }
+        static var searchEbooks: String { NSLocalizedString("store.searchEbooks", comment: "") }
+        static var searchMagazines: String { NSLocalizedString("store.searchMagazines", comment: "") }
+        static var searchHistory: String { NSLocalizedString("store.searchHistory", comment: "") }
+        static var clearHistory: String { NSLocalizedString("store.clearHistory", comment: "") }
+        static var hotSearches: String { NSLocalizedString("store.hotSearches", comment: "") }
+        static var noResults: String { NSLocalizedString("store.noResults", comment: "") }
+        static var tryOtherKeywords: String { NSLocalizedString("store.tryOtherKeywords", comment: "") }
         static var recommendedForYou: String { NSLocalizedString("store.recommendedForYou", comment: "") }
         static var newArrivals: String { NSLocalizedString("store.newArrivals", comment: "") }
         static var latestEbooks: String { NSLocalizedString("store.latestEbooks", comment: "") }
@@ -815,9 +870,31 @@ enum L10n {
         static var more: String { NSLocalizedString("store.more", comment: "") }
         static var rankings: String { NSLocalizedString("store.rankings", comment: "") }
         static var viewAll: String { NSLocalizedString("store.viewAll", comment: "") }
+        static var viewMore: String { NSLocalizedString("store.viewMore", comment: "") }
+        static var booksByYear: String { NSLocalizedString("store.booksByYear", comment: "") }
+        static var externalRankings: String { NSLocalizedString("store.externalRankings", comment: "") }
+        static var curatedCollections: String { NSLocalizedString("store.curatedCollections", comment: "") }
+        static var topRated: String { NSLocalizedString("store.topRated", comment: "") }
+        static var categories: String { NSLocalizedString("store.categories", comment: "") }
+        static var noCategories: String { NSLocalizedString("store.noCategories", comment: "") }
+        static var loading: String { NSLocalizedString("store.loading", comment: "") }
+        static var failedToLoad: String { NSLocalizedString("store.failedToLoad", comment: "") }
+        static var noBooks: String { NSLocalizedString("store.noBooks", comment: "") }
+        static var noBooksYet: String { NSLocalizedString("store.noBooksYet", comment: "") }
+        static var viewSource: String { NSLocalizedString("store.viewSource", comment: "") }
+        static var notAvailable: String { NSLocalizedString("store.notAvailable", comment: "") }
+        static var done: String { NSLocalizedString("store.done", comment: "") }
 
         static func bookCount(_ count: Int) -> String {
             String(format: NSLocalizedString("store.bookCount", comment: ""), count)
+        }
+
+        static func resultCount(_ count: Int) -> String {
+            String(format: NSLocalizedString("store.resultCount", comment: ""), count)
+        }
+
+        static func booksCountLabel(_ count: Int) -> String {
+            String(format: NSLocalizedString("store.booksCountLabel", comment: ""), count)
         }
     }
 

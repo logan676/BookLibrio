@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Enhanced Book Detail View supporting both ebooks and magazines
-/// Features: book metadata, community stats, reviews, and user bookshelf status
+/// Features: WeChat Reading-style layout with fixed bottom action bar
 struct BookDetailView: View {
     let bookType: BookType
     let bookId: Int
@@ -16,8 +16,8 @@ struct BookDetailView: View {
     @State private var isLoadingMyReview = false
     @State private var bookshelfStatus: BookshelfStatus?
     @State private var isUpdatingBookshelf = false
-    @State private var showBookshelfMenu = false
     @State private var showRemoveConfirm = false
+    @State private var showStatusMenu = false
     @EnvironmentObject private var authManager: AuthManager
 
     var body: some View {
@@ -30,21 +30,16 @@ struct BookDetailView: View {
                 }
             } else if let detail = detail {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        // Hero section with cover and basic info
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Compact hero section
                         heroSection(book: detail.book)
 
-                        // Read button
-                        readButton(book: detail.book)
+                        // 4-column stats bar
+                        statsBar(book: detail.book, stats: detail.stats, userStatus: detail.userStatus)
 
-                        // Stats section
-                        if detail.stats.hasActivity {
-                            statsSection(stats: detail.stats)
-                        }
-
-                        // User bookshelf actions (for logged-in users)
-                        if authManager.isLoggedIn {
-                            bookshelfSection(userStatus: detail.userStatus)
+                        // Recommendation section
+                        if detail.stats.recommendPercent != nil {
+                            recommendationSection(stats: detail.stats)
                         }
 
                         // Description section
@@ -52,17 +47,18 @@ struct BookDetailView: View {
                             descriptionSection(description: description)
                         }
 
-                        // Book metadata details
-                        metadataSection(book: detail.book)
-
                         // Reviews section
                         reviewsSection(reviews: detail.recentReviews, totalReviews: detail.stats.totalReviews)
                     }
                     .padding(.vertical)
+                    .padding(.bottom, 80) // Space for bottom bar
+                }
+                .safeAreaInset(edge: .bottom) {
+                    bottomActionBar(book: detail.book)
                 }
             }
         }
-        .navigationTitle(detail?.book.title ?? "详情")
+        .navigationTitle(detail?.book.title ?? L10n.Common.details)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadDetail()
@@ -105,237 +101,278 @@ struct BookDetailView: View {
         }
     }
 
-    // MARK: - Hero Section
+    // MARK: - Hero Section (Compact WeChat Reading Style)
 
     @ViewBuilder
     private func heroSection(book: BookMetadata) -> some View {
         HStack(alignment: .top, spacing: 16) {
+            // Smaller cover image
             BookCoverView(coverUrl: book.coverUrl, title: book.title)
-                .frame(width: 140, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .shadow(radius: 4)
+                .frame(width: 100, height: 140)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Title
                 Text(book.title)
-                    .font(.title3)
+                    .font(.headline)
                     .fontWeight(.bold)
-                    .lineLimit(3)
+                    .lineLimit(2)
 
+                // Author
                 if let author = book.author, !author.isEmpty {
-                    Label(author, systemImage: "person")
+                    Text(author)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
 
+                // Translator (if exists)
                 if let translator = book.translator, !translator.isEmpty {
-                    Label("译者: \(translator)", systemImage: "text.quote")
+                    Text("\(L10n.Ebooks.translator): \(translator)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
-                HStack(spacing: 12) {
-                    if let fileType = book.fileType {
-                        Label(fileType.uppercased(), systemImage: "doc")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let fileSize = book.fileSize {
-                        Label(book.formattedFileSize, systemImage: "arrow.down.circle")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
+                // Rating display
                 if let rating = detail?.stats.formattedRating {
                     HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
                         Text(rating)
-                            .fontWeight(.semibold)
-                        Text("(\(detail?.stats.ratingCount ?? 0))")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.orange)
+                        Text("(\(detail?.stats.ratingCount ?? 0)\(L10n.Ebooks.peopleRated))")
+                            .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    .font(.subheadline)
                 }
             }
         }
         .padding(.horizontal)
     }
 
-    // MARK: - Read Button
+    // MARK: - Stats Bar (4-Column WeChat Reading Style)
 
     @ViewBuilder
-    private func readButton(book: BookMetadata) -> some View {
-        Button(action: {
-            Log.i("📖 Read button tapped: id=\(book.id), title=\(book.title), fileType=\(book.fileType ?? "nil")")
-            showReader = true
-        }) {
-            HStack {
-                Image(systemName: "book.fill")
-                Text(L10n.Ebooks.startReading)
+    private func statsBar(book: BookMetadata, stats: BookStats, userStatus: UserBookshelfStatus?) -> some View {
+        HStack(spacing: 0) {
+            // Column 1: Total readers
+            statsBarItem(
+                title: "\(stats.totalReaders)",
+                subtitle: L10n.Ebooks.readers
+            )
+
+            Divider().frame(height: 36)
+
+            // Column 2: My reading progress
+            statsBarItem(
+                title: userStatus?.formattedProgress ?? "--",
+                subtitle: L10n.Ebooks.myReading
+            )
+
+            Divider().frame(height: 36)
+
+            // Column 3: Word count
+            if let wordCount = book.wordCount {
+                statsBarItem(
+                    title: formatWordCount(wordCount),
+                    subtitle: L10n.Ebooks.wordCount
+                )
+            } else if let pageCount = book.pageCount {
+                statsBarItem(
+                    title: "\(pageCount)",
+                    subtitle: L10n.Ebooks.pages
+                )
+            } else {
+                statsBarItem(
+                    title: "--",
+                    subtitle: L10n.Ebooks.wordCount
+                )
             }
-            .fontWeight(.semibold)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
+
+            Divider().frame(height: 36)
+
+            // Column 4: Publisher/Copyright info
+            statsBarItem(
+                title: book.publisher ?? "--",
+                subtitle: L10n.Ebooks.publisher,
+                isText: true
+            )
         }
-        .buttonStyle(.borderedProminent)
+        .padding(.vertical, 12)
+        .background(Color(.systemGray6).opacity(0.5))
         .padding(.horizontal)
     }
 
-    // MARK: - Stats Section
-
     @ViewBuilder
-    private func statsSection(stats: BookStats) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("社区数据")
-                .font(.headline)
-
-            HStack(spacing: 0) {
-                statItem(value: "\(stats.totalReaders)", label: "读者", icon: "person.2")
-                Divider().frame(height: 40)
-                statItem(value: "\(stats.totalHighlights)", label: "划线", icon: "highlighter")
-                Divider().frame(height: 40)
-                statItem(value: "\(stats.totalReviews)", label: "评论", icon: "text.bubble")
-                if let percent = stats.formattedRecommendPercent {
-                    Divider().frame(height: 40)
-                    statItem(value: percent, label: "推荐", icon: "hand.thumbsup")
-                }
-            }
-            .padding(.vertical, 12)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .padding(.horizontal)
-    }
-
-    @ViewBuilder
-    private func statItem(value: String, label: String, icon: String) -> some View {
+    private func statsBarItem(title: String, subtitle: String, isText: Bool = false) -> some View {
         VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.accentColor)
-            Text(value)
-                .font(.headline)
-            Text(label)
-                .font(.caption)
+            Text(title)
+                .font(isText ? .caption : .subheadline)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(subtitle)
+                .font(.caption2)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Bookshelf Section
+    // MARK: - Recommendation Section
 
     @ViewBuilder
-    private func bookshelfSection(userStatus: UserBookshelfStatus?) -> some View {
+    private func recommendationSection(stats: BookStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("我的书架")
-                .font(.headline)
+            HStack {
+                Text(L10n.Ebooks.recommendation)
+                    .font(.headline)
+                Spacer()
+            }
 
-            if let currentStatus = bookshelfStatus {
-                // Book is on shelf - show status and actions
-                VStack(spacing: 12) {
-                    // Current status display
-                    HStack(spacing: 16) {
-                        Label(currentStatus.displayName, systemImage: currentStatus.iconName)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(statusColor(currentStatus).opacity(0.15))
-                            .foregroundColor(statusColor(currentStatus))
-                            .clipShape(Capsule())
+            HStack(spacing: 20) {
+                // Recommendation percentage
+                VStack(spacing: 4) {
+                    Text(stats.formattedRecommendPercent ?? "0%")
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundColor(.orange)
+                    Text(L10n.Ebooks.recommendRate)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
-                        if let progress = userStatus?.formattedProgress {
-                            Label("进度: \(progress)", systemImage: "chart.bar.fill")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                // Visual indicator
+                VStack(alignment: .leading, spacing: 8) {
+                    // Progress bar
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            Rectangle()
+                                .fill(Color(.systemGray5))
+                                .frame(height: 8)
+                                .clipShape(Capsule())
+
+                            Rectangle()
+                                .fill(Color.orange)
+                                .frame(width: geometry.size.width * CGFloat((stats.recommendPercent ?? 0) / 100), height: 8)
+                                .clipShape(Capsule())
                         }
-
-                        Spacer()
                     }
+                    .frame(height: 8)
 
-                    // Action buttons
-                    HStack(spacing: 12) {
-                        // Change status menu
-                        Menu {
-                            ForEach([BookshelfStatus.wantToRead, .reading, .finished], id: \.self) { status in
-                                if status != currentStatus {
-                                    Button {
-                                        Task { await updateBookshelfStatus(status) }
-                                    } label: {
-                                        Label(status.displayName, systemImage: status.iconName)
-                                    }
-                                }
-                            }
-                        } label: {
-                            Label("更改状态", systemImage: "arrow.triangle.2.circlepath")
-                                .font(.subheadline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                        }
-                        .disabled(isUpdatingBookshelf)
-
-                        // Remove button
-                        Button(role: .destructive) {
-                            showRemoveConfirm = true
-                        } label: {
-                            Label("移除", systemImage: "trash")
-                                .font(.subheadline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(Color.red.opacity(0.1))
-                                .foregroundColor(.red)
-                                .cornerRadius(8)
-                        }
-                        .disabled(isUpdatingBookshelf)
+                    // Stats summary
+                    HStack(spacing: 16) {
+                        Label("\(stats.totalReaders)", systemImage: "person.2")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Label("\(stats.totalReviews)", systemImage: "text.bubble")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
+                .frame(maxWidth: .infinity)
+            }
+            .padding()
+            .background(Color(.systemGray6).opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.horizontal)
+    }
+
+    // MARK: - Bottom Action Bar
+
+    @ViewBuilder
+    private func bottomActionBar(book: BookMetadata) -> some View {
+        HStack(spacing: 12) {
+            // Bookshelf button
+            if let status = bookshelfStatus {
+                // Already on bookshelf - show status with menu
+                Menu {
+                    ForEach([BookshelfStatus.wantToRead, .reading, .finished], id: \.self) { newStatus in
+                        if newStatus != status {
+                            Button {
+                                Task { await updateBookshelfStatus(newStatus) }
+                            } label: {
+                                Label(newStatus.displayName, systemImage: newStatus.iconName)
+                            }
+                        }
+                    }
+                    Divider()
+                    Button(role: .destructive) {
+                        showRemoveConfirm = true
+                    } label: {
+                        Label(L10n.Bookshelf.removeFromShelf, systemImage: "trash")
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: status.iconName)
+                        Text(status.displayName)
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(statusColor(status).opacity(0.15))
+                    .foregroundColor(statusColor(status))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .disabled(isUpdatingBookshelf)
             } else {
-                // Book not on shelf - show add buttons
-                HStack(spacing: 12) {
-                    ForEach([BookshelfStatus.wantToRead, .reading], id: \.self) { status in
+                // Not on bookshelf - show add button
+                Menu {
+                    ForEach([BookshelfStatus.wantToRead, .reading, .finished], id: \.self) { status in
                         Button {
                             Task { await addToBookshelf(status: status) }
                         } label: {
                             Label(status.displayName, systemImage: status.iconName)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(statusColor(status).opacity(0.15))
-                                .foregroundColor(statusColor(status))
-                                .cornerRadius(8)
                         }
-                        .disabled(isUpdatingBookshelf)
                     }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                        Text(L10n.Bookshelf.addToShelf)
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color(.systemGray6))
+                    .foregroundColor(.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
+                .disabled(isUpdatingBookshelf)
             }
 
-            if isUpdatingBookshelf {
-                HStack {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("更新中...")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            // Read button
+            Button {
+                Log.i("📖 Read button tapped: id=\(book.id), title=\(book.title), fileType=\(book.fileType ?? "nil")")
+                showReader = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "book.fill")
+                    Text(L10n.Ebooks.startReading)
                 }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
             }
+            .buttonStyle(.borderedProminent)
         }
         .padding(.horizontal)
-        .confirmationDialog("移除书籍", isPresented: $showRemoveConfirm) {
-            Button("从书架移除", role: .destructive) {
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .confirmationDialog(L10n.Bookshelf.removeBook, isPresented: $showRemoveConfirm) {
+            Button(L10n.Bookshelf.removeFromShelf, role: .destructive) {
                 Task { await removeFromBookshelf() }
             }
-            Button("取消", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
-            Text("确定要将这本书从书架移除吗？")
+            Text(L10n.Bookshelf.removeConfirmMessage)
         }
     }
+
+    // MARK: - Bookshelf Helper Functions
 
     private func statusColor(_ status: BookshelfStatus) -> Color {
         switch status {
@@ -384,7 +421,7 @@ struct BookDetailView: View {
     @ViewBuilder
     private func descriptionSection(description: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("简介")
+            Text(L10n.Ebooks.description)
                 .font(.headline)
 
             Text(description)
@@ -395,72 +432,19 @@ struct BookDetailView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Metadata Section
-
-    @ViewBuilder
-    private func metadataSection(book: BookMetadata) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("详细信息")
-                .font(.headline)
-
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                if let publisher = book.publisher {
-                    metadataItem(label: "出版社", value: publisher)
-                }
-                if let publicationDate = book.publicationDate {
-                    metadataItem(label: "出版日期", value: publicationDate)
-                }
-                if let isbn = book.isbn {
-                    metadataItem(label: "ISBN", value: isbn)
-                }
-                if let language = book.language {
-                    metadataItem(label: "语言", value: languageDisplayName(language))
-                }
-                if let pageCount = book.pageCount {
-                    metadataItem(label: "页数", value: "\(pageCount) 页")
-                }
-                if let wordCount = book.wordCount {
-                    metadataItem(label: "字数", value: formatWordCount(wordCount))
-                }
-                if let issueNumber = book.issueNumber {
-                    metadataItem(label: "期号", value: issueNumber)
-                }
-                if let issn = book.issn {
-                    metadataItem(label: "ISSN", value: issn)
-                }
-            }
-        }
-        .padding(.horizontal)
-    }
-
-    @ViewBuilder
-    private func metadataItem(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.subheadline)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     // MARK: - Reviews Section
 
     @ViewBuilder
     private func reviewsSection(reviews: [BookReview], totalReviews: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("书评")
+                Text(L10n.Ebooks.reviews)
                     .font(.headline)
 
                 Spacer()
 
                 if totalReviews > reviews.count {
-                    Button("查看全部 (\(totalReviews))") {
+                    Button("\(L10n.Common.viewAll) (\(totalReviews))") {
                         showAllReviews = true
                     }
                     .font(.subheadline)
@@ -477,7 +461,7 @@ struct BookDetailView: View {
                 } label: {
                     HStack {
                         Image(systemName: myReview != nil ? "pencil" : "square.and.pencil")
-                        Text(myReview != nil ? "编辑我的评论" : "写评论")
+                        Text(myReview != nil ? L10n.Ebooks.editReview : L10n.Ebooks.writeReview)
                     }
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -493,7 +477,7 @@ struct BookDetailView: View {
             // My review (if exists and not already in the list)
             if let myReview = myReview, !reviews.contains(where: { $0.id == myReview.id }) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("我的评论")
+                    Text(L10n.Ebooks.myReview)
                         .font(.caption)
                         .foregroundColor(.secondary)
                     ReviewCard(review: myReview, isOwn: true, onEdit: {
@@ -508,10 +492,10 @@ struct BookDetailView: View {
                     Image(systemName: "text.bubble")
                         .font(.largeTitle)
                         .foregroundColor(.secondary.opacity(0.5))
-                    Text("暂无评论")
+                    Text(L10n.Ebooks.noReviews)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    Text("成为第一个评论的读者")
+                    Text(L10n.Ebooks.beFirstReviewer)
                         .font(.caption)
                         .foregroundColor(.secondary.opacity(0.8))
                 }
@@ -615,14 +599,14 @@ struct ReviewCard: View {
                             .fontWeight(.medium)
 
                         if isOwn {
-                            Text("(我)")
+                            Text("(\(L10n.Ebooks.me))")
                                 .font(.caption)
                                 .foregroundColor(.accentColor)
                         }
                     }
 
                     if let progress = review.formattedReadingProgress {
-                        Text("阅读进度 \(progress)")
+                        Text("\(L10n.Ebooks.readingProgress) \(progress)")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -631,7 +615,7 @@ struct ReviewCard: View {
                 Spacer()
 
                 if review.isFeatured {
-                    Label("精选", systemImage: "star.fill")
+                    Label(L10n.Ebooks.featured, systemImage: "star.fill")
                         .font(.caption2)
                         .foregroundColor(.yellow)
                 }
@@ -661,11 +645,11 @@ struct ReviewCard: View {
                 }
 
                 if review.isRecommended {
-                    Label("推荐", systemImage: "hand.thumbsup.fill")
+                    Label(L10n.Ebooks.recommend, systemImage: "hand.thumbsup.fill")
                         .font(.caption)
                         .foregroundColor(.green)
                 } else if review.isNotRecommended {
-                    Label("不推荐", systemImage: "hand.thumbsdown.fill")
+                    Label(L10n.Ebooks.notRecommend, systemImage: "hand.thumbsdown.fill")
                         .font(.caption)
                         .foregroundColor(.red)
                 }
@@ -775,7 +759,7 @@ struct AllReviewsView: View {
                 if reviews.isEmpty && isLoading {
                     LoadingView()
                 } else if reviews.isEmpty {
-                    ContentUnavailableView("暂无评论", systemImage: "text.bubble")
+                    ContentUnavailableView(L10n.Ebooks.noReviews, systemImage: "text.bubble")
                 } else {
                     List {
                         ForEach(reviews) { review in
@@ -786,7 +770,7 @@ struct AllReviewsView: View {
                         }
 
                         if hasMore {
-                            Button("加载更多") {
+                            Button(L10n.Notes.loadMore) {
                                 Task { await loadMore() }
                             }
                             .frame(maxWidth: .infinity)
@@ -796,20 +780,20 @@ struct AllReviewsView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("全部评论")
+            .navigationTitle(L10n.Ebooks.allReviews)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
+                    Button(L10n.Common.close) { dismiss() }
                 }
 
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Picker("排序", selection: $sortOption) {
-                            Text("最新").tag("newest")
-                            Text("最早").tag("oldest")
-                            Text("最高分").tag("highest")
-                            Text("最有用").tag("helpful")
+                        Picker(L10n.Ebooks.sort, selection: $sortOption) {
+                            Text(L10n.Ebooks.sortNewest).tag("newest")
+                            Text(L10n.Ebooks.sortOldest).tag("oldest")
+                            Text(L10n.Ebooks.sortHighest).tag("highest")
+                            Text(L10n.Ebooks.sortHelpful).tag("helpful")
                         }
                     } label: {
                         Image(systemName: "arrow.up.arrow.down")

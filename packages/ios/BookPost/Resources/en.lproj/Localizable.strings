@@ -25,9 +25,13 @@
 "common.share" = "Share";
 "common.save" = "Save";
 "common.delete" = "Delete";
+"common.close" = "Close";
+"common.viewAll" = "View All";
+"common.details" = "Details";
 
 // MARK: - Tab Bar
 "tab.home" = "Home";
+"tab.bookshelf" = "Bookshelf";
 "tab.ebooks" = "Ebooks";
 "tab.magazines" = "Magazines";
 "tab.books" = "Books";
@@ -58,6 +62,39 @@
 "ebooks.count" = "%d ebooks";
 "ebooks.noEbooks" = "No ebooks";
 "ebooks.startReading" = "Start Reading";
+// Book detail - stats bar
+"ebooks.readers" = "Readers";
+"ebooks.myReading" = "My Reading";
+"ebooks.wordCount" = "Words";
+"ebooks.pages" = "Pages";
+"ebooks.publisher" = "Publisher";
+// Book detail - recommendation section
+"ebooks.recommendation" = "Reader Recommendation";
+"ebooks.recommendRate" = "Recommend Rate";
+"ebooks.recommend" = "Recommend";
+"ebooks.neutral" = "Neutral";
+"ebooks.notRecommend" = "Not Recommend";
+// Book detail - description
+"ebooks.description" = "Description";
+"ebooks.translator" = "Translator";
+"ebooks.peopleRated" = " rated";
+// Book detail - reviews
+"ebooks.reviews" = "Reviews";
+"ebooks.allReviews" = "All Reviews";
+"ebooks.writeReview" = "Write Review";
+"ebooks.editReview" = "Edit My Review";
+"ebooks.myReview" = "My Review";
+"ebooks.noReviews" = "No reviews yet";
+"ebooks.beFirstReviewer" = "Be the first to review";
+"ebooks.me" = "Me";
+"ebooks.readingProgress" = "Reading progress";
+"ebooks.featured" = "Featured";
+// Review sorting
+"ebooks.sort" = "Sort";
+"ebooks.sortNewest" = "Newest";
+"ebooks.sortOldest" = "Oldest";
+"ebooks.sortHighest" = "Highest Rated";
+"ebooks.sortHelpful" = "Most Helpful";
 
 // MARK: - Magazines
 "magazines.title" = "Magazines";
@@ -108,6 +145,11 @@
 "bookshelf.sortAsc" = "Ascending";
 "bookshelf.sortDesc" = "Descending";
 "bookshelf.type" = "Type";
+// Book detail actions
+"bookshelf.addToShelf" = "Add to Shelf";
+"bookshelf.removeFromShelf" = "Remove from Shelf";
+"bookshelf.removeBook" = "Remove Book";
+"bookshelf.removeConfirmMessage" = "Are you sure you want to remove this book from your shelf?";
 
 // MARK: - Notes
 "notes.title" = "Reading Notes";
@@ -652,7 +694,29 @@
 // MARK: - Store
 "store.title" = "Store";
 "store.searchPlaceholder" = "Search books, magazines...";
+"store.searchEbooks" = "Search ebooks";
+"store.searchMagazines" = "Search magazines";
+"store.searchHistory" = "Search History";
+"store.clearHistory" = "Clear";
+"store.hotSearches" = "Hot Searches";
+"store.noResults" = "No results found";
+"store.tryOtherKeywords" = "Try other keywords";
+"store.resultCount" = "Found %d results";
 "store.recommendedForYou" = "Recommended For You";
+"store.booksByYear" = "Books by Year";
+"store.externalRankings" = "External Rankings";
+"store.curatedCollections" = "Curated Collections";
+"store.topRated" = "Top Rated";
+"store.categories" = "Categories";
+"store.noCategories" = "No categories";
+"store.loading" = "Loading...";
+"store.failedToLoad" = "Failed to Load";
+"store.noBooks" = "No Books";
+"store.noBooksYet" = "This ranking has no books yet.";
+"store.viewSource" = "View Source";
+"store.notAvailable" = "Not Available";
+"store.booksCountLabel" = "%d books";
+"store.done" = "Done";
 "store.newArrivals" = "New Arrivals";
 "store.latestEbooks" = "Latest Ebooks";
 "store.hotMagazines" = "Hot Magazines";
@@ -662,7 +726,22 @@
 "store.more" = "More";
 "store.rankings" = "Rankings";
 "store.viewAll" = "View All";
+"store.viewMore" = "View More";
+"store.booksByYear" = "Books by Year";
+"store.externalRankings" = "External Rankings";
+"store.curatedCollections" = "Curated Collections";
+"store.topRated" = "Top Rated";
+"store.categories" = "Categories";
+"store.noCategories" = "No categories";
+"store.loading" = "Loading...";
+"store.failedToLoad" = "Failed to Load";
+"store.noBooks" = "No Books";
+"store.noBooksYet" = "This ranking has no books yet.";
+"store.viewSource" = "View Source";
+"store.notAvailable" = "Not Available";
+"store.done" = "Done";
 "store.bookCount" = "%d books";
+"store.booksCountLabel" = "%d books";
 
 // MARK: - AI Question
 "ai.title" = "AI Q&A";
