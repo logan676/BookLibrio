@@ -133,13 +133,9 @@ enum Log {
         guard isEnabled && level >= minLevel else { return }
 
         let fileName = (file as NSString).lastPathComponent
-        let timestamp = ISO8601DateFormatter().string(from: Date())
         let logMessage = "\(level.emoji) [\(level.name)] [\(fileName):\(line)] \(function) → \(message)"
 
-        // Print to console
-        print(logMessage)
-
-        // Also log to system (visible in Console.app)
+        // Log to unified logging system (visible in Xcode console and Console.app)
         switch level {
         case .debug:
             logger.debug("\(logMessage)")
