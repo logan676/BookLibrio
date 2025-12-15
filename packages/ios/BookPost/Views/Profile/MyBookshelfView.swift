@@ -198,9 +198,9 @@ struct MyBookshelfView: View {
         do {
             let typeValue = selectedType.apiValue
 
-            // For "Recent Open", use lastRead sort, limit to 9, and only show opened books
+            // For "Recent Open", always fetch fresh data (skip cache) for real-time updates
             if selectedFilter == .recentOpen {
-                let response = try await APIClient.shared.getMyBookshelfCached(
+                let response = try await APIClient.shared.getMyBookshelf(
                     status: "all",
                     type: typeValue,
                     sort: "lastRead",
@@ -212,7 +212,7 @@ struct MyBookshelfView: View {
                 items = response.data
                 counts = response.counts
                 hasMore = false  // No pagination for recent open
-                Log.d("[Bookshelf Cache] Loaded recent open: \(items.count) items")
+                Log.d("[Bookshelf] Loaded recent open (fresh): \(items.count) items")
             } else {
                 let response = try await APIClient.shared.getMyBookshelfCached(
                     status: selectedFilter.apiValue,
