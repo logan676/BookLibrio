@@ -21,6 +21,7 @@ import socialRoutes from './routes/social'
 import goalsRoutes from './routes/goals'
 import bookListsRoutes from './routes/book-lists'
 import adminRoutes from './routes/admin'
+import adminDashboardRoutes from './routes/admin-dashboard'
 import rankingsRoutes from './routes/rankings'
 import { userRoutes } from './routes/user'
 import avatarsRoutes from './routes/avatars'
@@ -91,6 +92,7 @@ app.route('/api/book-lists', bookListsRoutes)
 app.route('/api/curated-lists', curatedListsRoutes)
 app.route('/api/store', storeRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/admin-dashboard', adminDashboardRoutes)
 app.route('/api/rankings', rankingsRoutes)
 
 // OpenAPI documentation endpoint

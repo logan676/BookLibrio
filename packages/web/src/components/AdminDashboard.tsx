@@ -5,132 +5,248 @@ interface Stats {
   magazines: { total: number; preprocessed: number }
   ebooks: number
   users: number
-}
-
-interface ImportProgress {
-  running: boolean
-  type: string
-  current: number
-  total: number
-  currentItem: string
-  errors: string[]
-}
-
-interface BrowseResult {
-  currentPath: string
-  parentPath: string | null
-  folders: { name: string; path: string }[]
+  curatedLists: number
 }
 
 interface User {
   id: number
   email: string
-  is_admin: number
+  username: string
+  is_admin: boolean
   created_at: string
 }
 
+interface CuratedList {
+  id: number
+  listType: string
+  title: string
+  subtitle: string | null
+  sourceName: string | null
+  sourceLogoUrl: string | null
+  year: number | null
+  bookCount: number
+  isActive: boolean
+  isFeatured: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+interface CuratedListItem {
+  id: number
+  listId: number
+  externalTitle: string
+  externalAuthor: string
+  externalCoverUrl: string | null
+  isbn: string | null
+  position: number
+  editorNote: string | null
+}
+
+interface JobStatus {
+  [key: string]: {
+    running: boolean
+    lastRun?: string
+  }
+}
+
+interface SystemInfo {
+  nodeVersion: string
+  platform: string
+  uptime: number
+  memory: {
+    heapUsed: number
+    heapTotal: number
+    external: number
+    rss: number
+  }
+  environment: string
+  timestamp: string
+}
+
+type TabType = 'overview' | 'rankings' | 'jobs' | 'system' | 'users'
+
 export default function AdminDashboard() {
   const { token } = useAuth()
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [stats, setStats] = useState<Stats | null>(null)
-  const [importType, setImportType] = useState<'magazine' | 'ebook'>('magazine')
-  const [folderPath, setFolderPath] = useState('')
-  const [importing, setImporting] = useState(false)
-  const [progress, setProgress] = useState<ImportProgress | null>(null)
-  const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  // Folder browser state
-  const [showBrowser, setShowBrowser] = useState(false)
-  const [browseData, setBrowseData] = useState<BrowseResult | null>(null)
-  const [browseLoading, setBrowseLoading] = useState(false)
+  // Rankings state
+  const [curatedLists, setCuratedLists] = useState<CuratedList[]>([])
+  const [selectedList, setSelectedList] = useState<CuratedList | null>(null)
+  const [listItems, setListItems] = useState<CuratedListItem[]>([])
+  const [rankingsLoading, setRankingsLoading] = useState(false)
 
-  // User list state
-  const [showUserList, setShowUserList] = useState(false)
+  // Jobs state
+  const [jobs, setJobs] = useState<JobStatus>({})
+  const [jobsLoading, setJobsLoading] = useState(false)
+  const [triggeringJob, setTriggeringJob] = useState<string | null>(null)
+
+  // System state
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
+  const [systemLoading, setSystemLoading] = useState(false)
+
+  // Users state
   const [users, setUsers] = useState<User[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
+
+  // Message state
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const API_BASE = '/api/admin-dashboard'
 
   useEffect(() => {
     fetchStats()
   }, [token])
 
   useEffect(() => {
-    let interval: number | undefined
-    if (importing) {
-      interval = window.setInterval(fetchProgress, 1000)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [importing])
+    if (activeTab === 'rankings') fetchCuratedLists()
+    if (activeTab === 'jobs') fetchJobs()
+    if (activeTab === 'system') fetchSystemInfo()
+    if (activeTab === 'users') fetchUsers()
+  }, [activeTab])
+
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text })
+    setTimeout(() => setMessage(null), 3000)
+  }
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/admin/stats', {
+      const res = await fetch(`${API_BASE}/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      if (res.ok) {
-        setStats(await res.json())
-      }
+      if (res.ok) setStats(await res.json())
     } catch (err) {
       console.error('Failed to fetch stats:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const fetchProgress = async () => {
+  const fetchCuratedLists = async () => {
+    setRankingsLoading(true)
     try {
-      const res = await fetch('/api/admin/import/progress', {
+      const res = await fetch(`${API_BASE}/curated-lists`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) setCuratedLists(await res.json())
+    } catch (err) {
+      console.error('Failed to fetch curated lists:', err)
+    } finally {
+      setRankingsLoading(false)
+    }
+  }
+
+  const fetchListDetail = async (id: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/curated-lists/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
         const data = await res.json()
-        setProgress(data)
-        if (!data.running && importing) {
-          setImporting(false)
-          setMessage('Import completed!')
-          fetchStats()
-        }
+        setSelectedList(data)
+        setListItems(data.items || [])
       }
     } catch (err) {
-      console.error('Failed to fetch progress:', err)
+      console.error('Failed to fetch list detail:', err)
     }
   }
 
-  const browseFolders = async (path?: string) => {
-    setBrowseLoading(true)
+  const toggleListActive = async (list: CuratedList) => {
     try {
-      const url = path ? `/api/admin/browse?path=${encodeURIComponent(path)}` : '/api/admin/browse'
-      const res = await fetch(url, {
+      const res = await fetch(`${API_BASE}/curated-lists/${list.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...list, isActive: !list.isActive })
+      })
+      if (res.ok) {
+        showMessage('success', `List ${list.isActive ? 'deactivated' : 'activated'}`)
+        fetchCuratedLists()
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to update list')
+    }
+  }
+
+  const deleteList = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this list?')) return
+    try {
+      const res = await fetch(`${API_BASE}/curated-lists/${id}`, {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        setBrowseData(await res.json())
+        showMessage('success', 'List deleted')
+        fetchCuratedLists()
+        setSelectedList(null)
       }
     } catch (err) {
-      console.error('Failed to browse folders:', err)
-    } finally {
-      setBrowseLoading(false)
+      showMessage('error', 'Failed to delete list')
     }
   }
 
-  const openBrowser = () => {
-    setShowBrowser(true)
-    browseFolders()
+  const fetchJobs = async () => {
+    setJobsLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/jobs`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setJobs(data.data || {})
+      }
+    } catch (err) {
+      console.error('Failed to fetch jobs:', err)
+    } finally {
+      setJobsLoading(false)
+    }
   }
 
-  const selectFolder = (path: string) => {
-    setFolderPath(path)
-    setShowBrowser(false)
+  const triggerJob = async (jobName: string) => {
+    setTriggeringJob(jobName)
+    try {
+      const res = await fetch(`${API_BASE}/jobs/${jobName}/trigger`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        showMessage('success', `Job "${jobName}" triggered successfully`)
+        setTimeout(fetchJobs, 1000)
+      } else {
+        showMessage('error', 'Failed to trigger job')
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to trigger job')
+    } finally {
+      setTriggeringJob(null)
+    }
+  }
+
+  const fetchSystemInfo = async () => {
+    setSystemLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/system`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) setSystemInfo(await res.json())
+    } catch (err) {
+      console.error('Failed to fetch system info:', err)
+    } finally {
+      setSystemLoading(false)
+    }
   }
 
   const fetchUsers = async () => {
     setUsersLoading(true)
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch(`${API_BASE}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      if (res.ok) {
-        setUsers(await res.json())
-      }
+      if (res.ok) setUsers(await res.json())
     } catch (err) {
       console.error('Failed to fetch users:', err)
     } finally {
@@ -138,9 +254,23 @@ export default function AdminDashboard() {
     }
   }
 
-  const openUserList = () => {
-    setShowUserList(true)
-    fetchUsers()
+  const toggleUserAdmin = async (user: User) => {
+    try {
+      const res = await fetch(`${API_BASE}/users/${user.id}/admin`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ isAdmin: !user.is_admin })
+      })
+      if (res.ok) {
+        showMessage('success', `User ${user.is_admin ? 'demoted' : 'promoted'} to ${user.is_admin ? 'regular user' : 'admin'}`)
+        fetchUsers()
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to update user')
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -153,670 +283,954 @@ export default function AdminDashboard() {
     })
   }
 
+  const formatUptime = (seconds: number) => {
+    const days = Math.floor(seconds / 86400)
+    const hours = Math.floor((seconds % 86400) / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    return `${days}d ${hours}h ${mins}m`
+  }
 
-  const handleImport = async () => {
-    if (!folderPath.trim()) {
-      setError('Please enter a folder path')
-      return
+  const getListTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      nyt_bestseller: 'NYT Bestseller',
+      amazon_best: 'Amazon Best',
+      bill_gates: 'Bill Gates',
+      goodreads_choice: 'Goodreads Choice',
+      pulitzer: 'Pulitzer Prize',
+      booker: 'Booker Prize',
+      obama_reading: 'Obama Reading',
+      national_book: 'National Book Award',
     }
+    return labels[type] || type
+  }
 
-    setError('')
-    setMessage('')
-    setImporting(true)
-
-    try {
-      const res = await fetch('/api/admin/import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: importType, folderPath: folderPath.trim() })
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Import failed')
-        setImporting(false)
-      } else {
-        setMessage(data.message)
-      }
-    } catch (err) {
-      setError('Network error')
-      setImporting(false)
-    }
+  const jobDescriptions: Record<string, string> = {
+    refresh_popular_highlights: 'Refresh popular book highlights',
+    aggregate_book_stats: 'Aggregate book statistics',
+    enrich_book_metadata: 'Enrich book metadata from external sources',
+    compute_related_books: 'Compute related book recommendations',
+    cleanup_expired_ai_cache: 'Clean up expired AI cache entries',
   }
 
   return (
     <div className="admin-dashboard">
-      <h2>Admin Dashboard</h2>
+      {/* Header */}
+      <div className="admin-header">
+        <h1>Admin Dashboard</h1>
+        {message && (
+          <div className={`message ${message.type}`}>{message.text}</div>
+        )}
+      </div>
 
-      {/* Stats Section */}
-      {stats && (
-        <div className="admin-stats">
-          <div className="stat-card">
-            <h3>Magazines</h3>
-            <p className="stat-number">{stats.magazines.total}</p>
-            <p className="stat-sub">Preprocessed: {stats.magazines.preprocessed}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Ebooks</h3>
-            <p className="stat-number">{stats.ebooks}</p>
-          </div>
-          <div className="stat-card clickable" onClick={openUserList}>
-            <h3>Users</h3>
-            <p className="stat-number">{stats.users}</p>
-            <p className="stat-hint">Click to view</p>
-          </div>
-        </div>
-      )}
-
-      {/* Import Section */}
-      <div className="admin-import-section">
-        <h3>Import Content</h3>
-
-        <div className="import-form">
-          <div className="form-group">
-            <label>Content Type</label>
-            <div className="type-selector">
-              <button
-                className={`type-btn ${importType === 'magazine' ? 'active' : ''}`}
-                onClick={() => setImportType('magazine')}
-                disabled={importing}
-              >
-                Magazine (PDF)
-              </button>
-              <button
-                className={`type-btn ${importType === 'ebook' ? 'active' : ''}`}
-                onClick={() => setImportType('ebook')}
-                disabled={importing}
-              >
-                Ebook (PDF/EPUB)
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Folder Path</label>
-            <div className="path-input-row">
-              <input
-                type="text"
-                value={folderPath}
-                onChange={(e) => setFolderPath(e.target.value)}
-                placeholder="/Volumes/..."
-                disabled={importing}
-              />
-              <button
-                className="browse-btn"
-                onClick={openBrowser}
-                disabled={importing}
-              >
-                Browse
-              </button>
-            </div>
-          </div>
-
-          {error && <p className="error-message">{error}</p>}
-          {message && <p className="success-message">{message}</p>}
-
+      {/* Tab Navigation */}
+      <div className="tab-nav">
+        {[
+          { id: 'overview', label: 'Overview', icon: '📊' },
+          { id: 'rankings', label: 'Rankings', icon: '📋' },
+          { id: 'jobs', label: 'Jobs', icon: '⚙️' },
+          { id: 'system', label: 'System', icon: '🖥️' },
+          { id: 'users', label: 'Users', icon: '👥' },
+        ].map(tab => (
           <button
-            className="import-btn"
-            onClick={handleImport}
-            disabled={importing || !folderPath.trim()}
+            key={tab.id}
+            className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id as TabType)}
           >
-            {importing ? 'Importing...' : 'Start Import'}
+            <span className="tab-icon">{tab.icon}</span>
+            <span className="tab-label">{tab.label}</span>
           </button>
-        </div>
+        ))}
+      </div>
 
-        {/* Progress */}
-        {progress && progress.running && (
-          <div className="import-progress">
-            <div className="progress-header">
-              <span>Importing {progress.type}s...</span>
-              <span>{progress.current} / {progress.total}</span>
+      {/* Tab Content */}
+      <div className="tab-content">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="overview-tab">
+            {loading ? (
+              <div className="loading">Loading...</div>
+            ) : stats && (
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-icon">📚</div>
+                  <div className="stat-info">
+                    <h3>Ebooks</h3>
+                    <p className="stat-number">{stats.ebooks.toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">📰</div>
+                  <div className="stat-info">
+                    <h3>Magazines</h3>
+                    <p className="stat-number">{stats.magazines.total.toLocaleString()}</p>
+                    <p className="stat-sub">Preprocessed: {stats.magazines.preprocessed}</p>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">👥</div>
+                  <div className="stat-info">
+                    <h3>Users</h3>
+                    <p className="stat-number">{stats.users.toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">📋</div>
+                  <div className="stat-info">
+                    <h3>Curated Lists</h3>
+                    <p className="stat-number">{stats.curatedLists.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rankings Tab */}
+        {activeTab === 'rankings' && (
+          <div className="rankings-tab">
+            <div className="rankings-layout">
+              {/* List Panel */}
+              <div className="rankings-list-panel">
+                <div className="panel-header">
+                  <h3>External Rankings</h3>
+                  <span className="count">{curatedLists.length} lists</span>
+                </div>
+                {rankingsLoading ? (
+                  <div className="loading">Loading...</div>
+                ) : (
+                  <div className="rankings-list">
+                    {curatedLists.map(list => (
+                      <div
+                        key={list.id}
+                        className={`ranking-item ${selectedList?.id === list.id ? 'selected' : ''} ${!list.isActive ? 'inactive' : ''}`}
+                        onClick={() => fetchListDetail(list.id)}
+                      >
+                        <div className="ranking-item-main">
+                          <span className="ranking-type">{getListTypeLabel(list.listType)}</span>
+                          <h4>{list.title}</h4>
+                          <p className="ranking-meta">
+                            {list.bookCount} books • {list.year || 'N/A'}
+                          </p>
+                        </div>
+                        <div className="ranking-item-actions">
+                          <button
+                            className={`status-btn ${list.isActive ? 'active' : 'inactive'}`}
+                            onClick={(e) => { e.stopPropagation(); toggleListActive(list) }}
+                            title={list.isActive ? 'Deactivate' : 'Activate'}
+                          >
+                            {list.isActive ? '✓' : '○'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Detail Panel */}
+              <div className="rankings-detail-panel">
+                {selectedList ? (
+                  <>
+                    <div className="panel-header">
+                      <div>
+                        <h3>{selectedList.title}</h3>
+                        <p className="subtitle">{selectedList.subtitle}</p>
+                      </div>
+                      <button
+                        className="delete-btn"
+                        onClick={() => deleteList(selectedList.id)}
+                      >
+                        Delete List
+                      </button>
+                    </div>
+                    <div className="list-meta">
+                      <span>Source: {selectedList.sourceName || 'Unknown'}</span>
+                      <span>Year: {selectedList.year || 'N/A'}</span>
+                      <span>Books: {selectedList.bookCount}</span>
+                      <span>Status: {selectedList.isActive ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div className="list-items">
+                      <h4>Books ({listItems.length})</h4>
+                      {listItems.map((item, index) => (
+                        <div key={item.id} className="list-item">
+                          <span className="item-rank">#{index + 1}</span>
+                          {item.externalCoverUrl && (
+                            <img src={item.externalCoverUrl} alt="" className="item-cover" />
+                          )}
+                          <div className="item-info">
+                            <h5>{item.externalTitle}</h5>
+                            <p>{item.externalAuthor}</p>
+                            {item.editorNote && <p className="editor-note">{item.editorNote}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-state">
+                    <p>Select a ranking list to view details</p>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }}
-              />
+          </div>
+        )}
+
+        {/* Jobs Tab */}
+        {activeTab === 'jobs' && (
+          <div className="jobs-tab">
+            <div className="panel-header">
+              <h3>Background Jobs</h3>
+              <button className="refresh-btn" onClick={fetchJobs} disabled={jobsLoading}>
+                {jobsLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
             </div>
-            <p className="current-item">{progress.currentItem}</p>
-            {progress.errors.length > 0 && (
-              <div className="progress-errors">
-                <p>Errors: {progress.errors.length}</p>
+            {jobsLoading && Object.keys(jobs).length === 0 ? (
+              <div className="loading">Loading...</div>
+            ) : (
+              <div className="jobs-grid">
+                {Object.entries(jobDescriptions).map(([jobName, description]) => {
+                  const status = jobs[jobName]
+                  return (
+                    <div key={jobName} className="job-card">
+                      <div className="job-header">
+                        <h4>{jobName.replace(/_/g, ' ')}</h4>
+                        <span className={`job-status ${status?.running ? 'running' : 'idle'}`}>
+                          {status?.running ? 'Running' : 'Idle'}
+                        </span>
+                      </div>
+                      <p className="job-description">{description}</p>
+                      {status?.lastRun && (
+                        <p className="job-last-run">Last run: {formatDate(status.lastRun)}</p>
+                      )}
+                      <button
+                        className="trigger-btn"
+                        onClick={() => triggerJob(jobName)}
+                        disabled={triggeringJob === jobName || status?.running}
+                      >
+                        {triggeringJob === jobName ? 'Triggering...' : 'Trigger Now'}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* System Tab */}
+        {activeTab === 'system' && (
+          <div className="system-tab">
+            <div className="panel-header">
+              <h3>System Information</h3>
+              <button className="refresh-btn" onClick={fetchSystemInfo} disabled={systemLoading}>
+                {systemLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+            {systemLoading && !systemInfo ? (
+              <div className="loading">Loading...</div>
+            ) : systemInfo && (
+              <div className="system-grid">
+                <div className="system-card">
+                  <h4>Environment</h4>
+                  <div className="system-item">
+                    <span>Node Version</span>
+                    <strong>{systemInfo.nodeVersion}</strong>
+                  </div>
+                  <div className="system-item">
+                    <span>Platform</span>
+                    <strong>{systemInfo.platform}</strong>
+                  </div>
+                  <div className="system-item">
+                    <span>Environment</span>
+                    <strong className={systemInfo.environment === 'production' ? 'prod' : 'dev'}>
+                      {systemInfo.environment}
+                    </strong>
+                  </div>
+                </div>
+                <div className="system-card">
+                  <h4>Runtime</h4>
+                  <div className="system-item">
+                    <span>Uptime</span>
+                    <strong>{formatUptime(systemInfo.uptime)}</strong>
+                  </div>
+                  <div className="system-item">
+                    <span>Last Updated</span>
+                    <strong>{formatDate(systemInfo.timestamp)}</strong>
+                  </div>
+                </div>
+                <div className="system-card">
+                  <h4>Memory Usage</h4>
+                  <div className="memory-bar">
+                    <div
+                      className="memory-used"
+                      style={{ width: `${(systemInfo.memory.heapUsed / systemInfo.memory.heapTotal) * 100}%` }}
+                    />
+                  </div>
+                  <div className="system-item">
+                    <span>Heap Used</span>
+                    <strong>{systemInfo.memory.heapUsed} MB</strong>
+                  </div>
+                  <div className="system-item">
+                    <span>Heap Total</span>
+                    <strong>{systemInfo.memory.heapTotal} MB</strong>
+                  </div>
+                  <div className="system-item">
+                    <span>RSS</span>
+                    <strong>{systemInfo.memory.rss} MB</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="users-tab">
+            <div className="panel-header">
+              <h3>User Management</h3>
+              <span className="count">{users.length} users</span>
+            </div>
+            {usersLoading ? (
+              <div className="loading">Loading...</div>
+            ) : (
+              <div className="users-table">
+                <div className="table-header">
+                  <span>Email</span>
+                  <span>Username</span>
+                  <span>Role</span>
+                  <span>Joined</span>
+                  <span>Actions</span>
+                </div>
+                {users.map(user => (
+                  <div key={user.id} className="table-row">
+                    <span className="user-email">{user.email}</span>
+                    <span>{user.username}</span>
+                    <span>
+                      <span className={`role-badge ${user.is_admin ? 'admin' : 'user'}`}>
+                        {user.is_admin ? 'Admin' : 'User'}
+                      </span>
+                    </span>
+                    <span>{formatDate(user.created_at)}</span>
+                    <span>
+                      <button
+                        className={`action-btn ${user.is_admin ? 'demote' : 'promote'}`}
+                        onClick={() => toggleUserAdmin(user)}
+                      >
+                        {user.is_admin ? 'Demote' : 'Promote'}
+                      </button>
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Folder Browser Modal */}
-      {showBrowser && (
-        <div className="browser-overlay" onClick={() => setShowBrowser(false)}>
-          <div className="browser-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="browser-header">
-              <h3>Select Folder</h3>
-              <button className="close-btn" onClick={() => setShowBrowser(false)}>x</button>
-            </div>
-
-            {browseData && (
-              <div className="browser-path">
-                <span>{browseData.currentPath}</span>
-                <button
-                  className="select-current-btn"
-                  onClick={() => selectFolder(browseData.currentPath)}
-                >
-                  Select This Folder
-                </button>
-              </div>
-            )}
-
-            <div className="browser-content">
-              {browseLoading ? (
-                <div className="browser-loading">Loading...</div>
-              ) : browseData ? (
-                <div className="folder-list">
-                  {browseData.parentPath && (
-                    <div
-                      className="folder-item parent"
-                      onClick={() => browseFolders(browseData.parentPath!)}
-                    >
-                      <span className="folder-icon">..</span>
-                      <span className="folder-name">Parent Directory</span>
-                    </div>
-                  )}
-                  {browseData.folders.map((folder) => (
-                    <div
-                      key={folder.path}
-                      className="folder-item"
-                      onClick={() => browseFolders(folder.path)}
-                      onDoubleClick={() => selectFolder(folder.path)}
-                    >
-                      <span className="folder-icon">📁</span>
-                      <span className="folder-name">{folder.name}</span>
-                    </div>
-                  ))}
-                  {browseData.folders.length === 0 && !browseData.parentPath && (
-                    <div className="no-folders">No folders found</div>
-                  )}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="browser-footer">
-              <p className="browser-hint">Click to enter folder, double-click to select</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* User List Modal */}
-      {showUserList && (
-        <div className="browser-overlay" onClick={() => setShowUserList(false)}>
-          <div className="browser-modal user-list-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="browser-header">
-              <h3>Users ({users.length})</h3>
-              <button className="close-btn" onClick={() => setShowUserList(false)}>x</button>
-            </div>
-
-            <div className="browser-content">
-              {usersLoading ? (
-                <div className="browser-loading">Loading...</div>
-              ) : (
-                <div className="user-list">
-                  {users.map((user) => (
-                    <div key={user.id} className="user-item">
-                      <div className="user-info">
-                        <span className="user-email">{user.email}</span>
-                        {user.is_admin === 1 && <span className="admin-badge">Admin</span>}
-                      </div>
-                      <span className="user-date">{formatDate(user.created_at)}</span>
-                    </div>
-                  ))}
-                  {users.length === 0 && (
-                    <div className="no-folders">No users found</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       <style>{`
         .admin-dashboard {
-          padding: 20px;
-          max-width: 900px;
+          padding: 24px;
+          max-width: 1400px;
           margin: 0 auto;
+          min-height: 100vh;
+          background: #f5f7fa;
         }
 
-        .admin-dashboard h2 {
+        .admin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           margin-bottom: 24px;
+        }
+
+        .admin-header h1 {
+          font-size: 28px;
+          color: #1a1a2e;
+          margin: 0;
+        }
+
+        .message {
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-size: 14px;
+          animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+          background: #d4edda;
+          color: #155724;
+        }
+
+        .message.error {
+          background: #f8d7da;
+          color: #721c24;
+        }
+
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 24px;
+          background: white;
+          padding: 8px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .tab-nav .tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 20px;
+          border: none;
+          background: transparent;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          color: #666;
+          transition: all 0.2s;
+        }
+
+        .tab-nav .tab-btn:hover {
+          background: #f0f0f0;
+        }
+
+        .tab-nav .tab-btn.active {
+          background: #007bff;
+          color: white;
+        }
+
+        .tab-icon {
+          font-size: 18px;
+        }
+
+        /* Tab Content */
+        .tab-content {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          min-height: 500px;
+        }
+
+        .loading {
+          text-align: center;
+          padding: 40px;
+          color: #888;
+        }
+
+        .panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .panel-header h3 {
+          margin: 0;
+          font-size: 18px;
           color: #333;
         }
 
-        .admin-stats {
+        .panel-header .count {
+          font-size: 14px;
+          color: #888;
+        }
+
+        .refresh-btn {
+          padding: 8px 16px;
+          background: #f0f0f0;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .refresh-btn:hover:not(:disabled) {
+          background: #e0e0e0;
+        }
+
+        .refresh-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        /* Overview Tab */
+        .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          margin-bottom: 32px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 20px;
         }
 
         .stat-card {
-          background: #f8f9fa;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 24px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           border-radius: 12px;
-          padding: 20px;
-          text-align: center;
+          color: white;
         }
 
-        .stat-card h3 {
+        .stat-card:nth-child(2) {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card:nth-child(3) {
+          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stat-card:nth-child(4) {
+          background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .stat-icon {
+          font-size: 40px;
+        }
+
+        .stat-info h3 {
+          margin: 0;
           font-size: 14px;
-          color: #666;
-          margin-bottom: 8px;
+          opacity: 0.9;
         }
 
         .stat-number {
           font-size: 32px;
-          font-weight: 600;
-          color: #333;
+          font-weight: 700;
+          margin: 4px 0;
         }
 
         .stat-sub {
           font-size: 12px;
+          opacity: 0.8;
+          margin: 0;
+        }
+
+        /* Rankings Tab */
+        .rankings-layout {
+          display: grid;
+          grid-template-columns: 400px 1fr;
+          gap: 24px;
+          height: calc(100vh - 300px);
+          min-height: 500px;
+        }
+
+        .rankings-list-panel {
+          border-right: 1px solid #eee;
+          padding-right: 24px;
+          overflow-y: auto;
+        }
+
+        .rankings-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .ranking-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: 2px solid transparent;
+        }
+
+        .ranking-item:hover {
+          background: #f0f0f0;
+        }
+
+        .ranking-item.selected {
+          border-color: #007bff;
+          background: #e7f3ff;
+        }
+
+        .ranking-item.inactive {
+          opacity: 0.6;
+        }
+
+        .ranking-type {
+          font-size: 11px;
           color: #888;
-          margin-top: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
-        .admin-import-section {
-          background: #fff;
-          border: 1px solid #e0e0e0;
-          border-radius: 12px;
-          padding: 24px;
-        }
-
-        .admin-import-section h3 {
-          margin-bottom: 20px;
+        .ranking-item h4 {
+          margin: 4px 0;
+          font-size: 14px;
           color: #333;
         }
 
-        .import-form {
+        .ranking-meta {
+          font-size: 12px;
+          color: #666;
+          margin: 0;
+        }
+
+        .status-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 2px solid #ddd;
+          background: white;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .status-btn.active {
+          border-color: #28a745;
+          color: #28a745;
+        }
+
+        .status-btn.inactive {
+          border-color: #dc3545;
+          color: #dc3545;
+        }
+
+        .rankings-detail-panel {
+          overflow-y: auto;
+        }
+
+        .subtitle {
+          color: #666;
+          font-size: 14px;
+          margin: 4px 0 0;
+        }
+
+        .delete-btn {
+          padding: 8px 16px;
+          background: #dc3545;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .delete-btn:hover {
+          background: #c82333;
+        }
+
+        .list-meta {
           display: flex;
-          flex-direction: column;
+          gap: 16px;
+          padding: 12px 0;
+          border-bottom: 1px solid #eee;
+          font-size: 13px;
+          color: #666;
+        }
+
+        .list-items {
+          margin-top: 20px;
+        }
+
+        .list-items h4 {
+          margin: 0 0 16px;
+          color: #333;
+        }
+
+        .list-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          margin-bottom: 8px;
+        }
+
+        .item-rank {
+          font-weight: 600;
+          color: #007bff;
+          min-width: 30px;
+        }
+
+        .item-cover {
+          width: 40px;
+          height: 60px;
+          object-fit: cover;
+          border-radius: 4px;
+        }
+
+        .item-info h5 {
+          margin: 0;
+          font-size: 14px;
+          color: #333;
+        }
+
+        .item-info p {
+          margin: 4px 0 0;
+          font-size: 12px;
+          color: #666;
+        }
+
+        .editor-note {
+          font-style: italic;
+          color: #888 !important;
+        }
+
+        .empty-state {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 300px;
+          color: #888;
+        }
+
+        /* Jobs Tab */
+        .jobs-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
           gap: 16px;
         }
 
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
+        .job-card {
+          padding: 20px;
+          background: #f8f9fa;
+          border-radius: 10px;
+          border: 1px solid #eee;
         }
 
-        .form-group label {
+        .job-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .job-header h4 {
+          margin: 0;
           font-size: 14px;
+          color: #333;
+          text-transform: capitalize;
+        }
+
+        .job-status {
+          font-size: 11px;
+          padding: 4px 8px;
+          border-radius: 12px;
           font-weight: 500;
-          color: #555;
         }
 
-        .type-selector {
-          display: flex;
-          gap: 8px;
+        .job-status.running {
+          background: #cce5ff;
+          color: #004085;
         }
 
-        .type-btn {
-          flex: 1;
-          padding: 12px;
-          border: 2px solid #e0e0e0;
-          background: #fff;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: all 0.2s;
+        .job-status.idle {
+          background: #e2e3e5;
+          color: #383d41;
         }
 
-        .type-btn:hover:not(:disabled) {
-          border-color: #007bff;
+        .job-description {
+          font-size: 13px;
+          color: #666;
+          margin: 0 0 12px;
         }
 
-        .type-btn.active {
-          border-color: #007bff;
-          background: #e7f3ff;
-          color: #007bff;
+        .job-last-run {
+          font-size: 12px;
+          color: #888;
+          margin: 0 0 12px;
         }
 
-        .type-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .path-input-row {
-          display: flex;
-          gap: 8px;
-        }
-
-        .path-input-row input[type="text"] {
-          flex: 1;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 14px;
-        }
-
-        .path-input-row input:focus {
-          outline: none;
-          border-color: #007bff;
-        }
-
-        .browse-btn {
-          padding: 12px 20px;
-          background: #6c757d;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          white-space: nowrap;
-        }
-
-        .browse-btn:hover:not(:disabled) {
-          background: #5a6268;
-        }
-
-        .browse-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .import-btn {
-          padding: 14px 24px;
+        .trigger-btn {
+          width: 100%;
+          padding: 10px;
           background: #007bff;
           color: white;
           border: none;
-          border-radius: 8px;
-          font-size: 16px;
+          border-radius: 6px;
           cursor: pointer;
+          font-size: 13px;
           transition: background 0.2s;
         }
 
-        .import-btn:hover:not(:disabled) {
+        .trigger-btn:hover:not(:disabled) {
           background: #0056b3;
         }
 
-        .import-btn:disabled {
+        .trigger-btn:disabled {
           background: #ccc;
           cursor: not-allowed;
         }
 
-        .error-message {
-          color: #dc3545;
-          font-size: 14px;
+        /* System Tab */
+        .system-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 20px;
         }
 
-        .success-message {
-          color: #28a745;
-          font-size: 14px;
-        }
-
-        .import-progress {
-          margin-top: 20px;
-          padding: 16px;
+        .system-card {
+          padding: 20px;
           background: #f8f9fa;
-          border-radius: 8px;
+          border-radius: 10px;
         }
 
-        .progress-header {
+        .system-card h4 {
+          margin: 0 0 16px;
+          font-size: 14px;
+          color: #888;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .system-item {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 8px;
-          font-size: 14px;
-          color: #555;
+          padding: 8px 0;
+          border-bottom: 1px solid #eee;
         }
 
-        .progress-bar {
+        .system-item:last-child {
+          border-bottom: none;
+        }
+
+        .system-item span {
+          color: #666;
+          font-size: 13px;
+        }
+
+        .system-item strong {
+          color: #333;
+          font-size: 13px;
+        }
+
+        .system-item strong.prod {
+          color: #28a745;
+        }
+
+        .system-item strong.dev {
+          color: #ffc107;
+        }
+
+        .memory-bar {
           height: 8px;
           background: #e0e0e0;
           border-radius: 4px;
+          margin-bottom: 16px;
           overflow: hidden;
         }
 
-        .progress-fill {
+        .memory-used {
           height: 100%;
-          background: #007bff;
+          background: linear-gradient(90deg, #667eea, #764ba2);
+          border-radius: 4px;
           transition: width 0.3s;
         }
 
-        .current-item {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #888;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .progress-errors {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #dc3545;
-        }
-
-        /* Folder Browser Modal */
-        .browser-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .browser-modal {
-          background: white;
-          border-radius: 12px;
-          width: 90%;
-          max-width: 600px;
-          max-height: 80vh;
-          display: flex;
-          flex-direction: column;
+        /* Users Tab */
+        .users-table {
+          border: 1px solid #eee;
+          border-radius: 8px;
           overflow: hidden;
         }
 
-        .browser-header {
-          display: flex;
-          justify-content: space-between;
+        .table-header, .table-row {
+          display: grid;
+          grid-template-columns: 2fr 1fr 100px 150px 100px;
+          padding: 12px 16px;
           align-items: center;
-          padding: 16px 20px;
-          border-bottom: 1px solid #e0e0e0;
         }
 
-        .browser-header h3 {
-          margin: 0;
-          font-size: 18px;
-          color: #333;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: #666;
-          padding: 0;
-          line-height: 1;
-        }
-
-        .close-btn:hover {
-          color: #333;
-        }
-
-        .browser-path {
-          padding: 12px 20px;
+        .table-header {
           background: #f8f9fa;
-          border-bottom: 1px solid #e0e0e0;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .browser-path span {
+          font-weight: 600;
           font-size: 13px;
-          color: #555;
-          font-family: monospace;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .select-current-btn {
-          padding: 6px 12px;
-          background: #28a745;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-size: 12px;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .select-current-btn:hover {
-          background: #218838;
-        }
-
-        .browser-content {
-          flex: 1;
-          overflow-y: auto;
-          padding: 8px;
-        }
-
-        .browser-loading {
-          padding: 40px;
-          text-align: center;
-          color: #888;
-        }
-
-        .folder-list {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .folder-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: background 0.15s;
-        }
-
-        .folder-item:hover {
-          background: #f0f0f0;
-        }
-
-        .folder-item.parent {
           color: #666;
         }
 
-        .folder-icon {
-          font-size: 18px;
+        .table-row {
+          border-top: 1px solid #eee;
+          font-size: 13px;
         }
 
-        .folder-name {
-          font-size: 14px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .no-folders {
-          padding: 40px;
-          text-align: center;
-          color: #888;
-        }
-
-        .browser-footer {
-          padding: 12px 20px;
-          border-top: 1px solid #e0e0e0;
+        .table-row:hover {
           background: #f8f9fa;
-        }
-
-        .browser-hint {
-          margin: 0;
-          font-size: 12px;
-          color: #888;
-          text-align: center;
-        }
-
-        /* Clickable stat card */
-        .stat-card.clickable {
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .stat-card.clickable:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-hint {
-          font-size: 11px;
-          color: #007bff;
-          margin-top: 4px;
-        }
-
-        /* User list styles */
-        .user-list-modal {
-          max-width: 500px;
-        }
-
-        .user-list {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .user-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 16px;
-          border-radius: 8px;
-          transition: background 0.15s;
-        }
-
-        .user-item:hover {
-          background: #f0f0f0;
-        }
-
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: 8px;
         }
 
         .user-email {
-          font-size: 14px;
+          font-weight: 500;
           color: #333;
         }
 
-        .admin-badge {
-          font-size: 10px;
-          padding: 2px 6px;
-          background: #007bff;
-          color: white;
-          border-radius: 4px;
+        .role-badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 11px;
           font-weight: 500;
         }
 
-        .user-date {
+        .role-badge.admin {
+          background: #cce5ff;
+          color: #004085;
+        }
+
+        .role-badge.user {
+          background: #e2e3e5;
+          color: #383d41;
+        }
+
+        .action-btn {
+          padding: 6px 12px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
           font-size: 12px;
-          color: #888;
+        }
+
+        .action-btn.promote {
+          background: #28a745;
+          color: white;
+        }
+
+        .action-btn.demote {
+          background: #dc3545;
+          color: white;
+        }
+
+        .action-btn:hover {
+          opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+          .rankings-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .rankings-list-panel {
+            border-right: none;
+            padding-right: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+            max-height: 300px;
+          }
+
+          .table-header, .table-row {
+            grid-template-columns: 1fr 80px 80px;
+          }
+
+          .table-header span:nth-child(2),
+          .table-header span:nth-child(4),
+          .table-row span:nth-child(2),
+          .table-row span:nth-child(4) {
+            display: none;
+          }
         }
       `}</style>
     </div>
