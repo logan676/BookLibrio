@@ -105,7 +105,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   // Rankings state
-  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'internal'
+  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'editor_pick' | 'book_series' | 'weekly_pick' | 'internal'
   const [rankingSubTab, setRankingSubTab] = useState<RankingSubTab>('nyt')
   const [curatedLists, setCuratedLists] = useState<CuratedList[]>([])
   const [selectedList, setSelectedList] = useState<CuratedList | null>(null)
@@ -465,8 +465,13 @@ export default function AdminDashboard() {
       goodreads_choice: 'Goodreads Choice',
       pulitzer: 'Pulitzer Prize',
       booker: 'Booker Prize',
+      booker_international: 'Booker International',
+      newbery: 'Newbery Medal',
       obama_reading: 'Obama Reading',
       national_book: 'National Book Award',
+      editor_pick: 'Editor Pick',
+      book_series: 'Book Series',
+      weekly_pick: 'Weekly Pick',
     }
     return labels[type] || type
   }
@@ -475,8 +480,11 @@ export default function AdminDashboard() {
   const listTypeCategories: Record<string, string[]> = {
     nyt: ['nyt_bestseller'],
     platforms: ['amazon_best', 'goodreads_choice'],
-    awards: ['pulitzer', 'booker', 'national_book'],
+    awards: ['pulitzer', 'booker', 'booker_international', 'newbery', 'national_book'],
     celebrity: ['bill_gates', 'obama_reading'],
+    editor_pick: ['editor_pick'],
+    book_series: ['book_series'],
+    weekly_pick: ['weekly_pick'],
   }
 
   // Filter curated lists by category
@@ -633,7 +641,10 @@ export default function AdminDashboard() {
                 { id: 'platforms' as RankingSubTab, label: '平台榜单' },
                 { id: 'awards' as RankingSubTab, label: '文学奖' },
                 { id: 'celebrity' as RankingSubTab, label: '名人书单' },
-                { id: 'internal' as RankingSubTab, label: '编辑精选' },
+                { id: 'editor_pick' as RankingSubTab, label: '编辑精选' },
+                { id: 'book_series' as RankingSubTab, label: '系列丛书' },
+                { id: 'weekly_pick' as RankingSubTab, label: '每周推荐' },
+                { id: 'internal' as RankingSubTab, label: '站内榜单' },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -656,6 +667,9 @@ export default function AdminDashboard() {
                       {rankingSubTab === 'platforms' && '平台榜单'}
                       {rankingSubTab === 'awards' && '文学奖'}
                       {rankingSubTab === 'celebrity' && '名人书单'}
+                      {rankingSubTab === 'editor_pick' && '编辑精选'}
+                      {rankingSubTab === 'book_series' && '系列丛书'}
+                      {rankingSubTab === 'weekly_pick' && '每周推荐'}
                     </h3>
                     <span className="count">{getFilteredLists(rankingSubTab).length} lists</span>
                   </div>

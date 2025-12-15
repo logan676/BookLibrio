@@ -114,6 +114,8 @@ enum CuratedListType: String, CaseIterable {
     case goodreadsChoice = "goodreads_choice"
     case pulitzer = "pulitzer"
     case booker = "booker"
+    case bookerInternational = "booker_international"
+    case newbery = "newbery"
     case nationalBook = "national_book"
     case oprahBookClub = "oprah_book_club"
     case reeseBookClub = "reese_book_club"
@@ -123,6 +125,10 @@ enum CuratedListType: String, CaseIterable {
     case guardianBest = "guardian_best"
     case economistBooks = "economist_books"
     case financialTimes = "financial_times"
+    // New types
+    case editorPick = "editor_pick"
+    case bookSeries = "book_series"
+    case weeklyPick = "weekly_pick"
 
     var displayName: String {
         switch self {
@@ -132,6 +138,8 @@ enum CuratedListType: String, CaseIterable {
         case .goodreadsChoice: return "Goodreads Choice"
         case .pulitzer: return "Pulitzer Prize"
         case .booker: return "Booker Prize"
+        case .bookerInternational: return "Booker International"
+        case .newbery: return "Newbery Medal"
         case .nationalBook: return "National Book Award"
         case .oprahBookClub: return "Oprah's Book Club"
         case .reeseBookClub: return "Reese's Book Club"
@@ -141,6 +149,9 @@ enum CuratedListType: String, CaseIterable {
         case .guardianBest: return "The Guardian"
         case .economistBooks: return "The Economist"
         case .financialTimes: return "Financial Times"
+        case .editorPick: return "Editor's Pick"
+        case .bookSeries: return "Book Series"
+        case .weeklyPick: return "Weekly Pick"
         }
     }
 
@@ -152,6 +163,8 @@ enum CuratedListType: String, CaseIterable {
         case .goodreadsChoice: return "star.circle"
         case .pulitzer: return "medal"
         case .booker: return "trophy"
+        case .bookerInternational: return "trophy.fill"
+        case .newbery: return "medal.fill"
         case .nationalBook: return "book.closed"
         case .oprahBookClub: return "person.crop.circle"
         case .reeseBookClub: return "person.crop.circle.fill"
@@ -161,6 +174,9 @@ enum CuratedListType: String, CaseIterable {
         case .guardianBest: return "newspaper.fill"
         case .economistBooks: return "chart.line.uptrend.xyaxis"
         case .financialTimes: return "dollarsign.circle"
+        case .editorPick: return "star.square.on.square"
+        case .bookSeries: return "books.vertical"
+        case .weeklyPick: return "calendar.badge.clock"
         }
     }
 }
