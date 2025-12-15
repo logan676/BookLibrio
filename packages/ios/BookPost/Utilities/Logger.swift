@@ -148,6 +148,30 @@ enum Log {
         case .network:
             logger.info("\(logMessage)")
         }
+
+        // Add Sentry breadcrumb for non-debug levels
+        if level >= .info {
+            SentryManager.addBreadcrumb(
+                category: level == .network ? "http" : "log",
+                message: message,
+                level: sentryLevel(for: level)
+            )
+        }
+
+        // Capture error-level messages as Sentry events
+        if level == .error {
+            SentryManager.captureMessage(message, level: .error)
+        }
+    }
+
+    /// Convert Log.Level to SentryLevel
+    private static func sentryLevel(for level: Level) -> SentryLevel {
+        switch level {
+        case .debug: return .debug
+        case .info, .network: return .info
+        case .warning: return .warning
+        case .error: return .error
+        }
     }
 }
 

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import * as SecureStore from 'expo-secure-store'
 import type { User, AuthResponse } from '../types'
 import api from '../services/api'
+import { setUser as setSentryUser, clearUser as clearSentryUser } from '../lib/sentry'
 
 interface AuthContextType {
   user: User | null
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await api.getCurrentUser()
         if (userData) {
           setUser(userData)
+          setSentryUser(userData.id, userData.username) // Set Sentry user context
         } else {
           // Token invalid, try refresh
           const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
@@ -50,9 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const response = await api.refreshToken(refreshToken)
               await saveTokens(response.accessToken, response.refreshToken)
               setUser(response.user)
+              setSentryUser(response.user.id, response.user.username) // Set Sentry user context
             } catch {
               await clearTokens()
               setUser(null)
+              clearSentryUser() // Clear Sentry user context
             }
           } else {
             await clearTokens()
@@ -80,12 +84,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     await saveTokens(response.accessToken, response.refreshToken)
     setUser(response.user)
+    setSentryUser(response.user.id, response.user.username) // Set Sentry user context
   }
 
   const register = async (email: string, password: string) => {
     const response = await api.register(email, password)
     await saveTokens(response.accessToken, response.refreshToken)
     setUser(response.user)
+    setSentryUser(response.user.id, response.user.username) // Set Sentry user context
   }
 
   const logout = async () => {
@@ -96,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       await clearTokens()
       setUser(null)
+      clearSentryUser() // Clear Sentry user context
     }
   }
 
@@ -105,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await api.refreshToken(refreshToken)
       await saveTokens(response.accessToken, response.refreshToken)
       setUser(response.user)
+      setSentryUser(response.user.id, response.user.username) // Set Sentry user context
     }
   }
 

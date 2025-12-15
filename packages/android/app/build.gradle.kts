@@ -36,6 +36,13 @@ android {
             "API_BASE_URL",
             "\"${localProperties.getProperty("API_BASE_URL", "https://bookpost-api.fly.dev")}\""
         )
+
+        // Sentry DSN
+        buildConfigField(
+            "String",
+            "SENTRY_DSN",
+            "\"${localProperties.getProperty("SENTRY_DSN", "https://a30412a1cffb0b8ee035e9b32592faca@o4510539308400640.ingest.us.sentry.io/4510539315675136")}\""
+        )
     }
 
     buildTypes {
@@ -129,6 +136,9 @@ dependencies {
 
     // Security
     implementation(libs.security.crypto)
+
+    // Sentry
+    implementation(libs.sentry.android)
 
     // Media3 (Audio playback)
     implementation(libs.media3.exoplayer)

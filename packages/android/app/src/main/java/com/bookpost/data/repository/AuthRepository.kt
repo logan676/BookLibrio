@@ -8,6 +8,7 @@ import com.bookpost.data.remote.dto.RegisterRequest
 import com.bookpost.domain.model.AuthToken
 import com.bookpost.domain.model.User
 import com.bookpost.util.NetworkResult
+import com.bookpost.util.SentryManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -26,6 +27,8 @@ class AuthRepository @Inject constructor(
                 response.body()?.let { authResponse ->
                     val (user, token) = authResponse.toUserAndToken()
                     userPreferences.saveAuthData(user, token)
+                    // Set Sentry user context
+                    SentryManager.setUser(user.id, user.username, email)
                     NetworkResult.Success(user)
                 } ?: NetworkResult.Error("Empty response")
             } else {
@@ -43,6 +46,8 @@ class AuthRepository @Inject constructor(
                 response.body()?.let { authResponse ->
                     val (user, token) = authResponse.toUserAndToken()
                     userPreferences.saveAuthData(user, token)
+                    // Set Sentry user context
+                    SentryManager.setUser(user.id, user.username, email)
                     NetworkResult.Success(user)
                 } ?: NetworkResult.Error("Empty response")
             } else {
@@ -92,5 +97,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout() {
         userPreferences.clearAuthData()
+        // Clear Sentry user context
+        SentryManager.clearUser()
     }
 }

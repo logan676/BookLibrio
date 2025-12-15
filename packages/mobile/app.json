@@ -33,7 +33,28 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "booklibrio",
+          "project": "react-native"
+        }
+      ]
+    ],
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "@sentry/react-native/expo/hooks/expo-upload-sourcemaps",
+          "config": {
+            "organization": "booklibrio",
+            "project": "react-native"
+          }
+        }
+      ]
+    },
+    "extra": {
+      "sentryDsn": "${EXPO_PUBLIC_SENTRY_DSN}"
+    }
   }
 }

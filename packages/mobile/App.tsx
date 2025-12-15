@@ -1,9 +1,13 @@
+// Initialize Sentry first - must be before any other imports
+import { initSentry, Sentry } from './src/lib/sentry'
+initSentry()
+
 if (__DEV__) {
   require('./src/ReactotronConfig').default
 }
 
 import React from 'react'
-import { StatusBar, View, Text, StyleSheet, ActivityIndicator } from 'react-native'
+import { StatusBar, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -210,18 +214,36 @@ function AppNavigator() {
   )
 }
 
-export default function App() {
+// Error fallback component for Sentry ErrorBoundary
+function ErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {
+  return (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorTitle}>Something went wrong</Text>
+      <Text style={styles.errorMessage}>{error.message}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={resetError}>
+        <Text style={styles.retryButtonText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
-      <AuthProvider>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+      <Sentry.ErrorBoundary fallback={ErrorFallback}>
+        <AuthProvider>
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </Sentry.ErrorBoundary>
     </SafeAreaProvider>
   )
 }
+
+// Wrap with Sentry for native crash handling
+export default Sentry.wrap(App)
 
 const styles = StyleSheet.create({
   loadingContainer: {
@@ -240,5 +262,35 @@ const styles = StyleSheet.create({
   },
   tabIconFocused: {
     opacity: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 12,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

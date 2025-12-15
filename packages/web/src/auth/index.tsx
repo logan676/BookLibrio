@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { setUser as setSentryUser, clearUser as clearSentryUser } from '../lib/sentry'
 
 interface User {
   id: number
@@ -82,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null)
     setRefreshToken(null)
     setUser(null)
+    clearSentryUser() // Clear Sentry user context
   }, [])
 
   // Check current auth status on mount
@@ -110,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: userData.email,
               is_admin: userData.isAdmin ?? userData.is_admin ?? false,
             })
+            setSentryUser(userData.id, userData.email) // Set Sentry user context
             return
           }
         }
@@ -130,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: userData.email,
                 is_admin: userData.isAdmin ?? userData.is_admin ?? false,
               })
+              setSentryUser(userData.id, userData.email) // Set Sentry user context
               return
             }
           }
@@ -176,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: userData.email,
             is_admin: userData.isAdmin ?? userData.is_admin ?? false,
           })
+          setSentryUser(userData.id, userData.email) // Set Sentry user context
         }
         return { success: true }
       }
@@ -217,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: userData.email,
             is_admin: userData.isAdmin ?? userData.is_admin ?? false,
           })
+          setSentryUser(userData.id, userData.email) // Set Sentry user context
         }
         return { success: true }
       }

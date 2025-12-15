@@ -1,3 +1,7 @@
+// Initialize Sentry first - must be before any other imports
+import { initSentry, Sentry } from './lib/sentry'
+initSentry()
+
 import { serve } from '@hono/node-server'
 import { app } from './app'
 import { testConnection } from './db/client'

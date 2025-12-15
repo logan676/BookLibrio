@@ -38,6 +38,9 @@ class AuthManager: ObservableObject {
         UserDefaults.standard.set(accessToken, forKey: "\(userDefaultsKey)_access_token")
         UserDefaults.standard.set(refreshToken, forKey: "\(userDefaultsKey)_refresh_token")
 
+        // Set Sentry user context
+        SentryManager.setUser(id: user.id, username: user.username)
+
         DispatchQueue.main.async {
             self.currentUser = user
             self.isLoggedIn = true
@@ -48,6 +51,9 @@ class AuthManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "\(userDefaultsKey)_user")
         UserDefaults.standard.removeObject(forKey: "\(userDefaultsKey)_access_token")
         UserDefaults.standard.removeObject(forKey: "\(userDefaultsKey)_refresh_token")
+
+        // Clear Sentry user context
+        SentryManager.clearUser()
 
         DispatchQueue.main.async {
             self.currentUser = nil

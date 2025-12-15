@@ -2,6 +2,7 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { log } from './utils/logger'
+import { sentryMiddleware, captureException } from './middleware/sentry'
 import { authRoutes } from './routes/auth'
 import { ebooksRoutes } from './routes/ebooks'
 import { magazinesRoutes } from './routes/magazines'
@@ -30,6 +31,9 @@ import storeRoutes from './routes/store'
 
 // Create OpenAPI-enabled Hono app
 const app = new OpenAPIHono()
+
+// Sentry middleware (must be first for distributed tracing)
+app.use('*', sentryMiddleware)
 
 // Custom logging middleware using our unified logger
 app.use('*', async (c, next) => {
@@ -131,6 +135,14 @@ app.notFound((c) => {
 // Error handler
 app.onError((err, c) => {
   log.e(`Server error on ${c.req.method} ${c.req.path}`, err)
+
+  // Capture exception with Sentry
+  captureException(err, {
+    method: c.req.method,
+    path: c.req.path,
+    query: c.req.query(),
+  })
+
   return c.json({
     error: {
       code: 'INTERNAL_ERROR',
