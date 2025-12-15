@@ -231,12 +231,15 @@ class CategoryGridViewModel: ObservableObject {
 
     private let apiClient = APIClient.shared
     private var maxDisplayCount = 20 // Show more categories in horizontal scroll
+    private var loadedBookType: String? // Track which bookType has been loaded
 
     var displayedCategories: [Category] {
         Array(categories.prefix(maxDisplayCount))
     }
 
     func loadCategories(bookType: String) async {
+        // Skip if already loaded for this bookType (prevents reload on tab resume)
+        guard loadedBookType != bookType else { return }
         guard !isLoading else { return }
 
         isLoading = true
@@ -246,6 +249,7 @@ class CategoryGridViewModel: ObservableObject {
             let response = try await apiClient.getCategories(bookType: bookType, flat: false)
             // Filter to top-level categories only for the grid display
             categories = response.data.filter { $0.isTopLevel }
+            loadedBookType = bookType
         } catch {
             errorMessage = error.localizedDescription
             print("Failed to load categories: \(error)")
