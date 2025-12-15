@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   // Rankings state
-  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'media' | 'editor_pick' | 'book_series' | 'weekly_pick'
+  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'editor_pick' | 'book_series' | 'weekly_pick'
   const [rankingSubTab, setRankingSubTab] = useState<RankingSubTab>('nyt')
   const [curatedLists, setCuratedLists] = useState<CuratedList[]>([])
   const [selectedList, setSelectedList] = useState<CuratedList | null>(null)
@@ -310,11 +310,6 @@ export default function AdminDashboard() {
       national_book: 'National Book Award',
       oprah_book_club: "Oprah's Book Club",
       reese_book_club: "Reese's Book Club",
-      time_100: 'TIME 100',
-      npr_books: 'NPR Best Books',
-      guardian_best: 'The Guardian',
-      economist_books: 'The Economist',
-      financial_times: 'Financial Times',
       editor_pick: 'Editor Pick',
       book_series: 'Book Series',
       weekly_pick: 'Weekly Pick',
@@ -328,7 +323,6 @@ export default function AdminDashboard() {
     platforms: ['amazon_best', 'goodreads_choice'],
     awards: ['pulitzer', 'booker', 'booker_international', 'newbery', 'national_book'],
     celebrity: ['bill_gates', 'obama_reading', 'oprah_book_club', 'reese_book_club'],
-    media: ['time_100', 'npr_books', 'guardian_best', 'economist_books', 'financial_times'],
     editor_pick: ['editor_pick'],
     book_series: ['book_series'],
     weekly_pick: ['weekly_pick'],
@@ -435,7 +429,6 @@ export default function AdminDashboard() {
                 { id: 'platforms' as RankingSubTab, label: t.adminPlatformLists },
                 { id: 'awards' as RankingSubTab, label: t.adminAwards },
                 { id: 'celebrity' as RankingSubTab, label: t.adminCelebrityLists },
-                { id: 'media' as RankingSubTab, label: t.adminMediaLists },
                 { id: 'editor_pick' as RankingSubTab, label: t.adminEditorPick },
                 { id: 'book_series' as RankingSubTab, label: t.adminBookSeries },
                 { id: 'weekly_pick' as RankingSubTab, label: t.adminWeeklyPick },
@@ -460,7 +453,6 @@ export default function AdminDashboard() {
                       {rankingSubTab === 'platforms' && t.adminPlatformLists}
                       {rankingSubTab === 'awards' && t.adminAwards}
                       {rankingSubTab === 'celebrity' && t.adminCelebrityLists}
-                      {rankingSubTab === 'media' && t.adminMediaLists}
                       {rankingSubTab === 'editor_pick' && t.adminEditorPick}
                       {rankingSubTab === 'book_series' && t.adminBookSeries}
                       {rankingSubTab === 'weekly_pick' && t.adminWeeklyPick}

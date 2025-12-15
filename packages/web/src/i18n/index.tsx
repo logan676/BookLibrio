@@ -155,7 +155,6 @@ interface Translations {
   adminPlatformLists: string
   adminAwards: string
   adminCelebrityLists: string
-  adminMediaLists: string
   adminEditorPick: string
   adminBookSeries: string
   adminWeeklyPick: string
@@ -358,7 +357,6 @@ const en: Translations = {
   adminPlatformLists: 'Platform Lists',
   adminAwards: 'Awards',
   adminCelebrityLists: 'Celebrity Lists',
-  adminMediaLists: 'Media Lists',
   adminEditorPick: 'Editor Pick',
   adminBookSeries: 'Book Series',
   adminWeeklyPick: 'Weekly Pick',
@@ -561,7 +559,6 @@ const zh: Translations = {
   adminPlatformLists: '平台榜单',
   adminAwards: '文学奖',
   adminCelebrityLists: '名人书单',
-  adminMediaLists: '媒体榜单',
   adminEditorPick: '编辑精选',
   adminBookSeries: '系列丛书',
   adminWeeklyPick: '每周推荐',
