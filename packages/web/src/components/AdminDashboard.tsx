@@ -105,7 +105,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   // Rankings state
-  const [rankingSubTab, setRankingSubTab] = useState<'external' | 'internal'>('external')
+  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'internal'
+  const [rankingSubTab, setRankingSubTab] = useState<RankingSubTab>('nyt')
   const [curatedLists, setCuratedLists] = useState<CuratedList[]>([])
   const [selectedList, setSelectedList] = useState<CuratedList | null>(null)
   const [listItems, setListItems] = useState<CuratedListItem[]>([])
@@ -470,6 +471,27 @@ export default function AdminDashboard() {
     return labels[type] || type
   }
 
+  // Define list type categories
+  const listTypeCategories: Record<string, string[]> = {
+    nyt: ['nyt_bestseller'],
+    platforms: ['amazon_best', 'goodreads_choice'],
+    awards: ['pulitzer', 'booker', 'national_book'],
+    celebrity: ['bill_gates', 'obama_reading'],
+  }
+
+  // Filter curated lists by category
+  const getFilteredLists = (category: RankingSubTab) => {
+    if (category === 'internal') return []
+    const types = listTypeCategories[category] || []
+    return curatedLists.filter(list => types.includes(list.listType))
+  }
+
+  // Get count for each category
+  const getCategoryCount = (category: RankingSubTab) => {
+    if (category === 'internal') return internalRankings.length
+    return getFilteredLists(category).length
+  }
+
   const getRankingTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       trending: '热门榜',
@@ -535,19 +557,18 @@ export default function AdminDashboard() {
       {/* Tab Navigation */}
       <div className="tab-nav">
         {[
-          { id: 'overview', label: 'Overview', icon: '📊' },
-          { id: 'rankings', label: 'Rankings', icon: '📋' },
-          { id: 'jobs', label: 'Jobs', icon: '⚙️' },
-          { id: 'system', label: 'System', icon: '🖥️' },
-          { id: 'users', label: 'Users', icon: '👥' },
+          { id: 'overview', label: 'Overview' },
+          { id: 'rankings', label: 'Rankings' },
+          { id: 'jobs', label: 'Jobs' },
+          { id: 'system', label: 'System' },
+          { id: 'users', label: 'Users' },
         ].map(tab => (
           <button
             key={tab.id}
             className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id as TabType)}
           >
-            <span className="tab-icon">{tab.icon}</span>
-            <span className="tab-label">{tab.label}</span>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -607,34 +628,46 @@ export default function AdminDashboard() {
           <div className="rankings-tab">
             {/* Sub-tab Navigation */}
             <div className="sub-tab-nav">
-              <button
-                className={`sub-tab-btn ${rankingSubTab === 'external' ? 'active' : ''}`}
-                onClick={() => setRankingSubTab('external')}
-              >
-                External Rankings ({curatedLists.length})
-              </button>
-              <button
-                className={`sub-tab-btn ${rankingSubTab === 'internal' ? 'active' : ''}`}
-                onClick={() => setRankingSubTab('internal')}
-              >
-                精选榜单 ({internalRankings.length})
-              </button>
+              {[
+                { id: 'nyt' as RankingSubTab, label: 'NYT 榜单' },
+                { id: 'platforms' as RankingSubTab, label: '平台榜单' },
+                { id: 'awards' as RankingSubTab, label: '文学奖' },
+                { id: 'celebrity' as RankingSubTab, label: '名人书单' },
+                { id: 'internal' as RankingSubTab, label: '编辑精选' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  className={`sub-tab-btn ${rankingSubTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setRankingSubTab(tab.id)}
+                >
+                  {tab.label} ({getCategoryCount(tab.id)})
+                </button>
+              ))}
             </div>
 
-            {/* External Rankings Sub-tab */}
-            {rankingSubTab === 'external' && (
+            {/* External Rankings Sub-tabs (NYT, Platforms, Awards, Celebrity) */}
+            {rankingSubTab !== 'internal' && (
               <div className="rankings-layout">
                 {/* List Panel */}
                 <div className="rankings-list-panel">
                   <div className="panel-header">
-                    <h3>External Rankings</h3>
-                    <span className="count">{curatedLists.length} lists</span>
+                    <h3>
+                      {rankingSubTab === 'nyt' && 'NYT 榜单'}
+                      {rankingSubTab === 'platforms' && '平台榜单'}
+                      {rankingSubTab === 'awards' && '文学奖'}
+                      {rankingSubTab === 'celebrity' && '名人书单'}
+                    </h3>
+                    <span className="count">{getFilteredLists(rankingSubTab).length} lists</span>
                   </div>
                   {rankingsLoading ? (
                     <div className="loading">Loading...</div>
                   ) : (
                     <div className="rankings-list">
-                      {curatedLists.map(list => (
+                      {getFilteredLists(rankingSubTab).length === 0 ? (
+                        <div className="empty-list">
+                          <p>暂无此分类的榜单</p>
+                        </div>
+                      ) : getFilteredLists(rankingSubTab).map(list => (
                         <div
                           key={list.id}
                           className={`ranking-item ${selectedList?.id === list.id ? 'selected' : ''} ${!list.isActive ? 'inactive' : ''}`}
@@ -649,11 +682,11 @@ export default function AdminDashboard() {
                           </div>
                           <div className="ranking-item-actions">
                             <button
-                              className={`status-btn ${list.isActive ? 'active' : 'inactive'}`}
+                              className={`publish-status-btn ${list.isActive ? 'published' : 'unpublished'}`}
                               onClick={(e) => { e.stopPropagation(); toggleListActive(list) }}
-                              title={list.isActive ? 'Deactivate' : 'Activate'}
+                              title={list.isActive ? '点击取消发布' : '点击发布'}
                             >
-                              {list.isActive ? '✓' : '○'}
+                              {list.isActive ? '已发布' : '未发布'}
                             </button>
                           </div>
                         </div>
@@ -716,7 +749,7 @@ export default function AdminDashboard() {
                 {/* List Panel */}
                 <div className="rankings-list-panel">
                   <div className="panel-header">
-                    <h3>精选榜单</h3>
+                    <h3>编辑精选</h3>
                     <button className="add-btn" onClick={() => setShowCreateRankingModal(true)}>
                       + 新建榜单
                     </button>
@@ -727,7 +760,7 @@ export default function AdminDashboard() {
                     <div className="rankings-list">
                       {internalRankings.length === 0 ? (
                         <div className="empty-list">
-                          <p>暂无精选榜单</p>
+                          <p>暂无编辑精选</p>
                           <button className="create-btn" onClick={() => setShowCreateRankingModal(true)}>
                             创建第一个榜单
                           </button>
@@ -751,11 +784,11 @@ export default function AdminDashboard() {
                             </div>
                             <div className="ranking-item-actions">
                               <button
-                                className={`status-btn ${ranking.isActive ? 'active' : 'inactive'}`}
+                                className={`publish-status-btn ${ranking.isActive ? 'published' : 'unpublished'}`}
                                 onClick={(e) => { e.stopPropagation(); toggleInternalRankingActive(ranking) }}
-                                title={ranking.isActive ? 'Deactivate' : 'Activate'}
+                                title={ranking.isActive ? '点击取消发布' : '点击发布'}
                               >
-                                {ranking.isActive ? '✓' : '○'}
+                                {ranking.isActive ? '已发布' : '未发布'}
                               </button>
                             </div>
                           </div>
@@ -849,7 +882,7 @@ export default function AdminDashboard() {
               <div className="modal-overlay" onClick={() => setShowCreateRankingModal(false)}>
                 <div className="modal" onClick={e => e.stopPropagation()}>
                   <div className="modal-header">
-                    <h3>新建精选榜单</h3>
+                    <h3>新建编辑精选</h3>
                     <button className="close-btn" onClick={() => setShowCreateRankingModal(false)}>×</button>
                   </div>
                   <div className="modal-body">
@@ -1171,10 +1204,6 @@ export default function AdminDashboard() {
         .tab-nav .tab-btn.active {
           background: #007bff;
           color: white;
-        }
-
-        .tab-icon {
-          font-size: 18px;
         }
 
         /* Tab Content */
@@ -1638,24 +1667,33 @@ export default function AdminDashboard() {
           margin: 0;
         }
 
-        .status-btn {
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          border: 2px solid #ddd;
-          background: white;
+        .publish-status-btn {
+          padding: 6px 12px;
+          border-radius: 16px;
+          border: none;
           cursor: pointer;
-          font-size: 14px;
+          font-size: 12px;
+          font-weight: 500;
+          transition: all 0.2s;
+          white-space: nowrap;
         }
 
-        .status-btn.active {
-          border-color: #28a745;
-          color: #28a745;
+        .publish-status-btn.published {
+          background: #d4edda;
+          color: #155724;
         }
 
-        .status-btn.inactive {
-          border-color: #dc3545;
-          color: #dc3545;
+        .publish-status-btn.published:hover {
+          background: #c3e6cb;
+        }
+
+        .publish-status-btn.unpublished {
+          background: #f8d7da;
+          color: #721c24;
+        }
+
+        .publish-status-btn.unpublished:hover {
+          background: #f5c6cb;
         }
 
         .rankings-detail-panel {
