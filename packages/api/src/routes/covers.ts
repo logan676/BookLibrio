@@ -93,7 +93,6 @@ app.get('/:type/:filename', async (c) => {
         const thumbContentType = detectImageContentType(thumbBuffer)
         return c.body(thumbBuffer, 200, {
           'Content-Type': thumbContentType,
-          'Content-Length': thumbBuffer.length.toString(),
           'Cache-Control': 'public, max-age=31536000', // 1 year (immutable cache)
         })
       }
@@ -126,7 +125,6 @@ app.get('/:type/:filename', async (c) => {
       // 5. Return the generated thumbnail
       return c.body(thumbnailBuffer, 200, {
         'Content-Type': 'image/jpeg',
-        'Content-Length': thumbnailBuffer.length.toString(),
         'Cache-Control': 'public, max-age=31536000', // 1 year
       })
     }
@@ -144,7 +142,6 @@ app.get('/:type/:filename', async (c) => {
 
     return c.body(buffer, 200, {
       'Content-Type': contentType,
-      'Content-Length': buffer.length.toString(),
       'Cache-Control': 'public, max-age=86400',
     })
   } catch (error) {
