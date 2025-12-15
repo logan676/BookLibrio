@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../auth'
+import { useI18n } from '../i18n'
 
 interface Stats {
   magazines: { total: number; preprocessed: number }
   ebooks: number
   users: number
   curatedLists: number
-  internalRankings: number
 }
 
 interface User {
@@ -43,38 +43,6 @@ interface CuratedListItem {
   editorNote: string | null
 }
 
-interface InternalRanking {
-  id: number
-  rankingType: string
-  periodType: string
-  periodStart: string
-  periodEnd: string
-  displayName: string
-  themeColor: string | null
-  description: string | null
-  isActive: boolean
-  computedAt: string | null
-  expiresAt: string | null
-  itemCount: number
-}
-
-interface InternalRankingItem {
-  id: number
-  rankingId: number
-  bookType: string
-  bookId: number
-  rank: number
-  previousRank: number | null
-  rankChange: number | null
-  score: string | null
-  bookTitle: string | null
-  bookAuthor: string | null
-  bookCoverUrl: string | null
-  readerCount: number | null
-  rating: string | null
-  evaluationTag: string | null
-}
-
 interface JobStatus {
   [key: string]: {
     running: boolean
@@ -100,33 +68,18 @@ type TabType = 'overview' | 'rankings' | 'jobs' | 'system' | 'users'
 
 export default function AdminDashboard() {
   const { token } = useAuth()
+  const { t, locale, formatCount } = useI18n()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Rankings state
-  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'editor_pick' | 'book_series' | 'weekly_pick' | 'internal'
+  type RankingSubTab = 'nyt' | 'platforms' | 'awards' | 'celebrity' | 'media' | 'editor_pick' | 'book_series' | 'weekly_pick'
   const [rankingSubTab, setRankingSubTab] = useState<RankingSubTab>('nyt')
   const [curatedLists, setCuratedLists] = useState<CuratedList[]>([])
   const [selectedList, setSelectedList] = useState<CuratedList | null>(null)
   const [listItems, setListItems] = useState<CuratedListItem[]>([])
   const [rankingsLoading, setRankingsLoading] = useState(false)
-
-  // Internal rankings state
-  const [internalRankings, setInternalRankings] = useState<InternalRanking[]>([])
-  const [selectedInternalRanking, setSelectedInternalRanking] = useState<InternalRanking | null>(null)
-  const [internalRankingItems, setInternalRankingItems] = useState<InternalRankingItem[]>([])
-  const [internalRankingsLoading, setInternalRankingsLoading] = useState(false)
-  const [showCreateRankingModal, setShowCreateRankingModal] = useState(false)
-  const [newRanking, setNewRanking] = useState({
-    rankingType: 'trending',
-    periodType: 'weekly',
-    displayName: '',
-    description: '',
-    themeColor: '#667eea',
-    periodStart: new Date().toISOString().split('T')[0],
-    periodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  })
 
   // Jobs state
   const [jobs, setJobs] = useState<JobStatus>({})
@@ -153,7 +106,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'rankings') {
       fetchCuratedLists()
-      fetchInternalRankings()
     }
     if (activeTab === 'jobs') fetchJobs()
     if (activeTab === 'system') fetchSystemInfo()
@@ -218,141 +170,28 @@ export default function AdminDashboard() {
         body: JSON.stringify({ ...list, isActive: !list.isActive })
       })
       if (res.ok) {
-        showMessage('success', `List ${list.isActive ? 'deactivated' : 'activated'}`)
+        showMessage('success', list.isActive ? t.adminListDeactivated : t.adminListActivated)
         fetchCuratedLists()
       }
     } catch (err) {
-      showMessage('error', 'Failed to update list')
+      showMessage('error', t.adminFailedUpdateList)
     }
   }
 
   const deleteList = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this list?')) return
+    if (!confirm(t.adminConfirmDeleteList)) return
     try {
       const res = await fetch(`${API_BASE}/curated-lists/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        showMessage('success', 'List deleted')
+        showMessage('success', t.adminListDeleted)
         fetchCuratedLists()
         setSelectedList(null)
       }
     } catch (err) {
-      showMessage('error', 'Failed to delete list')
-    }
-  }
-
-  // Internal Rankings Functions
-  const fetchInternalRankings = async () => {
-    setInternalRankingsLoading(true)
-    try {
-      const res = await fetch(`${API_BASE}/internal-rankings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.ok) setInternalRankings(await res.json())
-    } catch (err) {
-      console.error('Failed to fetch internal rankings:', err)
-    } finally {
-      setInternalRankingsLoading(false)
-    }
-  }
-
-  const fetchInternalRankingDetail = async (id: number) => {
-    try {
-      const res = await fetch(`${API_BASE}/internal-rankings/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setSelectedInternalRanking(data)
-        setInternalRankingItems(data.items || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch internal ranking detail:', err)
-    }
-  }
-
-  const createInternalRanking = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/internal-rankings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(newRanking)
-      })
-      if (res.ok) {
-        showMessage('success', 'Internal ranking created')
-        setShowCreateRankingModal(false)
-        setNewRanking({
-          rankingType: 'trending',
-          periodType: 'weekly',
-          displayName: '',
-          description: '',
-          themeColor: '#667eea',
-          periodStart: new Date().toISOString().split('T')[0],
-          periodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        })
-        fetchInternalRankings()
-      } else {
-        showMessage('error', 'Failed to create ranking')
-      }
-    } catch (err) {
-      showMessage('error', 'Failed to create ranking')
-    }
-  }
-
-  const toggleInternalRankingActive = async (ranking: InternalRanking) => {
-    try {
-      const res = await fetch(`${API_BASE}/internal-rankings/${ranking.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ ...ranking, isActive: !ranking.isActive })
-      })
-      if (res.ok) {
-        showMessage('success', `Ranking ${ranking.isActive ? 'deactivated' : 'activated'}`)
-        fetchInternalRankings()
-      }
-    } catch (err) {
-      showMessage('error', 'Failed to update ranking')
-    }
-  }
-
-  const deleteInternalRanking = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this ranking?')) return
-    try {
-      const res = await fetch(`${API_BASE}/internal-rankings/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.ok) {
-        showMessage('success', 'Internal ranking deleted')
-        fetchInternalRankings()
-        setSelectedInternalRanking(null)
-      }
-    } catch (err) {
-      showMessage('error', 'Failed to delete ranking')
-    }
-  }
-
-  const deleteInternalRankingItem = async (rankingId: number, itemId: number) => {
-    if (!confirm('Remove this book from the ranking?')) return
-    try {
-      const res = await fetch(`${API_BASE}/internal-rankings/${rankingId}/items/${itemId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.ok) {
-        showMessage('success', 'Book removed from ranking')
-        fetchInternalRankingDetail(rankingId)
-      }
-    } catch (err) {
-      showMessage('error', 'Failed to remove book')
+      showMessage('error', t.adminFailedDeleteList)
     }
   }
 
@@ -381,13 +220,13 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        showMessage('success', `Job "${jobName}" triggered successfully`)
+        showMessage('success', t.adminJobTriggered)
         setTimeout(fetchJobs, 1000)
       } else {
-        showMessage('error', 'Failed to trigger job')
+        showMessage('error', t.adminFailedTriggerJob)
       }
     } catch (err) {
-      showMessage('error', 'Failed to trigger job')
+      showMessage('error', t.adminFailedTriggerJob)
     } finally {
       setTriggeringJob(null)
     }
@@ -432,16 +271,16 @@ export default function AdminDashboard() {
         body: JSON.stringify({ isAdmin: !user.is_admin })
       })
       if (res.ok) {
-        showMessage('success', `User ${user.is_admin ? 'demoted' : 'promoted'} to ${user.is_admin ? 'regular user' : 'admin'}`)
+        showMessage('success', user.is_admin ? t.adminUserDemoted : t.adminUserPromoted)
         fetchUsers()
       }
     } catch (err) {
-      showMessage('error', 'Failed to update user')
+      showMessage('error', t.adminFailedUpdateUser)
     }
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -469,6 +308,13 @@ export default function AdminDashboard() {
       newbery: 'Newbery Medal',
       obama_reading: 'Obama Reading',
       national_book: 'National Book Award',
+      oprah_book_club: "Oprah's Book Club",
+      reese_book_club: "Reese's Book Club",
+      time_100: 'TIME 100',
+      npr_books: 'NPR Best Books',
+      guardian_best: 'The Guardian',
+      economist_books: 'The Economist',
+      financial_times: 'Financial Times',
       editor_pick: 'Editor Pick',
       book_series: 'Book Series',
       weekly_pick: 'Weekly Pick',
@@ -481,7 +327,8 @@ export default function AdminDashboard() {
     nyt: ['nyt_bestseller'],
     platforms: ['amazon_best', 'goodreads_choice'],
     awards: ['pulitzer', 'booker', 'booker_international', 'newbery', 'national_book'],
-    celebrity: ['bill_gates', 'obama_reading'],
+    celebrity: ['bill_gates', 'obama_reading', 'oprah_book_club', 'reese_book_club'],
+    media: ['time_100', 'npr_books', 'guardian_best', 'economist_books', 'financial_times'],
     editor_pick: ['editor_pick'],
     book_series: ['book_series'],
     weekly_pick: ['weekly_pick'],
@@ -489,74 +336,28 @@ export default function AdminDashboard() {
 
   // Filter curated lists by category
   const getFilteredLists = (category: RankingSubTab) => {
-    if (category === 'internal') return []
     const types = listTypeCategories[category] || []
     return curatedLists.filter(list => types.includes(list.listType))
   }
 
   // Get count for each category
   const getCategoryCount = (category: RankingSubTab) => {
-    if (category === 'internal') return internalRankings.length
     return getFilteredLists(category).length
   }
 
-  const getRankingTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      trending: '热门榜',
-      hot_search: '热搜榜',
-      new_books: '新书榜',
-      fiction: '小说榜',
-      film_tv: '影视原著',
-      audiobook: '有声书榜',
-      top_200: 'Top 200',
-      masterpiece: '神作榜',
-      potential_masterpiece: '准神作榜',
-    }
-    return labels[type] || type
-  }
-
-  const getPeriodTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      daily: '日榜',
-      weekly: '周榜',
-      monthly: '月榜',
-      all_time: '总榜',
-    }
-    return labels[type] || type
-  }
-
-  const rankingTypeOptions = [
-    { value: 'trending', label: '热门榜' },
-    { value: 'hot_search', label: '热搜榜' },
-    { value: 'new_books', label: '新书榜' },
-    { value: 'fiction', label: '小说榜' },
-    { value: 'film_tv', label: '影视原著' },
-    { value: 'audiobook', label: '有声书榜' },
-    { value: 'top_200', label: 'Top 200' },
-    { value: 'masterpiece', label: '神作榜' },
-    { value: 'potential_masterpiece', label: '准神作榜' },
-  ]
-
-  const periodTypeOptions = [
-    { value: 'daily', label: '日榜' },
-    { value: 'weekly', label: '周榜' },
-    { value: 'monthly', label: '月榜' },
-    { value: 'all_time', label: '总榜' },
-  ]
-
-  const jobDescriptions: Record<string, string> = {
-    refresh_popular_highlights: 'Refresh popular book highlights',
-    aggregate_book_stats: 'Aggregate book statistics',
-    enrich_book_metadata: 'Enrich book metadata from external sources',
-    compute_related_books: 'Compute related book recommendations',
-    cleanup_expired_ai_cache: 'Clean up expired AI cache entries',
-  }
+  const getJobDescriptions = (): Record<string, string> => ({
+    refresh_popular_highlights: t.adminJobRefreshHighlights,
+    aggregate_book_stats: t.adminJobAggregateStats,
+    enrich_book_metadata: t.adminJobEnrichMetadata,
+    compute_related_books: t.adminJobComputeRelated,
+    cleanup_expired_ai_cache: t.adminJobCleanupCache,
+  })
 
   return (
     <div className="admin-dashboard">
       {/* Header */}
       <div className="admin-header">
-        <h1>Admin Dashboard</h1>
+        <h1>{t.adminDashboard}</h1>
         {message && (
           <div className={`message ${message.type}`}>{message.text}</div>
         )}
@@ -565,11 +366,11 @@ export default function AdminDashboard() {
       {/* Tab Navigation */}
       <div className="tab-nav">
         {[
-          { id: 'overview', label: 'Overview' },
-          { id: 'rankings', label: 'Rankings' },
-          { id: 'jobs', label: 'Jobs' },
-          { id: 'system', label: 'System' },
-          { id: 'users', label: 'Users' },
+          { id: 'overview', label: t.adminOverview },
+          { id: 'rankings', label: t.adminRankings },
+          { id: 'jobs', label: t.adminJobs },
+          { id: 'system', label: t.adminSystem },
+          { id: 'users', label: t.adminUsers },
         ].map(tab => (
           <button
             key={tab.id}
@@ -587,43 +388,36 @@ export default function AdminDashboard() {
         {activeTab === 'overview' && (
           <div className="overview-tab">
             {loading ? (
-              <div className="loading">Loading...</div>
+              <div className="loading">{t.loading}</div>
             ) : stats && (
               <div className="stats-grid">
                 <div className="stat-card">
                   <div className="stat-icon">📚</div>
                   <div className="stat-info">
-                    <h3>Ebooks</h3>
+                    <h3>{t.adminEbooks}</h3>
                     <p className="stat-number">{stats.ebooks.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon">📰</div>
                   <div className="stat-info">
-                    <h3>Magazines</h3>
+                    <h3>{t.adminMagazines}</h3>
                     <p className="stat-number">{stats.magazines.total.toLocaleString()}</p>
-                    <p className="stat-sub">Preprocessed: {stats.magazines.preprocessed}</p>
+                    <p className="stat-sub">{formatCount(t.adminPreprocessed, stats.magazines.preprocessed)}</p>
                   </div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon">👥</div>
                   <div className="stat-info">
-                    <h3>Users</h3>
+                    <h3>{t.adminUsers2}</h3>
                     <p className="stat-number">{stats.users.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon">📋</div>
                   <div className="stat-info">
-                    <h3>Curated Lists</h3>
+                    <h3>{t.adminCuratedLists}</h3>
                     <p className="stat-number">{stats.curatedLists.toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon">🏆</div>
-                  <div className="stat-info">
-                    <h3>Internal Rankings</h3>
-                    <p className="stat-number">{stats.internalRankings?.toLocaleString() || 0}</p>
                   </div>
                 </div>
               </div>
@@ -637,14 +431,14 @@ export default function AdminDashboard() {
             {/* Sub-tab Navigation */}
             <div className="sub-tab-nav">
               {[
-                { id: 'nyt' as RankingSubTab, label: 'NYT 榜单' },
-                { id: 'platforms' as RankingSubTab, label: '平台榜单' },
-                { id: 'awards' as RankingSubTab, label: '文学奖' },
-                { id: 'celebrity' as RankingSubTab, label: '名人书单' },
-                { id: 'editor_pick' as RankingSubTab, label: '编辑精选' },
-                { id: 'book_series' as RankingSubTab, label: '系列丛书' },
-                { id: 'weekly_pick' as RankingSubTab, label: '每周推荐' },
-                { id: 'internal' as RankingSubTab, label: '站内榜单' },
+                { id: 'nyt' as RankingSubTab, label: t.adminNytLists },
+                { id: 'platforms' as RankingSubTab, label: t.adminPlatformLists },
+                { id: 'awards' as RankingSubTab, label: t.adminAwards },
+                { id: 'celebrity' as RankingSubTab, label: t.adminCelebrityLists },
+                { id: 'media' as RankingSubTab, label: t.adminMediaLists },
+                { id: 'editor_pick' as RankingSubTab, label: t.adminEditorPick },
+                { id: 'book_series' as RankingSubTab, label: t.adminBookSeries },
+                { id: 'weekly_pick' as RankingSubTab, label: t.adminWeeklyPick },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -656,30 +450,30 @@ export default function AdminDashboard() {
               ))}
             </div>
 
-            {/* External Rankings Sub-tabs (NYT, Platforms, Awards, Celebrity) */}
-            {rankingSubTab !== 'internal' && (
-              <div className="rankings-layout">
+            {/* Rankings Sub-tabs (NYT, Platforms, Awards, Celebrity, etc.) */}
+            <div className="rankings-layout">
                 {/* List Panel */}
                 <div className="rankings-list-panel">
                   <div className="panel-header">
                     <h3>
-                      {rankingSubTab === 'nyt' && 'NYT 榜单'}
-                      {rankingSubTab === 'platforms' && '平台榜单'}
-                      {rankingSubTab === 'awards' && '文学奖'}
-                      {rankingSubTab === 'celebrity' && '名人书单'}
-                      {rankingSubTab === 'editor_pick' && '编辑精选'}
-                      {rankingSubTab === 'book_series' && '系列丛书'}
-                      {rankingSubTab === 'weekly_pick' && '每周推荐'}
+                      {rankingSubTab === 'nyt' && t.adminNytLists}
+                      {rankingSubTab === 'platforms' && t.adminPlatformLists}
+                      {rankingSubTab === 'awards' && t.adminAwards}
+                      {rankingSubTab === 'celebrity' && t.adminCelebrityLists}
+                      {rankingSubTab === 'media' && t.adminMediaLists}
+                      {rankingSubTab === 'editor_pick' && t.adminEditorPick}
+                      {rankingSubTab === 'book_series' && t.adminBookSeries}
+                      {rankingSubTab === 'weekly_pick' && t.adminWeeklyPick}
                     </h3>
-                    <span className="count">{getFilteredLists(rankingSubTab).length} lists</span>
+                    <span className="count">{formatCount(t.adminListsCount, getFilteredLists(rankingSubTab).length)}</span>
                   </div>
                   {rankingsLoading ? (
-                    <div className="loading">Loading...</div>
+                    <div className="loading">{t.loading}</div>
                   ) : (
                     <div className="rankings-list">
                       {getFilteredLists(rankingSubTab).length === 0 ? (
                         <div className="empty-list">
-                          <p>暂无此分类的榜单</p>
+                          <p>{t.adminNoListsInCategory}</p>
                         </div>
                       ) : getFilteredLists(rankingSubTab).map(list => (
                         <div
@@ -691,16 +485,16 @@ export default function AdminDashboard() {
                             <span className="ranking-type">{getListTypeLabel(list.listType)}</span>
                             <h4>{list.title}</h4>
                             <p className="ranking-meta">
-                              {list.bookCount} books • {list.year || 'N/A'}
+                              {formatCount(t.adminBooksCount, list.bookCount)} • {list.year || 'N/A'}
                             </p>
                           </div>
                           <div className="ranking-item-actions">
                             <button
                               className={`publish-status-btn ${list.isActive ? 'published' : 'unpublished'}`}
                               onClick={(e) => { e.stopPropagation(); toggleListActive(list) }}
-                              title={list.isActive ? '点击取消发布' : '点击发布'}
+                              title={list.isActive ? t.adminClickToUnpublish : t.adminClickToPublish}
                             >
-                              {list.isActive ? '已发布' : '未发布'}
+                              {list.isActive ? t.adminPublished : t.adminUnpublished}
                             </button>
                           </div>
                         </div>
@@ -722,17 +516,17 @@ export default function AdminDashboard() {
                           className="delete-btn"
                           onClick={() => deleteList(selectedList.id)}
                         >
-                          Delete List
+                          {t.adminDeleteList}
                         </button>
                       </div>
                       <div className="list-meta">
-                        <span>Source: {selectedList.sourceName || 'Unknown'}</span>
-                        <span>Year: {selectedList.year || 'N/A'}</span>
-                        <span>Books: {selectedList.bookCount}</span>
-                        <span>Status: {selectedList.isActive ? 'Active' : 'Inactive'}</span>
+                        <span>{t.adminSource}: {selectedList.sourceName || 'Unknown'}</span>
+                        <span>{t.adminYear}: {selectedList.year || 'N/A'}</span>
+                        <span>{t.adminBooks}: {selectedList.bookCount}</span>
+                        <span>{t.adminStatus}: {selectedList.isActive ? t.adminActive : t.adminInactive}</span>
                       </div>
                       <div className="list-items">
-                        <h4>Books ({listItems.length})</h4>
+                        <h4>{t.adminBooks} ({listItems.length})</h4>
                         {listItems.map((item, index) => (
                           <div key={item.id} className="list-item">
                             <span className="item-rank">#{index + 1}</span>
@@ -750,241 +544,11 @@ export default function AdminDashboard() {
                     </>
                   ) : (
                     <div className="empty-state">
-                      <p>Select a ranking list to view details</p>
+                      <p>{t.adminSelectListToView}</p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-
-            {/* Internal Rankings Sub-tab */}
-            {rankingSubTab === 'internal' && (
-              <div className="rankings-layout">
-                {/* List Panel */}
-                <div className="rankings-list-panel">
-                  <div className="panel-header">
-                    <h3>编辑精选</h3>
-                    <button className="add-btn" onClick={() => setShowCreateRankingModal(true)}>
-                      + 新建榜单
-                    </button>
-                  </div>
-                  {internalRankingsLoading ? (
-                    <div className="loading">Loading...</div>
-                  ) : (
-                    <div className="rankings-list">
-                      {internalRankings.length === 0 ? (
-                        <div className="empty-list">
-                          <p>暂无编辑精选</p>
-                          <button className="create-btn" onClick={() => setShowCreateRankingModal(true)}>
-                            创建第一个榜单
-                          </button>
-                        </div>
-                      ) : (
-                        internalRankings.map(ranking => (
-                          <div
-                            key={ranking.id}
-                            className={`ranking-item ${selectedInternalRanking?.id === ranking.id ? 'selected' : ''} ${!ranking.isActive ? 'inactive' : ''}`}
-                            onClick={() => fetchInternalRankingDetail(ranking.id)}
-                          >
-                            <div className="ranking-item-main">
-                              <div className="ranking-badges">
-                                <span className="ranking-type">{getRankingTypeLabel(ranking.rankingType)}</span>
-                                <span className="period-badge">{getPeriodTypeLabel(ranking.periodType)}</span>
-                              </div>
-                              <h4>{ranking.displayName}</h4>
-                              <p className="ranking-meta">
-                                {ranking.itemCount} books • {ranking.periodStart} ~ {ranking.periodEnd}
-                              </p>
-                            </div>
-                            <div className="ranking-item-actions">
-                              <button
-                                className={`publish-status-btn ${ranking.isActive ? 'published' : 'unpublished'}`}
-                                onClick={(e) => { e.stopPropagation(); toggleInternalRankingActive(ranking) }}
-                                title={ranking.isActive ? '点击取消发布' : '点击发布'}
-                              >
-                                {ranking.isActive ? '已发布' : '未发布'}
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Detail Panel */}
-                <div className="rankings-detail-panel">
-                  {selectedInternalRanking ? (
-                    <>
-                      <div className="panel-header">
-                        <div>
-                          <h3>{selectedInternalRanking.displayName}</h3>
-                          <p className="subtitle">
-                            {getRankingTypeLabel(selectedInternalRanking.rankingType)} · {getPeriodTypeLabel(selectedInternalRanking.periodType)}
-                          </p>
-                        </div>
-                        <button
-                          className="delete-btn"
-                          onClick={() => deleteInternalRanking(selectedInternalRanking.id)}
-                        >
-                          删除榜单
-                        </button>
-                      </div>
-                      <div className="list-meta">
-                        <span>周期: {selectedInternalRanking.periodStart} ~ {selectedInternalRanking.periodEnd}</span>
-                        <span>图书: {selectedInternalRanking.itemCount}</span>
-                        <span>状态: {selectedInternalRanking.isActive ? '启用' : '禁用'}</span>
-                        {selectedInternalRanking.themeColor && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            主题色: <span style={{ width: 16, height: 16, background: selectedInternalRanking.themeColor, borderRadius: 4 }} />
-                          </span>
-                        )}
-                      </div>
-                      {selectedInternalRanking.description && (
-                        <p className="description">{selectedInternalRanking.description}</p>
-                      )}
-                      <div className="list-items">
-                        <h4>榜单图书 ({internalRankingItems.length})</h4>
-                        {internalRankingItems.length === 0 ? (
-                          <div className="empty-items">
-                            <p>该榜单暂无图书</p>
-                          </div>
-                        ) : (
-                          internalRankingItems.map((item) => (
-                            <div key={item.id} className="list-item">
-                              <span className="item-rank">#{item.rank}</span>
-                              {item.bookCoverUrl && (
-                                <img src={item.bookCoverUrl} alt="" className="item-cover" />
-                              )}
-                              <div className="item-info">
-                                <h5>{item.bookTitle || `Book #${item.bookId}`}</h5>
-                                <p>{item.bookAuthor || 'Unknown Author'}</p>
-                                <div className="item-stats">
-                                  {item.rating && <span>⭐ {parseFloat(item.rating).toFixed(1)}</span>}
-                                  {item.readerCount && <span>👥 {item.readerCount}</span>}
-                                  {item.evaluationTag && <span className="eval-tag">{item.evaluationTag}</span>}
-                                  {item.rankChange !== null && item.rankChange !== 0 && (
-                                    <span className={`rank-change ${item.rankChange > 0 ? 'up' : 'down'}`}>
-                                      {item.rankChange > 0 ? '↑' : '↓'}{Math.abs(item.rankChange)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <button
-                                className="remove-item-btn"
-                                onClick={() => deleteInternalRankingItem(selectedInternalRanking.id, item.id)}
-                                title="移除"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="empty-state">
-                      <p>选择一个榜单查看详情</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Create Ranking Modal */}
-            {showCreateRankingModal && (
-              <div className="modal-overlay" onClick={() => setShowCreateRankingModal(false)}>
-                <div className="modal" onClick={e => e.stopPropagation()}>
-                  <div className="modal-header">
-                    <h3>新建编辑精选</h3>
-                    <button className="close-btn" onClick={() => setShowCreateRankingModal(false)}>×</button>
-                  </div>
-                  <div className="modal-body">
-                    <div className="form-group">
-                      <label>榜单名称</label>
-                      <input
-                        type="text"
-                        value={newRanking.displayName}
-                        onChange={e => setNewRanking({ ...newRanking, displayName: e.target.value })}
-                        placeholder="例如：本周热门小说"
-                      />
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>榜单类型</label>
-                        <select
-                          value={newRanking.rankingType}
-                          onChange={e => setNewRanking({ ...newRanking, rankingType: e.target.value })}
-                        >
-                          {rankingTypeOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>周期类型</label>
-                        <select
-                          value={newRanking.periodType}
-                          onChange={e => setNewRanking({ ...newRanking, periodType: e.target.value })}
-                        >
-                          {periodTypeOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>开始日期</label>
-                        <input
-                          type="date"
-                          value={newRanking.periodStart}
-                          onChange={e => setNewRanking({ ...newRanking, periodStart: e.target.value })}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>结束日期</label>
-                        <input
-                          type="date"
-                          value={newRanking.periodEnd}
-                          onChange={e => setNewRanking({ ...newRanking, periodEnd: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>主题色</label>
-                      <div className="color-input">
-                        <input
-                          type="color"
-                          value={newRanking.themeColor}
-                          onChange={e => setNewRanking({ ...newRanking, themeColor: e.target.value })}
-                        />
-                        <span>{newRanking.themeColor}</span>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>描述（可选）</label>
-                      <textarea
-                        value={newRanking.description}
-                        onChange={e => setNewRanking({ ...newRanking, description: e.target.value })}
-                        placeholder="榜单描述..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button className="cancel-btn" onClick={() => setShowCreateRankingModal(false)}>取消</button>
-                    <button
-                      className="submit-btn"
-                      onClick={createInternalRanking}
-                      disabled={!newRanking.displayName}
-                    >
-                      创建榜单
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -992,35 +556,35 @@ export default function AdminDashboard() {
         {activeTab === 'jobs' && (
           <div className="jobs-tab">
             <div className="panel-header">
-              <h3>Background Jobs</h3>
+              <h3>{t.adminBackgroundJobs}</h3>
               <button className="refresh-btn" onClick={fetchJobs} disabled={jobsLoading}>
-                {jobsLoading ? 'Refreshing...' : 'Refresh'}
+                {jobsLoading ? t.adminRefreshing : t.adminRefresh}
               </button>
             </div>
             {jobsLoading && Object.keys(jobs).length === 0 ? (
-              <div className="loading">Loading...</div>
+              <div className="loading">{t.loading}</div>
             ) : (
               <div className="jobs-grid">
-                {Object.entries(jobDescriptions).map(([jobName, description]) => {
+                {Object.entries(getJobDescriptions()).map(([jobName, description]) => {
                   const status = jobs[jobName]
                   return (
                     <div key={jobName} className="job-card">
                       <div className="job-header">
                         <h4>{jobName.replace(/_/g, ' ')}</h4>
                         <span className={`job-status ${status?.running ? 'running' : 'idle'}`}>
-                          {status?.running ? 'Running' : 'Idle'}
+                          {status?.running ? t.adminRunning : t.adminIdle}
                         </span>
                       </div>
                       <p className="job-description">{description}</p>
                       {status?.lastRun && (
-                        <p className="job-last-run">Last run: {formatDate(status.lastRun)}</p>
+                        <p className="job-last-run">{t.adminLastRun}: {formatDate(status.lastRun)}</p>
                       )}
                       <button
                         className="trigger-btn"
                         onClick={() => triggerJob(jobName)}
                         disabled={triggeringJob === jobName || status?.running}
                       >
-                        {triggeringJob === jobName ? 'Triggering...' : 'Trigger Now'}
+                        {triggeringJob === jobName ? t.adminTriggering : t.adminTriggerNow}
                       </button>
                     </div>
                   )
@@ -1034,45 +598,45 @@ export default function AdminDashboard() {
         {activeTab === 'system' && (
           <div className="system-tab">
             <div className="panel-header">
-              <h3>System Information</h3>
+              <h3>{t.adminSystemInfo}</h3>
               <button className="refresh-btn" onClick={fetchSystemInfo} disabled={systemLoading}>
-                {systemLoading ? 'Refreshing...' : 'Refresh'}
+                {systemLoading ? t.adminRefreshing : t.adminRefresh}
               </button>
             </div>
             {systemLoading && !systemInfo ? (
-              <div className="loading">Loading...</div>
+              <div className="loading">{t.loading}</div>
             ) : systemInfo && (
               <div className="system-grid">
                 <div className="system-card">
-                  <h4>Environment</h4>
+                  <h4>{t.adminEnvironment}</h4>
                   <div className="system-item">
-                    <span>Node Version</span>
+                    <span>{t.adminNodeVersion}</span>
                     <strong>{systemInfo.nodeVersion}</strong>
                   </div>
                   <div className="system-item">
-                    <span>Platform</span>
+                    <span>{t.adminPlatform}</span>
                     <strong>{systemInfo.platform}</strong>
                   </div>
                   <div className="system-item">
-                    <span>Environment</span>
+                    <span>{t.adminEnvironment}</span>
                     <strong className={systemInfo.environment === 'production' ? 'prod' : 'dev'}>
                       {systemInfo.environment}
                     </strong>
                   </div>
                 </div>
                 <div className="system-card">
-                  <h4>Runtime</h4>
+                  <h4>{t.adminRuntime}</h4>
                   <div className="system-item">
-                    <span>Uptime</span>
+                    <span>{t.adminUptime}</span>
                     <strong>{formatUptime(systemInfo.uptime)}</strong>
                   </div>
                   <div className="system-item">
-                    <span>Last Updated</span>
+                    <span>{t.adminLastUpdated}</span>
                     <strong>{formatDate(systemInfo.timestamp)}</strong>
                   </div>
                 </div>
                 <div className="system-card">
-                  <h4>Memory Usage</h4>
+                  <h4>{t.adminMemoryUsage}</h4>
                   <div className="memory-bar">
                     <div
                       className="memory-used"
@@ -1080,15 +644,15 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="system-item">
-                    <span>Heap Used</span>
+                    <span>{t.adminHeapUsed}</span>
                     <strong>{systemInfo.memory.heapUsed} MB</strong>
                   </div>
                   <div className="system-item">
-                    <span>Heap Total</span>
+                    <span>{t.adminHeapTotal}</span>
                     <strong>{systemInfo.memory.heapTotal} MB</strong>
                   </div>
                   <div className="system-item">
-                    <span>RSS</span>
+                    <span>{t.adminRss}</span>
                     <strong>{systemInfo.memory.rss} MB</strong>
                   </div>
                 </div>
@@ -1101,19 +665,19 @@ export default function AdminDashboard() {
         {activeTab === 'users' && (
           <div className="users-tab">
             <div className="panel-header">
-              <h3>User Management</h3>
-              <span className="count">{users.length} users</span>
+              <h3>{t.adminUserManagement}</h3>
+              <span className="count">{formatCount(t.adminUsersCount, users.length)}</span>
             </div>
             {usersLoading ? (
-              <div className="loading">Loading...</div>
+              <div className="loading">{t.loading}</div>
             ) : (
               <div className="users-table">
                 <div className="table-header">
-                  <span>Email</span>
-                  <span>Username</span>
-                  <span>Role</span>
-                  <span>Joined</span>
-                  <span>Actions</span>
+                  <span>{t.adminEmail}</span>
+                  <span>{t.adminUsername}</span>
+                  <span>{t.adminRole}</span>
+                  <span>{t.adminJoined}</span>
+                  <span>{t.adminActions}</span>
                 </div>
                 {users.map(user => (
                   <div key={user.id} className="table-row">
@@ -1121,7 +685,7 @@ export default function AdminDashboard() {
                     <span>{user.username}</span>
                     <span>
                       <span className={`role-badge ${user.is_admin ? 'admin' : 'user'}`}>
-                        {user.is_admin ? 'Admin' : 'User'}
+                        {user.is_admin ? t.adminAdmin : t.adminUser}
                       </span>
                     </span>
                     <span>{formatDate(user.created_at)}</span>
@@ -1130,7 +694,7 @@ export default function AdminDashboard() {
                         className={`action-btn ${user.is_admin ? 'demote' : 'promote'}`}
                         onClick={() => toggleUserAdmin(user)}
                       >
-                        {user.is_admin ? 'Demote' : 'Promote'}
+                        {user.is_admin ? t.adminDemote : t.adminPromote}
                       </button>
                     </span>
                   </div>

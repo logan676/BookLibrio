@@ -139,6 +139,87 @@ interface Translations {
   myBooks: string
   noReadingHistory: string
   startReadingHint: string
+  // Admin Dashboard
+  adminDashboard: string
+  adminOverview: string
+  adminRankings: string
+  adminJobs: string
+  adminSystem: string
+  adminUsers: string
+  adminEbooks: string
+  adminMagazines: string
+  adminUsers2: string
+  adminCuratedLists: string
+  adminPreprocessed: string
+  adminNytLists: string
+  adminPlatformLists: string
+  adminAwards: string
+  adminCelebrityLists: string
+  adminMediaLists: string
+  adminEditorPick: string
+  adminBookSeries: string
+  adminWeeklyPick: string
+  adminListsCount: string
+  adminNoListsInCategory: string
+  adminBooksCount: string
+  adminPublished: string
+  adminUnpublished: string
+  adminClickToUnpublish: string
+  adminClickToPublish: string
+  adminDeleteList: string
+  adminSource: string
+  adminYear: string
+  adminBooks: string
+  adminStatus: string
+  adminActive: string
+  adminInactive: string
+  adminSelectListToView: string
+  adminBackgroundJobs: string
+  adminRefreshing: string
+  adminRefresh: string
+  adminRunning: string
+  adminIdle: string
+  adminLastRun: string
+  adminTriggering: string
+  adminTriggerNow: string
+  adminSystemInfo: string
+  adminEnvironment: string
+  adminNodeVersion: string
+  adminPlatform: string
+  adminRuntime: string
+  adminUptime: string
+  adminLastUpdated: string
+  adminMemoryUsage: string
+  adminHeapUsed: string
+  adminHeapTotal: string
+  adminRss: string
+  adminUserManagement: string
+  adminUsersCount: string
+  adminEmail: string
+  adminUsername: string
+  adminRole: string
+  adminJoined: string
+  adminActions: string
+  adminAdmin: string
+  adminUser: string
+  adminDemote: string
+  adminPromote: string
+  adminConfirmDeleteList: string
+  adminListActivated: string
+  adminListDeactivated: string
+  adminFailedUpdateList: string
+  adminListDeleted: string
+  adminFailedDeleteList: string
+  adminJobTriggered: string
+  adminFailedTriggerJob: string
+  adminUserPromoted: string
+  adminUserDemoted: string
+  adminFailedUpdateUser: string
+  adminJobRefreshHighlights: string
+  adminJobAggregateStats: string
+  adminJobEnrichMetadata: string
+  adminJobComputeRelated: string
+  adminJobCleanupCache: string
 }
 
 const en: Translations = {
@@ -261,6 +342,87 @@ const en: Translations = {
   myBooks: 'My Books',
   noReadingHistory: 'No reading history',
   startReadingHint: 'Start reading ebooks or magazines to see them here',
+  // Admin Dashboard
+  adminDashboard: 'Admin Dashboard',
+  adminOverview: 'Overview',
+  adminRankings: 'Rankings',
+  adminJobs: 'Jobs',
+  adminSystem: 'System',
+  adminUsers: 'Users',
+  adminEbooks: 'Ebooks',
+  adminMagazines: 'Magazines',
+  adminUsers2: 'Users',
+  adminCuratedLists: 'Curated Lists',
+  adminPreprocessed: 'Preprocessed: {count}',
+  adminNytLists: 'NYT Lists',
+  adminPlatformLists: 'Platform Lists',
+  adminAwards: 'Awards',
+  adminCelebrityLists: 'Celebrity Lists',
+  adminMediaLists: 'Media Lists',
+  adminEditorPick: 'Editor Pick',
+  adminBookSeries: 'Book Series',
+  adminWeeklyPick: 'Weekly Pick',
+  adminListsCount: '{count} lists',
+  adminNoListsInCategory: 'No lists in this category',
+  adminBooksCount: '{count} books',
+  adminPublished: 'Published',
+  adminUnpublished: 'Unpublished',
+  adminClickToUnpublish: 'Click to unpublish',
+  adminClickToPublish: 'Click to publish',
+  adminDeleteList: 'Delete List',
+  adminSource: 'Source',
+  adminYear: 'Year',
+  adminBooks: 'Books',
+  adminStatus: 'Status',
+  adminActive: 'Active',
+  adminInactive: 'Inactive',
+  adminSelectListToView: 'Select a ranking list to view details',
+  adminBackgroundJobs: 'Background Jobs',
+  adminRefreshing: 'Refreshing...',
+  adminRefresh: 'Refresh',
+  adminRunning: 'Running',
+  adminIdle: 'Idle',
+  adminLastRun: 'Last run',
+  adminTriggering: 'Triggering...',
+  adminTriggerNow: 'Trigger Now',
+  adminSystemInfo: 'System Information',
+  adminEnvironment: 'Environment',
+  adminNodeVersion: 'Node Version',
+  adminPlatform: 'Platform',
+  adminRuntime: 'Runtime',
+  adminUptime: 'Uptime',
+  adminLastUpdated: 'Last Updated',
+  adminMemoryUsage: 'Memory Usage',
+  adminHeapUsed: 'Heap Used',
+  adminHeapTotal: 'Heap Total',
+  adminRss: 'RSS',
+  adminUserManagement: 'User Management',
+  adminUsersCount: '{count} users',
+  adminEmail: 'Email',
+  adminUsername: 'Username',
+  adminRole: 'Role',
+  adminJoined: 'Joined',
+  adminActions: 'Actions',
+  adminAdmin: 'Admin',
+  adminUser: 'User',
+  adminDemote: 'Demote',
+  adminPromote: 'Promote',
+  adminConfirmDeleteList: 'Are you sure you want to delete this list?',
+  adminListActivated: 'List activated',
+  adminListDeactivated: 'List deactivated',
+  adminFailedUpdateList: 'Failed to update list',
+  adminListDeleted: 'List deleted',
+  adminFailedDeleteList: 'Failed to delete list',
+  adminJobTriggered: 'Job triggered successfully',
+  adminFailedTriggerJob: 'Failed to trigger job',
+  adminUserPromoted: 'User promoted to admin',
+  adminUserDemoted: 'User demoted to regular user',
+  adminFailedUpdateUser: 'Failed to update user',
+  adminJobRefreshHighlights: 'Refresh popular book highlights',
+  adminJobAggregateStats: 'Aggregate book statistics',
+  adminJobEnrichMetadata: 'Enrich book metadata from external sources',
+  adminJobComputeRelated: 'Compute related book recommendations',
+  adminJobCleanupCache: 'Clean up expired AI cache entries',
 }
 
 const zh: Translations = {
@@ -383,6 +545,87 @@ const zh: Translations = {
   myBooks: '我的书',
   noReadingHistory: '没有阅读记录',
   startReadingHint: '开始阅读电子书或杂志后会在这里显示',
+  // Admin Dashboard
+  adminDashboard: '管理后台',
+  adminOverview: '概览',
+  adminRankings: '榜单管理',
+  adminJobs: '后台任务',
+  adminSystem: '系统信息',
+  adminUsers: '用户管理',
+  adminEbooks: '电子书',
+  adminMagazines: '杂志',
+  adminUsers2: '用户',
+  adminCuratedLists: '精选榜单',
+  adminPreprocessed: '已预处理: {count}',
+  adminNytLists: 'NYT 榜单',
+  adminPlatformLists: '平台榜单',
+  adminAwards: '文学奖',
+  adminCelebrityLists: '名人书单',
+  adminMediaLists: '媒体榜单',
+  adminEditorPick: '编辑精选',
+  adminBookSeries: '系列丛书',
+  adminWeeklyPick: '每周推荐',
+  adminListsCount: '{count} 个榜单',
+  adminNoListsInCategory: '此分类暂无榜单',
+  adminBooksCount: '{count} 本书',
+  adminPublished: '已发布',
+  adminUnpublished: '未发布',
+  adminClickToUnpublish: '点击取消发布',
+  adminClickToPublish: '点击发布',
+  adminDeleteList: '删除榜单',
+  adminSource: '来源',
+  adminYear: '年份',
+  adminBooks: '书籍',
+  adminStatus: '状态',
+  adminActive: '已启用',
+  adminInactive: '已禁用',
+  adminSelectListToView: '选择一个榜单查看详情',
+  adminBackgroundJobs: '后台任务',
+  adminRefreshing: '刷新中...',
+  adminRefresh: '刷新',
+  adminRunning: '运行中',
+  adminIdle: '空闲',
+  adminLastRun: '上次运行',
+  adminTriggering: '触发中...',
+  adminTriggerNow: '立即执行',
+  adminSystemInfo: '系统信息',
+  adminEnvironment: '环境',
+  adminNodeVersion: 'Node 版本',
+  adminPlatform: '平台',
+  adminRuntime: '运行时',
+  adminUptime: '运行时长',
+  adminLastUpdated: '最后更新',
+  adminMemoryUsage: '内存使用',
+  adminHeapUsed: '堆内存已用',
+  adminHeapTotal: '堆内存总量',
+  adminRss: 'RSS',
+  adminUserManagement: '用户管理',
+  adminUsersCount: '{count} 个用户',
+  adminEmail: '邮箱',
+  adminUsername: '用户名',
+  adminRole: '角色',
+  adminJoined: '注册时间',
+  adminActions: '操作',
+  adminAdmin: '管理员',
+  adminUser: '普通用户',
+  adminDemote: '降级',
+  adminPromote: '升级',
+  adminConfirmDeleteList: '确定要删除此榜单吗？',
+  adminListActivated: '榜单已启用',
+  adminListDeactivated: '榜单已禁用',
+  adminFailedUpdateList: '更新榜单失败',
+  adminListDeleted: '榜单已删除',
+  adminFailedDeleteList: '删除榜单失败',
+  adminJobTriggered: '任务已触发',
+  adminFailedTriggerJob: '触发任务失败',
+  adminUserPromoted: '用户已升级为管理员',
+  adminUserDemoted: '用户已降级为普通用户',
+  adminFailedUpdateUser: '更新用户失败',
+  adminJobRefreshHighlights: '刷新热门书籍高亮',
+  adminJobAggregateStats: '聚合书籍统计数据',
+  adminJobEnrichMetadata: '从外部源丰富书籍元数据',
+  adminJobComputeRelated: '计算相关书籍推荐',
+  adminJobCleanupCache: '清理过期的 AI 缓存',
 }
 
 const translations: Record<Locale, Translations> = { en, zh }
