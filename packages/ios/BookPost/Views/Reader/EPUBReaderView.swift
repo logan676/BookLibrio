@@ -637,10 +637,16 @@ struct EPUBReaderView: View {
     // MARK: - Helpers
 
     private func closeReader() {
+        // Save position locally (instant)
+        viewModel.saveCurrentPosition()
+
+        // Dismiss immediately for responsive UX
+        dismiss()
+
+        // Background: end session and sync to server (fire-and-forget)
         Task {
             await viewModel.endReadingSession()
             viewModel.saveReadingProgress()
-            dismiss()
         }
     }
 

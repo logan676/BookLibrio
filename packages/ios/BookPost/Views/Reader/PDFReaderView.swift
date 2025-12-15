@@ -101,11 +101,14 @@ struct PDFReaderView: View {
     }
 
     private func closeReader() {
-        Task {
-            await endReadingSession()
-            saveReadingProgress()
-            dismiss()
-        }
+        // Save position locally (instant)
+        saveReadingProgress()
+
+        // Dismiss immediately for responsive UX
+        dismiss()
+
+        // Background: end session (fire-and-forget)
+        // Note: Session ending happens via onDisappear
     }
 
     private func startReadingSession() async {
