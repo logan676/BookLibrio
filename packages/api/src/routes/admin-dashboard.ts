@@ -12,7 +12,7 @@
 
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { db } from '../db/client'
-import { users, ebooks, magazines, curatedLists, curatedListItems } from '../db/schema'
+import { users, ebooks, magazines, curatedLists, curatedListItems, rankings, rankingItems } from '../db/schema'
 import { eq, desc, count, sql } from 'drizzle-orm'
 import { requireAdmin } from '../middleware/auth'
 import { triggerJob, getJobStatus } from '../jobs'
@@ -50,6 +50,10 @@ app.get('/stats', async (c) => {
       .select({ total: count() })
       .from(curatedLists)
 
+    const [internalRankingStats] = await db
+      .select({ total: count() })
+      .from(rankings)
+
     return c.json({
       magazines: {
         total: magazineStats?.total || 0,
@@ -58,6 +62,7 @@ app.get('/stats', async (c) => {
       ebooks: ebookStats?.total || 0,
       users: userStats?.total || 0,
       curatedLists: curatedListStats?.total || 0,
+      internalRankings: internalRankingStats?.total || 0,
     })
   } catch (error) {
     console.error('Error fetching stats:', error)
@@ -344,6 +349,238 @@ app.delete('/curated-lists/:id/items/:itemId', async (c) => {
     return c.json({ success: true })
   } catch (error) {
     console.error('Error deleting curated list item:', error)
+    return c.json({ error: 'Failed to delete item' }, 500)
+  }
+})
+
+// ============================================
+// Internal Rankings (精选榜单) Management
+// ============================================
+
+// GET /api/admin-dashboard/internal-rankings
+app.get('/internal-rankings', async (c) => {
+  try {
+    const allRankings = await db
+      .select({
+        id: rankings.id,
+        rankingType: rankings.rankingType,
+        periodType: rankings.periodType,
+        periodStart: rankings.periodStart,
+        periodEnd: rankings.periodEnd,
+        displayName: rankings.displayName,
+        themeColor: rankings.themeColor,
+        description: rankings.description,
+        isActive: rankings.isActive,
+        computedAt: rankings.computedAt,
+        expiresAt: rankings.expiresAt,
+      })
+      .from(rankings)
+      .orderBy(desc(rankings.computedAt))
+
+    // Get item counts for each ranking
+    const rankingsWithCounts = await Promise.all(
+      allRankings.map(async (ranking) => {
+        const [itemCount] = await db
+          .select({ count: count() })
+          .from(rankingItems)
+          .where(eq(rankingItems.rankingId, ranking.id))
+        return {
+          ...ranking,
+          itemCount: itemCount?.count || 0,
+        }
+      })
+    )
+
+    return c.json(rankingsWithCounts)
+  } catch (error) {
+    console.error('Error fetching internal rankings:', error)
+    return c.json({ error: 'Failed to fetch internal rankings' }, 500)
+  }
+})
+
+// GET /api/admin-dashboard/internal-rankings/:id
+app.get('/internal-rankings/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'))
+
+    const [ranking] = await db
+      .select()
+      .from(rankings)
+      .where(eq(rankings.id, id))
+      .limit(1)
+
+    if (!ranking) {
+      return c.json({ error: 'Ranking not found' }, 404)
+    }
+
+    const items = await db
+      .select()
+      .from(rankingItems)
+      .where(eq(rankingItems.rankingId, id))
+      .orderBy(rankingItems.rank)
+
+    return c.json({ ...ranking, items })
+  } catch (error) {
+    console.error('Error fetching internal ranking:', error)
+    return c.json({ error: 'Failed to fetch internal ranking' }, 500)
+  }
+})
+
+// POST /api/admin-dashboard/internal-rankings
+app.post('/internal-rankings', async (c) => {
+  try {
+    const data = await c.req.json()
+
+    const [newRanking] = await db
+      .insert(rankings)
+      .values({
+        rankingType: data.rankingType,
+        periodType: data.periodType,
+        periodStart: data.periodStart,
+        periodEnd: data.periodEnd,
+        displayName: data.displayName,
+        themeColor: data.themeColor,
+        description: data.description,
+        isActive: true,
+      })
+      .returning()
+
+    return c.json(newRanking, 201)
+  } catch (error) {
+    console.error('Error creating internal ranking:', error)
+    return c.json({ error: 'Failed to create internal ranking' }, 500)
+  }
+})
+
+// PUT /api/admin-dashboard/internal-rankings/:id
+app.put('/internal-rankings/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'))
+    const data = await c.req.json()
+
+    const [updated] = await db
+      .update(rankings)
+      .set({
+        rankingType: data.rankingType,
+        periodType: data.periodType,
+        periodStart: data.periodStart,
+        periodEnd: data.periodEnd,
+        displayName: data.displayName,
+        themeColor: data.themeColor,
+        description: data.description,
+        isActive: data.isActive,
+        expiresAt: data.expiresAt,
+      })
+      .where(eq(rankings.id, id))
+      .returning()
+
+    return c.json(updated)
+  } catch (error) {
+    console.error('Error updating internal ranking:', error)
+    return c.json({ error: 'Failed to update internal ranking' }, 500)
+  }
+})
+
+// DELETE /api/admin-dashboard/internal-rankings/:id
+app.delete('/internal-rankings/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'))
+
+    // Delete items first (cascade should handle this, but be explicit)
+    await db
+      .delete(rankingItems)
+      .where(eq(rankingItems.rankingId, id))
+
+    // Delete ranking
+    await db
+      .delete(rankings)
+      .where(eq(rankings.id, id))
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting internal ranking:', error)
+    return c.json({ error: 'Failed to delete internal ranking' }, 500)
+  }
+})
+
+// POST /api/admin-dashboard/internal-rankings/:id/items
+app.post('/internal-rankings/:id/items', async (c) => {
+  try {
+    const rankingId = parseInt(c.req.param('id'))
+    const data = await c.req.json()
+
+    // Get current max rank
+    const [maxRank] = await db
+      .select({ max: sql<number>`COALESCE(MAX(rank), 0)` })
+      .from(rankingItems)
+      .where(eq(rankingItems.rankingId, rankingId))
+
+    const [newItem] = await db
+      .insert(rankingItems)
+      .values({
+        rankingId,
+        bookType: data.bookType,
+        bookId: data.bookId,
+        rank: data.rank || (maxRank?.max || 0) + 1,
+        score: data.score,
+        bookTitle: data.bookTitle,
+        bookAuthor: data.bookAuthor,
+        bookCoverUrl: data.bookCoverUrl,
+        readerCount: data.readerCount,
+        rating: data.rating,
+        evaluationTag: data.evaluationTag,
+      })
+      .returning()
+
+    return c.json(newItem, 201)
+  } catch (error) {
+    console.error('Error adding item to internal ranking:', error)
+    return c.json({ error: 'Failed to add item' }, 500)
+  }
+})
+
+// PUT /api/admin-dashboard/internal-rankings/:id/items/:itemId
+app.put('/internal-rankings/:id/items/:itemId', async (c) => {
+  try {
+    const itemId = parseInt(c.req.param('itemId'))
+    const data = await c.req.json()
+
+    const [updated] = await db
+      .update(rankingItems)
+      .set({
+        rank: data.rank,
+        previousRank: data.previousRank,
+        rankChange: data.rankChange,
+        score: data.score,
+        bookTitle: data.bookTitle,
+        bookAuthor: data.bookAuthor,
+        bookCoverUrl: data.bookCoverUrl,
+        readerCount: data.readerCount,
+        rating: data.rating,
+        evaluationTag: data.evaluationTag,
+      })
+      .where(eq(rankingItems.id, itemId))
+      .returning()
+
+    return c.json(updated)
+  } catch (error) {
+    console.error('Error updating internal ranking item:', error)
+    return c.json({ error: 'Failed to update item' }, 500)
+  }
+})
+
+// DELETE /api/admin-dashboard/internal-rankings/:id/items/:itemId
+app.delete('/internal-rankings/:id/items/:itemId', async (c) => {
+  try {
+    const itemId = parseInt(c.req.param('itemId'))
+
+    await db
+      .delete(rankingItems)
+      .where(eq(rankingItems.id, itemId))
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting internal ranking item:', error)
     return c.json({ error: 'Failed to delete item' }, 500)
   }
 })

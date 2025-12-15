@@ -6,6 +6,7 @@ interface Stats {
   ebooks: number
   users: number
   curatedLists: number
+  internalRankings: number
 }
 
 interface User {
@@ -42,6 +43,38 @@ interface CuratedListItem {
   editorNote: string | null
 }
 
+interface InternalRanking {
+  id: number
+  rankingType: string
+  periodType: string
+  periodStart: string
+  periodEnd: string
+  displayName: string
+  themeColor: string | null
+  description: string | null
+  isActive: boolean
+  computedAt: string | null
+  expiresAt: string | null
+  itemCount: number
+}
+
+interface InternalRankingItem {
+  id: number
+  rankingId: number
+  bookType: string
+  bookId: number
+  rank: number
+  previousRank: number | null
+  rankChange: number | null
+  score: string | null
+  bookTitle: string | null
+  bookAuthor: string | null
+  bookCoverUrl: string | null
+  readerCount: number | null
+  rating: string | null
+  evaluationTag: string | null
+}
+
 interface JobStatus {
   [key: string]: {
     running: boolean
@@ -72,10 +105,27 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   // Rankings state
+  const [rankingSubTab, setRankingSubTab] = useState<'external' | 'internal'>('external')
   const [curatedLists, setCuratedLists] = useState<CuratedList[]>([])
   const [selectedList, setSelectedList] = useState<CuratedList | null>(null)
   const [listItems, setListItems] = useState<CuratedListItem[]>([])
   const [rankingsLoading, setRankingsLoading] = useState(false)
+
+  // Internal rankings state
+  const [internalRankings, setInternalRankings] = useState<InternalRanking[]>([])
+  const [selectedInternalRanking, setSelectedInternalRanking] = useState<InternalRanking | null>(null)
+  const [internalRankingItems, setInternalRankingItems] = useState<InternalRankingItem[]>([])
+  const [internalRankingsLoading, setInternalRankingsLoading] = useState(false)
+  const [showCreateRankingModal, setShowCreateRankingModal] = useState(false)
+  const [newRanking, setNewRanking] = useState({
+    rankingType: 'trending',
+    periodType: 'weekly',
+    displayName: '',
+    description: '',
+    themeColor: '#667eea',
+    periodStart: new Date().toISOString().split('T')[0],
+    periodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  })
 
   // Jobs state
   const [jobs, setJobs] = useState<JobStatus>({})
@@ -100,7 +150,10 @@ export default function AdminDashboard() {
   }, [token])
 
   useEffect(() => {
-    if (activeTab === 'rankings') fetchCuratedLists()
+    if (activeTab === 'rankings') {
+      fetchCuratedLists()
+      fetchInternalRankings()
+    }
     if (activeTab === 'jobs') fetchJobs()
     if (activeTab === 'system') fetchSystemInfo()
     if (activeTab === 'users') fetchUsers()
@@ -186,6 +239,119 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       showMessage('error', 'Failed to delete list')
+    }
+  }
+
+  // Internal Rankings Functions
+  const fetchInternalRankings = async () => {
+    setInternalRankingsLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/internal-rankings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) setInternalRankings(await res.json())
+    } catch (err) {
+      console.error('Failed to fetch internal rankings:', err)
+    } finally {
+      setInternalRankingsLoading(false)
+    }
+  }
+
+  const fetchInternalRankingDetail = async (id: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/internal-rankings/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSelectedInternalRanking(data)
+        setInternalRankingItems(data.items || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch internal ranking detail:', err)
+    }
+  }
+
+  const createInternalRanking = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/internal-rankings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(newRanking)
+      })
+      if (res.ok) {
+        showMessage('success', 'Internal ranking created')
+        setShowCreateRankingModal(false)
+        setNewRanking({
+          rankingType: 'trending',
+          periodType: 'weekly',
+          displayName: '',
+          description: '',
+          themeColor: '#667eea',
+          periodStart: new Date().toISOString().split('T')[0],
+          periodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        })
+        fetchInternalRankings()
+      } else {
+        showMessage('error', 'Failed to create ranking')
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to create ranking')
+    }
+  }
+
+  const toggleInternalRankingActive = async (ranking: InternalRanking) => {
+    try {
+      const res = await fetch(`${API_BASE}/internal-rankings/${ranking.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...ranking, isActive: !ranking.isActive })
+      })
+      if (res.ok) {
+        showMessage('success', `Ranking ${ranking.isActive ? 'deactivated' : 'activated'}`)
+        fetchInternalRankings()
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to update ranking')
+    }
+  }
+
+  const deleteInternalRanking = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this ranking?')) return
+    try {
+      const res = await fetch(`${API_BASE}/internal-rankings/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        showMessage('success', 'Internal ranking deleted')
+        fetchInternalRankings()
+        setSelectedInternalRanking(null)
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to delete ranking')
+    }
+  }
+
+  const deleteInternalRankingItem = async (rankingId: number, itemId: number) => {
+    if (!confirm('Remove this book from the ranking?')) return
+    try {
+      const res = await fetch(`${API_BASE}/internal-rankings/${rankingId}/items/${itemId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        showMessage('success', 'Book removed from ranking')
+        fetchInternalRankingDetail(rankingId)
+      }
+    } catch (err) {
+      showMessage('error', 'Failed to remove book')
     }
   }
 
@@ -304,6 +470,50 @@ export default function AdminDashboard() {
     return labels[type] || type
   }
 
+  const getRankingTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      trending: '热门榜',
+      hot_search: '热搜榜',
+      new_books: '新书榜',
+      fiction: '小说榜',
+      film_tv: '影视原著',
+      audiobook: '有声书榜',
+      top_200: 'Top 200',
+      masterpiece: '神作榜',
+      potential_masterpiece: '准神作榜',
+    }
+    return labels[type] || type
+  }
+
+  const getPeriodTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      daily: '日榜',
+      weekly: '周榜',
+      monthly: '月榜',
+      all_time: '总榜',
+    }
+    return labels[type] || type
+  }
+
+  const rankingTypeOptions = [
+    { value: 'trending', label: '热门榜' },
+    { value: 'hot_search', label: '热搜榜' },
+    { value: 'new_books', label: '新书榜' },
+    { value: 'fiction', label: '小说榜' },
+    { value: 'film_tv', label: '影视原著' },
+    { value: 'audiobook', label: '有声书榜' },
+    { value: 'top_200', label: 'Top 200' },
+    { value: 'masterpiece', label: '神作榜' },
+    { value: 'potential_masterpiece', label: '准神作榜' },
+  ]
+
+  const periodTypeOptions = [
+    { value: 'daily', label: '日榜' },
+    { value: 'weekly', label: '周榜' },
+    { value: 'monthly', label: '月榜' },
+    { value: 'all_time', label: '总榜' },
+  ]
+
   const jobDescriptions: Record<string, string> = {
     refresh_popular_highlights: 'Refresh popular book highlights',
     aggregate_book_stats: 'Aggregate book statistics',
@@ -380,6 +590,13 @@ export default function AdminDashboard() {
                     <p className="stat-number">{stats.curatedLists.toLocaleString()}</p>
                   </div>
                 </div>
+                <div className="stat-card">
+                  <div className="stat-icon">🏆</div>
+                  <div className="stat-info">
+                    <h3>Internal Rankings</h3>
+                    <p className="stat-number">{stats.internalRankings?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -388,91 +605,339 @@ export default function AdminDashboard() {
         {/* Rankings Tab */}
         {activeTab === 'rankings' && (
           <div className="rankings-tab">
-            <div className="rankings-layout">
-              {/* List Panel */}
-              <div className="rankings-list-panel">
-                <div className="panel-header">
-                  <h3>External Rankings</h3>
-                  <span className="count">{curatedLists.length} lists</span>
-                </div>
-                {rankingsLoading ? (
-                  <div className="loading">Loading...</div>
-                ) : (
-                  <div className="rankings-list">
-                    {curatedLists.map(list => (
-                      <div
-                        key={list.id}
-                        className={`ranking-item ${selectedList?.id === list.id ? 'selected' : ''} ${!list.isActive ? 'inactive' : ''}`}
-                        onClick={() => fetchListDetail(list.id)}
-                      >
-                        <div className="ranking-item-main">
-                          <span className="ranking-type">{getListTypeLabel(list.listType)}</span>
-                          <h4>{list.title}</h4>
-                          <p className="ranking-meta">
-                            {list.bookCount} books • {list.year || 'N/A'}
-                          </p>
-                        </div>
-                        <div className="ranking-item-actions">
-                          <button
-                            className={`status-btn ${list.isActive ? 'active' : 'inactive'}`}
-                            onClick={(e) => { e.stopPropagation(); toggleListActive(list) }}
-                            title={list.isActive ? 'Deactivate' : 'Activate'}
-                          >
-                            {list.isActive ? '✓' : '○'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            {/* Sub-tab Navigation */}
+            <div className="sub-tab-nav">
+              <button
+                className={`sub-tab-btn ${rankingSubTab === 'external' ? 'active' : ''}`}
+                onClick={() => setRankingSubTab('external')}
+              >
+                External Rankings ({curatedLists.length})
+              </button>
+              <button
+                className={`sub-tab-btn ${rankingSubTab === 'internal' ? 'active' : ''}`}
+                onClick={() => setRankingSubTab('internal')}
+              >
+                精选榜单 ({internalRankings.length})
+              </button>
+            </div>
 
-              {/* Detail Panel */}
-              <div className="rankings-detail-panel">
-                {selectedList ? (
-                  <>
-                    <div className="panel-header">
-                      <div>
-                        <h3>{selectedList.title}</h3>
-                        <p className="subtitle">{selectedList.subtitle}</p>
-                      </div>
-                      <button
-                        className="delete-btn"
-                        onClick={() => deleteList(selectedList.id)}
-                      >
-                        Delete List
-                      </button>
-                    </div>
-                    <div className="list-meta">
-                      <span>Source: {selectedList.sourceName || 'Unknown'}</span>
-                      <span>Year: {selectedList.year || 'N/A'}</span>
-                      <span>Books: {selectedList.bookCount}</span>
-                      <span>Status: {selectedList.isActive ? 'Active' : 'Inactive'}</span>
-                    </div>
-                    <div className="list-items">
-                      <h4>Books ({listItems.length})</h4>
-                      {listItems.map((item, index) => (
-                        <div key={item.id} className="list-item">
-                          <span className="item-rank">#{index + 1}</span>
-                          {item.externalCoverUrl && (
-                            <img src={item.externalCoverUrl} alt="" className="item-cover" />
-                          )}
-                          <div className="item-info">
-                            <h5>{item.externalTitle}</h5>
-                            <p>{item.externalAuthor}</p>
-                            {item.editorNote && <p className="editor-note">{item.editorNote}</p>}
+            {/* External Rankings Sub-tab */}
+            {rankingSubTab === 'external' && (
+              <div className="rankings-layout">
+                {/* List Panel */}
+                <div className="rankings-list-panel">
+                  <div className="panel-header">
+                    <h3>External Rankings</h3>
+                    <span className="count">{curatedLists.length} lists</span>
+                  </div>
+                  {rankingsLoading ? (
+                    <div className="loading">Loading...</div>
+                  ) : (
+                    <div className="rankings-list">
+                      {curatedLists.map(list => (
+                        <div
+                          key={list.id}
+                          className={`ranking-item ${selectedList?.id === list.id ? 'selected' : ''} ${!list.isActive ? 'inactive' : ''}`}
+                          onClick={() => fetchListDetail(list.id)}
+                        >
+                          <div className="ranking-item-main">
+                            <span className="ranking-type">{getListTypeLabel(list.listType)}</span>
+                            <h4>{list.title}</h4>
+                            <p className="ranking-meta">
+                              {list.bookCount} books • {list.year || 'N/A'}
+                            </p>
+                          </div>
+                          <div className="ranking-item-actions">
+                            <button
+                              className={`status-btn ${list.isActive ? 'active' : 'inactive'}`}
+                              onClick={(e) => { e.stopPropagation(); toggleListActive(list) }}
+                              title={list.isActive ? 'Deactivate' : 'Activate'}
+                            >
+                              {list.isActive ? '✓' : '○'}
+                            </button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  </>
-                ) : (
-                  <div className="empty-state">
-                    <p>Select a ranking list to view details</p>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Detail Panel */}
+                <div className="rankings-detail-panel">
+                  {selectedList ? (
+                    <>
+                      <div className="panel-header">
+                        <div>
+                          <h3>{selectedList.title}</h3>
+                          <p className="subtitle">{selectedList.subtitle}</p>
+                        </div>
+                        <button
+                          className="delete-btn"
+                          onClick={() => deleteList(selectedList.id)}
+                        >
+                          Delete List
+                        </button>
+                      </div>
+                      <div className="list-meta">
+                        <span>Source: {selectedList.sourceName || 'Unknown'}</span>
+                        <span>Year: {selectedList.year || 'N/A'}</span>
+                        <span>Books: {selectedList.bookCount}</span>
+                        <span>Status: {selectedList.isActive ? 'Active' : 'Inactive'}</span>
+                      </div>
+                      <div className="list-items">
+                        <h4>Books ({listItems.length})</h4>
+                        {listItems.map((item, index) => (
+                          <div key={item.id} className="list-item">
+                            <span className="item-rank">#{index + 1}</span>
+                            {item.externalCoverUrl && (
+                              <img src={item.externalCoverUrl} alt="" className="item-cover" />
+                            )}
+                            <div className="item-info">
+                              <h5>{item.externalTitle}</h5>
+                              <p>{item.externalAuthor}</p>
+                              {item.editorNote && <p className="editor-note">{item.editorNote}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="empty-state">
+                      <p>Select a ranking list to view details</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Internal Rankings Sub-tab */}
+            {rankingSubTab === 'internal' && (
+              <div className="rankings-layout">
+                {/* List Panel */}
+                <div className="rankings-list-panel">
+                  <div className="panel-header">
+                    <h3>精选榜单</h3>
+                    <button className="add-btn" onClick={() => setShowCreateRankingModal(true)}>
+                      + 新建榜单
+                    </button>
+                  </div>
+                  {internalRankingsLoading ? (
+                    <div className="loading">Loading...</div>
+                  ) : (
+                    <div className="rankings-list">
+                      {internalRankings.length === 0 ? (
+                        <div className="empty-list">
+                          <p>暂无精选榜单</p>
+                          <button className="create-btn" onClick={() => setShowCreateRankingModal(true)}>
+                            创建第一个榜单
+                          </button>
+                        </div>
+                      ) : (
+                        internalRankings.map(ranking => (
+                          <div
+                            key={ranking.id}
+                            className={`ranking-item ${selectedInternalRanking?.id === ranking.id ? 'selected' : ''} ${!ranking.isActive ? 'inactive' : ''}`}
+                            onClick={() => fetchInternalRankingDetail(ranking.id)}
+                          >
+                            <div className="ranking-item-main">
+                              <div className="ranking-badges">
+                                <span className="ranking-type">{getRankingTypeLabel(ranking.rankingType)}</span>
+                                <span className="period-badge">{getPeriodTypeLabel(ranking.periodType)}</span>
+                              </div>
+                              <h4>{ranking.displayName}</h4>
+                              <p className="ranking-meta">
+                                {ranking.itemCount} books • {ranking.periodStart} ~ {ranking.periodEnd}
+                              </p>
+                            </div>
+                            <div className="ranking-item-actions">
+                              <button
+                                className={`status-btn ${ranking.isActive ? 'active' : 'inactive'}`}
+                                onClick={(e) => { e.stopPropagation(); toggleInternalRankingActive(ranking) }}
+                                title={ranking.isActive ? 'Deactivate' : 'Activate'}
+                              >
+                                {ranking.isActive ? '✓' : '○'}
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Detail Panel */}
+                <div className="rankings-detail-panel">
+                  {selectedInternalRanking ? (
+                    <>
+                      <div className="panel-header">
+                        <div>
+                          <h3>{selectedInternalRanking.displayName}</h3>
+                          <p className="subtitle">
+                            {getRankingTypeLabel(selectedInternalRanking.rankingType)} · {getPeriodTypeLabel(selectedInternalRanking.periodType)}
+                          </p>
+                        </div>
+                        <button
+                          className="delete-btn"
+                          onClick={() => deleteInternalRanking(selectedInternalRanking.id)}
+                        >
+                          删除榜单
+                        </button>
+                      </div>
+                      <div className="list-meta">
+                        <span>周期: {selectedInternalRanking.periodStart} ~ {selectedInternalRanking.periodEnd}</span>
+                        <span>图书: {selectedInternalRanking.itemCount}</span>
+                        <span>状态: {selectedInternalRanking.isActive ? '启用' : '禁用'}</span>
+                        {selectedInternalRanking.themeColor && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            主题色: <span style={{ width: 16, height: 16, background: selectedInternalRanking.themeColor, borderRadius: 4 }} />
+                          </span>
+                        )}
+                      </div>
+                      {selectedInternalRanking.description && (
+                        <p className="description">{selectedInternalRanking.description}</p>
+                      )}
+                      <div className="list-items">
+                        <h4>榜单图书 ({internalRankingItems.length})</h4>
+                        {internalRankingItems.length === 0 ? (
+                          <div className="empty-items">
+                            <p>该榜单暂无图书</p>
+                          </div>
+                        ) : (
+                          internalRankingItems.map((item) => (
+                            <div key={item.id} className="list-item">
+                              <span className="item-rank">#{item.rank}</span>
+                              {item.bookCoverUrl && (
+                                <img src={item.bookCoverUrl} alt="" className="item-cover" />
+                              )}
+                              <div className="item-info">
+                                <h5>{item.bookTitle || `Book #${item.bookId}`}</h5>
+                                <p>{item.bookAuthor || 'Unknown Author'}</p>
+                                <div className="item-stats">
+                                  {item.rating && <span>⭐ {parseFloat(item.rating).toFixed(1)}</span>}
+                                  {item.readerCount && <span>👥 {item.readerCount}</span>}
+                                  {item.evaluationTag && <span className="eval-tag">{item.evaluationTag}</span>}
+                                  {item.rankChange !== null && item.rankChange !== 0 && (
+                                    <span className={`rank-change ${item.rankChange > 0 ? 'up' : 'down'}`}>
+                                      {item.rankChange > 0 ? '↑' : '↓'}{Math.abs(item.rankChange)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                className="remove-item-btn"
+                                onClick={() => deleteInternalRankingItem(selectedInternalRanking.id, item.id)}
+                                title="移除"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="empty-state">
+                      <p>选择一个榜单查看详情</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Create Ranking Modal */}
+            {showCreateRankingModal && (
+              <div className="modal-overlay" onClick={() => setShowCreateRankingModal(false)}>
+                <div className="modal" onClick={e => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3>新建精选榜单</h3>
+                    <button className="close-btn" onClick={() => setShowCreateRankingModal(false)}>×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="form-group">
+                      <label>榜单名称</label>
+                      <input
+                        type="text"
+                        value={newRanking.displayName}
+                        onChange={e => setNewRanking({ ...newRanking, displayName: e.target.value })}
+                        placeholder="例如：本周热门小说"
+                      />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>榜单类型</label>
+                        <select
+                          value={newRanking.rankingType}
+                          onChange={e => setNewRanking({ ...newRanking, rankingType: e.target.value })}
+                        >
+                          {rankingTypeOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>周期类型</label>
+                        <select
+                          value={newRanking.periodType}
+                          onChange={e => setNewRanking({ ...newRanking, periodType: e.target.value })}
+                        >
+                          {periodTypeOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>开始日期</label>
+                        <input
+                          type="date"
+                          value={newRanking.periodStart}
+                          onChange={e => setNewRanking({ ...newRanking, periodStart: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>结束日期</label>
+                        <input
+                          type="date"
+                          value={newRanking.periodEnd}
+                          onChange={e => setNewRanking({ ...newRanking, periodEnd: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>主题色</label>
+                      <div className="color-input">
+                        <input
+                          type="color"
+                          value={newRanking.themeColor}
+                          onChange={e => setNewRanking({ ...newRanking, themeColor: e.target.value })}
+                        />
+                        <span>{newRanking.themeColor}</span>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>描述（可选）</label>
+                      <textarea
+                        value={newRanking.description}
+                        onChange={e => setNewRanking({ ...newRanking, description: e.target.value })}
+                        placeholder="榜单描述..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button className="cancel-btn" onClick={() => setShowCreateRankingModal(false)}>取消</button>
+                    <button
+                      className="submit-btn"
+                      onClick={createInternalRanking}
+                      disabled={!newRanking.displayName}
+                    >
+                      创建榜单
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -792,6 +1257,10 @@ export default function AdminDashboard() {
           background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         }
 
+        .stat-card:nth-child(5) {
+          background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
         .stat-icon {
           font-size: 40px;
         }
@@ -815,6 +1284,296 @@ export default function AdminDashboard() {
         }
 
         /* Rankings Tab */
+        .sub-tab-nav {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .sub-tab-btn {
+          padding: 10px 20px;
+          border: 1px solid #ddd;
+          background: white;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+          color: #666;
+          transition: all 0.2s;
+        }
+
+        .sub-tab-btn:hover {
+          border-color: #007bff;
+          color: #007bff;
+        }
+
+        .sub-tab-btn.active {
+          background: #007bff;
+          border-color: #007bff;
+          color: white;
+        }
+
+        .add-btn {
+          padding: 8px 16px;
+          background: #28a745;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .add-btn:hover {
+          background: #218838;
+        }
+
+        .ranking-badges {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 4px;
+        }
+
+        .period-badge {
+          font-size: 10px;
+          padding: 2px 6px;
+          background: #e7f3ff;
+          color: #007bff;
+          border-radius: 4px;
+        }
+
+        .empty-list {
+          text-align: center;
+          padding: 40px 20px;
+          color: #888;
+        }
+
+        .empty-list p {
+          margin: 0 0 16px;
+        }
+
+        .create-btn {
+          padding: 10px 20px;
+          background: #007bff;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+
+        .empty-items {
+          text-align: center;
+          padding: 30px;
+          color: #888;
+          background: #f8f9fa;
+          border-radius: 8px;
+        }
+
+        .description {
+          margin: 12px 0;
+          padding: 12px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          font-size: 14px;
+          color: #666;
+        }
+
+        .item-stats {
+          display: flex;
+          gap: 12px;
+          margin-top: 4px;
+          font-size: 12px;
+          color: #888;
+        }
+
+        .eval-tag {
+          padding: 2px 6px;
+          background: #fff3cd;
+          color: #856404;
+          border-radius: 4px;
+        }
+
+        .rank-change {
+          font-weight: 600;
+        }
+
+        .rank-change.up {
+          color: #28a745;
+        }
+
+        .rank-change.down {
+          color: #dc3545;
+        }
+
+        .remove-item-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: none;
+          background: #f0f0f0;
+          color: #666;
+          cursor: pointer;
+          font-size: 18px;
+          line-height: 1;
+          margin-left: auto;
+        }
+
+        .remove-item-btn:hover {
+          background: #dc3545;
+          color: white;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal {
+          background: white;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 500px;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 24px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+          margin: 0;
+          font-size: 18px;
+        }
+
+        .close-btn {
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: #f0f0f0;
+          border-radius: 50%;
+          font-size: 20px;
+          cursor: pointer;
+          color: #666;
+        }
+
+        .close-btn:hover {
+          background: #e0e0e0;
+        }
+
+        .modal-body {
+          padding: 24px;
+        }
+
+        .form-group {
+          margin-bottom: 16px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 14px;
+          box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+          outline: none;
+          border-color: #007bff;
+        }
+
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+
+        .color-input {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .color-input input[type="color"] {
+          width: 40px;
+          height: 40px;
+          padding: 0;
+          border: none;
+          cursor: pointer;
+        }
+
+        .color-input span {
+          font-family: monospace;
+          font-size: 14px;
+          color: #666;
+        }
+
+        .modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 16px 24px;
+          border-top: 1px solid #eee;
+        }
+
+        .cancel-btn {
+          padding: 10px 20px;
+          border: 1px solid #ddd;
+          background: white;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .cancel-btn:hover {
+          background: #f0f0f0;
+        }
+
+        .submit-btn {
+          padding: 10px 20px;
+          background: #007bff;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+          background: #0056b3;
+        }
+
+        .submit-btn:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+
         .rankings-layout {
           display: grid;
           grid-template-columns: 400px 1fr;
