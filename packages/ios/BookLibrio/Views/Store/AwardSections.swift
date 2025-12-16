@@ -26,19 +26,25 @@ enum Award: String, CaseIterable {
     var headerGradient: [Color] {
         switch self {
         case .pulitzer:
+            // Gold/champagne textured gradient
             return [
-                Color(red: 0.75, green: 0.60, blue: 0.20),
-                Color(red: 0.85, green: 0.70, blue: 0.30)
+                Color(red: 0.85, green: 0.72, blue: 0.40),
+                Color(red: 0.75, green: 0.62, blue: 0.30),
+                Color(red: 0.90, green: 0.78, blue: 0.45)
             ]
         case .booker:
+            // Deep burgundy/maroon
             return [
-                Color(red: 0.10, green: 0.20, blue: 0.40),
-                Color(red: 0.15, green: 0.30, blue: 0.55)
+                Color(red: 0.45, green: 0.12, blue: 0.18),
+                Color(red: 0.55, green: 0.15, blue: 0.22),
+                Color(red: 0.40, green: 0.10, blue: 0.15)
             ]
         case .newbery:
+            // Warm golden/brown magical gradient
             return [
-                Color(red: 0.15, green: 0.45, blue: 0.35),
-                Color(red: 0.20, green: 0.55, blue: 0.45)
+                Color(red: 0.35, green: 0.25, blue: 0.18),
+                Color(red: 0.55, green: 0.40, blue: 0.25),
+                Color(red: 0.75, green: 0.60, blue: 0.35)
             ]
         }
     }
@@ -46,8 +52,8 @@ enum Award: String, CaseIterable {
     var accentColor: Color {
         switch self {
         case .pulitzer: return Color(red: 0.85, green: 0.70, blue: 0.30)
-        case .booker: return Color(red: 0.70, green: 0.55, blue: 0.25)
-        case .newbery: return Color(red: 0.85, green: 0.65, blue: 0.20)
+        case .booker: return Color(red: 0.85, green: 0.70, blue: 0.30) // Gold for winner badge
+        case .newbery: return Color(red: 0.90, green: 0.75, blue: 0.35)
         }
     }
 
@@ -55,12 +61,51 @@ enum Award: String, CaseIterable {
         switch self {
         case .pulitzer: return "medal.fill"
         case .booker: return "book.closed.fill"
-        case .newbery: return "star.circle.fill"
+        case .newbery: return "sparkles"
         }
     }
 }
 
-// MARK: - Award Book Card View
+// MARK: - Award Category Badge (Winner/Shortlist/Gold/Honor)
+
+struct AwardCategoryBadge: View {
+    let award: Award
+    let isWinner: Bool // true = Winner/Gold, false = Shortlist/Honor
+
+    var badgeText: String {
+        switch award {
+        case .pulitzer:
+            return isWinner ? "获奖作品" : "入围作品"
+        case .booker:
+            return isWinner ? "获奖作品" : "入围作品"
+        case .newbery:
+            return isWinner ? "金奖作品" : "荣誉作品"
+        }
+    }
+
+    var badgeColor: Color {
+        if isWinner {
+            return Color(red: 0.85, green: 0.65, blue: 0.13) // Gold
+        } else {
+            return Color(red: 0.70, green: 0.70, blue: 0.72) // Silver
+        }
+    }
+
+    var body: some View {
+        Text(badgeText)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(badgeColor)
+                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+            )
+    }
+}
+
+// MARK: - Award Book Card View (No numbered badge, label below)
 
 struct AwardBookCardView: View {
     let ranking: ExternalRanking
@@ -71,9 +116,9 @@ struct AwardBookCardView: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 12) {
-                ZStack(alignment: .topLeading) {
-                    // Book cover
+            VStack(alignment: .center, spacing: 10) {
+                // Book cover - clean, no badge overlay
+                ZStack {
                     if let coverUrl = ranking.previewCovers?.first {
                         AsyncImage(url: URL(string: coverUrl)) { phase in
                             switch phase {
@@ -92,33 +137,24 @@ struct AwardBookCardView: View {
                         }
                         .frame(width: cardWidth, height: cardWidth * 1.5)
                         .cornerRadius(8)
-                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 2, y: 4)
+                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 2, y: 4)
                     } else {
                         bookPlaceholder
                     }
-
-                    // Award badge
-                    AwardBadgeView(award: award, index: index)
-                        .offset(x: -4, y: -4)
                 }
 
-                // Title and subtitle
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(ranking.title)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                // Award category label below book (not on cover)
+                AwardCategoryBadge(award: award, isWinner: index == 0)
 
-                    if let subtitle = ranking.subtitle {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(width: cardWidth, alignment: .leading)
+                // Title
+                Text(ranking.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: cardWidth)
             }
         }
         .buttonStyle(PlainButtonStyle())
@@ -136,58 +172,107 @@ struct AwardBookCardView: View {
             )
             .frame(width: cardWidth, height: cardWidth * 1.5)
             .cornerRadius(8)
-            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 2, y: 4)
+            .shadow(color: Color.black.opacity(0.2), radius: 8, x: 2, y: 4)
     }
 }
 
-// MARK: - Award Badge View
+// MARK: - Gold Textured Background (Pulitzer)
 
-struct AwardBadgeView: View {
-    let award: Award
-    let index: Int
+struct GoldTexturedBackground: View {
+    var body: some View {
+        ZStack {
+            // Base gold gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.85, green: 0.72, blue: 0.40),
+                    Color(red: 0.78, green: 0.65, blue: 0.32),
+                    Color(red: 0.90, green: 0.78, blue: 0.45)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
 
-    var badgeColor: Color {
-        switch index {
-        case 0: return Color(red: 0.85, green: 0.65, blue: 0.13) // Gold
-        case 1: return Color(red: 0.75, green: 0.75, blue: 0.75) // Silver
-        case 2: return Color(red: 0.80, green: 0.50, blue: 0.20) // Bronze
-        default: return Color(red: 0.35, green: 0.35, blue: 0.35)
+            // Subtle fabric texture overlay
+            GeometryReader { geo in
+                Canvas { context, size in
+                    // Draw subtle vertical lines for texture
+                    for x in stride(from: 0, to: size.width, by: 3) {
+                        var path = Path()
+                        path.move(to: CGPoint(x: x, y: 0))
+                        path.addLine(to: CGPoint(x: x, y: size.height))
+                        context.stroke(path, with: .color(.white.opacity(0.05)), lineWidth: 1)
+                    }
+                }
+            }
         }
     }
+}
 
+// MARK: - Burgundy Velvet Background (Booker)
+
+struct BurgundyVelvetBackground: View {
     var body: some View {
-        VStack(spacing: 0) {
-            Image(systemName: award.icon)
-                .font(.system(size: 12, weight: .bold))
-            Text("\(index + 1)")
-                .font(.system(size: 14, weight: .bold))
+        ZStack {
+            // Base burgundy gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.45, green: 0.10, blue: 0.15),
+                    Color(red: 0.55, green: 0.15, blue: 0.20),
+                    Color(red: 0.40, green: 0.08, blue: 0.12)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Velvet texture overlay
+            RadialGradient(
+                gradient: Gradient(colors: [
+                    Color.white.opacity(0.08),
+                    Color.clear
+                ]),
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 400
+            )
         }
-        .foregroundColor(.white)
-        .frame(width: 36, height: 48)
-        .background(
-            Rectangle()
-                .fill(badgeColor)
-                .cornerRadius(4, corners: [.topLeft, .topRight])
-                .padding(.bottom, 5)
-                .overlay(
-                    Rectangle()
-                        .fill(badgeColor)
-                        .frame(height: 10)
-                        .rotationEffect(.degrees(45))
-                        .offset(x: -10, y: 20),
-                    alignment: .bottom
-                )
-                .overlay(
-                    Rectangle()
-                        .fill(badgeColor)
-                        .frame(height: 10)
-                        .rotationEffect(.degrees(-45))
-                        .offset(x: 10, y: 20),
-                    alignment: .bottom
-                )
-                .mask(Rectangle().padding(.bottom, -10))
-        )
-        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 1, y: 1)
+    }
+}
+
+// MARK: - Magical Starry Background (Newbery)
+
+struct MagicalStarryBackground: View {
+    var body: some View {
+        ZStack {
+            // Warm night sky gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.20, green: 0.15, blue: 0.25),
+                    Color(red: 0.35, green: 0.25, blue: 0.20),
+                    Color(red: 0.55, green: 0.40, blue: 0.25)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Stars
+            GeometryReader { geo in
+                ForEach(0..<20, id: \.self) { i in
+                    let x = CGFloat.random(in: 0...geo.size.width)
+                    let y = CGFloat.random(in: 0...geo.size.height)
+                    let size = CGFloat.random(in: 2...6)
+                    Circle()
+                        .fill(Color.white.opacity(Double.random(in: 0.3...0.8)))
+                        .frame(width: size, height: size)
+                        .position(x: x, y: y)
+                }
+            }
+
+            // Sparkle overlay
+            Image(systemName: "sparkles")
+                .font(.system(size: 60))
+                .foregroundColor(Color(red: 0.95, green: 0.85, blue: 0.50).opacity(0.3))
+                .offset(x: 80, y: -30)
+        }
     }
 }
 
@@ -198,43 +283,62 @@ struct PulitzerHeaderView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.75, green: 0.60, blue: 0.20),
-                    Color(red: 0.85, green: 0.70, blue: 0.30)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .edgesIgnoringSafeArea(.all)
+            GoldTexturedBackground()
 
-            VStack(spacing: 8) {
-                Image(systemName: "medal.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.white)
+            HStack(spacing: 16) {
+                // Medal on left
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 0.95, green: 0.85, blue: 0.50),
+                                    Color(red: 0.80, green: 0.65, blue: 0.25)
+                                ]),
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 35
+                            )
+                        )
+                        .frame(width: 70, height: 70)
+                        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 2, y: 2)
 
-                Text("Pulitzer Prize")
-                    .font(.system(size: 26, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
+                    Image(systemName: "medal.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(Color(red: 0.50, green: 0.35, blue: 0.10))
+                }
 
-                Text(L10n.Store.pulitzerSubtitle)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+                // Title on right
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("The \(Calendar.current.component(.year, from: Date()))")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+
+                    Text("Pulitzer Prize")
+                        .font(.system(size: 24, weight: .bold, design: .serif))
+                        .foregroundColor(.white)
+
+                    Text("Winners")
+                        .font(.system(size: 20, weight: .semibold, design: .serif))
+                        .foregroundColor(.white.opacity(0.9))
+
+                    Text("卓越的新闻与艺术成就")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+
+                Spacer()
 
                 Button(action: onViewAll) {
-                    HStack(spacing: 4) {
-                        Text(L10n.Store.viewMore)
-                        Image(systemName: "chevron.right")
-                    }
-                    .font(.footnote)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.top, 4)
+                    Image(systemName: "chevron.right.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.white.opacity(0.8))
                 }
             }
-            .padding(.vertical, 24)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
         }
-        .frame(height: 200)
+        .frame(height: 140)
     }
 }
 
@@ -274,28 +378,36 @@ struct BookerHeaderView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.10, green: 0.20, blue: 0.40),
-                    Color(red: 0.15, green: 0.30, blue: 0.55)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .edgesIgnoringSafeArea(.all)
+            BurgundyVelvetBackground()
 
-            VStack(spacing: 8) {
-                Image(systemName: "book.closed.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(Color(red: 0.85, green: 0.70, blue: 0.30))
+            VStack(spacing: 12) {
+                // Booker Prize logo block
+                VStack(spacing: 2) {
+                    Text("THE")
+                        .font(.system(size: 12, weight: .medium))
+                        .tracking(4)
+                    Text("BOOKER")
+                        .font(.system(size: 28, weight: .bold))
+                        .tracking(2)
+                    Text("PRIZE")
+                        .font(.system(size: 16, weight: .semibold))
+                        .tracking(6)
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
 
-                Text("Booker Prize")
-                    .font(.system(size: 26, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
-
-                Text(L10n.Store.bookerSubtitle)
-                    .font(.subheadline)
+                Text("\(Calendar.current.component(.year, from: Date()))年布克奖")
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
+
+                Text("年度最佳虚构文学作品")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.6))
 
                 Button(action: onViewAll) {
                     HStack(spacing: 4) {
@@ -304,11 +416,11 @@ struct BookerHeaderView: View {
                     }
                     .font(.footnote)
                     .fontWeight(.semibold)
-                    .foregroundColor(Color(red: 0.85, green: 0.70, blue: 0.30))
+                    .foregroundColor(Color(red: 0.90, green: 0.75, blue: 0.40))
                     .padding(.top, 4)
                 }
             }
-            .padding(.vertical, 24)
+            .padding(.vertical, 20)
         }
         .frame(height: 200)
     }
@@ -350,27 +462,44 @@ struct NewberyHeaderView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.15, green: 0.45, blue: 0.35),
-                    Color(red: 0.20, green: 0.55, blue: 0.45)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .edgesIgnoringSafeArea(.all)
+            MagicalStarryBackground()
 
-            VStack(spacing: 8) {
-                Image(systemName: "star.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(Color(red: 0.90, green: 0.75, blue: 0.30))
+            VStack(spacing: 12) {
+                // Medal with sparkle effect
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 0.95, green: 0.85, blue: 0.45),
+                                    Color(red: 0.75, green: 0.60, blue: 0.25)
+                                ]),
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 30
+                            )
+                        )
+                        .frame(width: 60, height: 60)
+                        .shadow(color: Color(red: 0.95, green: 0.85, blue: 0.45).opacity(0.5), radius: 10, x: 0, y: 0)
+
+                    Image(systemName: "book.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(Color(red: 0.45, green: 0.30, blue: 0.10))
+                }
+
+                // Title in pill-shaped container
+                Text("\(Calendar.current.component(.year, from: Date()))年纽伯瑞儿童文学奖")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.2))
+                    )
 
                 Text("Newbery Medal")
-                    .font(.system(size: 26, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
-
-                Text(L10n.Store.newberySubtitle)
-                    .font(.subheadline)
+                    .font(.system(size: 14, weight: .medium, design: .serif))
                     .foregroundColor(.white.opacity(0.8))
 
                 Button(action: onViewAll) {
@@ -380,11 +509,11 @@ struct NewberyHeaderView: View {
                     }
                     .font(.footnote)
                     .fontWeight(.semibold)
-                    .foregroundColor(Color(red: 0.90, green: 0.75, blue: 0.30))
+                    .foregroundColor(Color(red: 0.95, green: 0.85, blue: 0.45))
                     .padding(.top, 4)
                 }
             }
-            .padding(.vertical, 24)
+            .padding(.vertical, 20)
         }
         .frame(height: 200)
     }
@@ -464,26 +593,50 @@ struct AwardListView: View {
         }
     }
 
+    @ViewBuilder
     private var awardHeader: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: award.headerGradient),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            VStack(spacing: 8) {
-                Image(systemName: award.icon)
-                    .font(.system(size: 36))
-                    .foregroundColor(award == .pulitzer ? .white : award.accentColor)
-
-                Text(award.title)
-                    .font(.system(size: 28, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
-            }
-            .padding(.vertical, 32)
+        switch award {
+        case .pulitzer:
+            GoldTexturedBackground()
+                .frame(height: 160)
+                .overlay(
+                    VStack(spacing: 8) {
+                        Image(systemName: "medal.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(.white)
+                        Text(award.title)
+                            .font(.system(size: 28, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                    }
+                )
+        case .booker:
+            BurgundyVelvetBackground()
+                .frame(height: 160)
+                .overlay(
+                    VStack(spacing: 8) {
+                        Text("THE BOOKER PRIZE")
+                            .font(.system(size: 20, weight: .bold))
+                            .tracking(2)
+                            .foregroundColor(.white)
+                        Text(award.title)
+                            .font(.system(size: 24, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                    }
+                )
+        case .newbery:
+            MagicalStarryBackground()
+                .frame(height: 160)
+                .overlay(
+                    VStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 36))
+                            .foregroundColor(Color(red: 0.95, green: 0.85, blue: 0.45))
+                        Text(award.title)
+                            .font(.system(size: 28, weight: .bold, design: .serif))
+                            .foregroundColor(.white)
+                    }
+                )
         }
-        .frame(height: 160)
     }
 
     private var descriptionCard: some View {
@@ -530,11 +683,8 @@ struct AwardRankingRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
-                // Rank number
-                Text("\(index + 1)")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(index < 3 ? award.accentColor : .secondary)
-                    .frame(width: 30)
+                // Award badge instead of rank number
+                AwardCategoryBadge(award: award, isWinner: index == 0)
 
                 // Preview covers
                 HStack(spacing: -12) {

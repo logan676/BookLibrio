@@ -2,7 +2,23 @@ import SwiftUI
 
 // MARK: - Shared Components
 
-/// Ranking badge view (No.1, No.2...) with ribbon style
+/// Top overlay ranking badge (NO.1, NO.2...) - for NYT style
+struct TopOverlayRankingBadge: View {
+    let rank: Int
+
+    var body: some View {
+        Text("NO.\(rank)")
+            .font(.system(size: 16, weight: .black))
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(
+                Color.white.opacity(0.85)
+            )
+    }
+}
+
+/// Ranking badge view (No.1, No.2...) with ribbon style - for Amazon/Goodreads
 struct RankingBadgeView: View {
     let rank: Int
 
@@ -51,7 +67,86 @@ struct RankingBadgeView: View {
     }
 }
 
-/// Book card for platform sections
+/// NYT Book card with top overlay badge style
+struct NYTBookCardView: View {
+    let ranking: ExternalRanking
+    let index: Int
+    let cardWidth: CGFloat = 140
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                ZStack(alignment: .top) {
+                    // Book cover
+                    if let coverUrl = ranking.previewCovers?.first {
+                        AsyncImage(url: URL(string: coverUrl)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(2/3, contentMode: .fill)
+                            case .failure:
+                                bookPlaceholder
+                            case .empty:
+                                ProgressView()
+                                    .frame(width: cardWidth, height: cardWidth * 1.5)
+                            @unknown default:
+                                bookPlaceholder
+                            }
+                        }
+                        .frame(width: cardWidth, height: cardWidth * 1.5)
+                        .cornerRadius(8)
+                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 2, y: 4)
+                    } else {
+                        bookPlaceholder
+                    }
+
+                    // Top overlay ranking badge
+                    TopOverlayRankingBadge(rank: index + 1)
+                        .frame(width: cardWidth)
+                        .cornerRadius(8, corners: [.topLeft, .topRight])
+                }
+
+                // Title and subtitle
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(ranking.title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let subtitle = ranking.subtitle {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(width: cardWidth, alignment: .leading)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var bookPlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.2))
+            .overlay(
+                Image(systemName: "book.closed.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(30)
+                    .foregroundColor(.gray)
+            )
+            .frame(width: cardWidth, height: cardWidth * 1.5)
+            .cornerRadius(8)
+            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 2, y: 4)
+    }
+}
+
+/// Book card for platform sections (Amazon, Goodreads) - ribbon badge style
 struct PlatformBookCardView: View {
     let ranking: ExternalRanking
     let index: Int
@@ -137,18 +232,28 @@ struct NYTHeaderView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.96, green: 0.95, blue: 0.93)
+            Color(red: 0.98, green: 0.97, blue: 0.95)
                 .edgesIgnoringSafeArea(.all)
 
             VStack(spacing: 8) {
+                // Classic NYT masthead style
                 Text("The New York Times")
-                    .font(.system(size: 26, weight: .black, design: .serif))
+                    .font(.custom("TimesNewRomanPS-BoldMT", size: 28))
                     .foregroundColor(.black)
                     .multilineTextAlignment(.center)
+                    .overlay(
+                        // Underline decoration
+                        Rectangle()
+                            .fill(Color.black)
+                            .frame(height: 1)
+                            .offset(y: 18),
+                        alignment: .bottom
+                    )
 
                 Text("Best Sellers")
                     .font(.system(size: 20, weight: .bold, design: .serif))
                     .foregroundColor(.black)
+                    .padding(.top, 4)
 
                 Text(L10n.Store.nytSubtitle)
                     .font(.subheadline)
@@ -185,7 +290,7 @@ struct NYTBestSellersSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 20) {
                     ForEach(Array(rankings.enumerated()), id: \.element.id) { index, ranking in
-                        PlatformBookCardView(
+                        NYTBookCardView(
                             ranking: ranking,
                             index: index,
                             onTap: { onRankingTap(ranking) }
@@ -393,7 +498,7 @@ enum Platform: String, CaseIterable {
 
     var headerColor: Color {
         switch self {
-        case .nyt: return Color(red: 0.96, green: 0.95, blue: 0.93)
+        case .nyt: return Color(red: 0.98, green: 0.97, blue: 0.95)
         case .amazon: return Color(red: 0.13, green: 0.11, blue: 0.10)
         case .goodreads: return Color(red: 0.24, green: 0.16, blue: 0.10)
         }
@@ -460,7 +565,7 @@ struct PlatformListView: View {
                     platform.headerColor
                     VStack(spacing: 8) {
                         Text("The New York Times")
-                            .font(.system(size: 28, weight: .black, design: .serif))
+                            .font(.custom("TimesNewRomanPS-BoldMT", size: 28))
                             .foregroundColor(.black)
                         Text("Best Sellers")
                             .font(.system(size: 22, weight: .bold, design: .serif))
