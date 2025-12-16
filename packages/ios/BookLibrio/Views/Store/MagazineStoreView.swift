@@ -12,6 +12,9 @@ struct MagazineStoreView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // Top spacing to avoid being covered by the fixed Ebook/Magazine tab bar
+                Color.clear.frame(height: 8)
+
                 // Featured magazines
                 if !viewModel.featuredMagazines.isEmpty {
                     featuredSection
