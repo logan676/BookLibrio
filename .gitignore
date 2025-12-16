@@ -50,6 +50,9 @@ coverage/
 # Vercel
 .vercel
 
+# Cloudflare
+.wrangler/
+
 # AWS
 .aws-sam/
 samconfig.toml
