@@ -5,34 +5,10 @@ struct BookCoverView: View {
     let title: String
     var useThumbnail: Bool = false
 
-    // Base URL for the API - relative paths need this prefix
-    private static let baseURL = "https://bookpost-api-hono.fly.dev"
-
-    /// Converts a cover URL to an absolute URL if needed
-    /// Appends ?thumb=1 for thumbnail requests
+    /// Converts a cover URL to an absolute URL
+    /// Uses R2 public URL if enabled, otherwise falls back to API proxy
     private var absoluteURL: URL? {
-        guard let urlString = coverUrl, !urlString.isEmpty else { return nil }
-
-        var finalUrl: String
-
-        // If it's already an absolute URL, use it directly
-        if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
-            finalUrl = urlString
-        } else if urlString.hasPrefix("/") {
-            // If it's a relative path, prepend the base URL
-            finalUrl = Self.baseURL + urlString
-        } else {
-            // Try as-is (shouldn't happen but fallback)
-            finalUrl = urlString
-        }
-
-        // Append thumbnail parameter if requested
-        if useThumbnail {
-            let separator = finalUrl.contains("?") ? "&" : "?"
-            finalUrl += "\(separator)thumb=1"
-        }
-
-        return URL(string: finalUrl)
+        R2Config.convertToPublicURL(coverUrl, useThumbnail: useThumbnail)
     }
 
     var body: some View {
@@ -43,14 +19,21 @@ struct BookCoverView: View {
                     .aspectRatio(contentMode: .fit)
             } placeholder: {
                 PlaceholderCover(title: title)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .onAppear {
-                Log.d("BookCoverView: rendering with URL \(url.absoluteString) for '\(title)'")
+                Log.i("BookCoverView: loading '\(title)' - original='\(coverUrl ?? "nil")' → resolved='\(url.absoluteString)'")
             }
         } else {
             PlaceholderCover(title: title)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .onAppear {
-                    Log.d("BookCoverView: no URL for '\(title)', coverUrl=\(coverUrl ?? "nil")")
+                    // Log as error since coverUrl should always be present for ranking items
+                    if let rawUrl = coverUrl, !rawUrl.isEmpty {
+                        Log.e("BookCoverView: URL conversion failed for '\(title)' - coverUrl='\(rawUrl)' could not be converted to URL")
+                    } else {
+                        Log.e("BookCoverView: missing coverUrl for '\(title)'")
+                    }
                 }
         }
     }
@@ -59,16 +42,13 @@ struct BookCoverView: View {
 struct PlaceholderCover: View {
     let title: String
 
-    // Standard book cover aspect ratio (width:height ≈ 2:3)
-    private let coverAspectRatio: CGFloat = 2.0 / 3.0
-
     var body: some View {
         ZStack {
             Color(.systemGray5)
 
-            VStack {
+            VStack(spacing: 4) {
                 Image(systemName: "book.closed")
-                    .font(.system(size: 30))
+                    .font(.system(size: 24))
                     .foregroundColor(.secondary)
 
                 Text(title)
@@ -79,7 +59,6 @@ struct PlaceholderCover: View {
                     .padding(.horizontal, 4)
             }
         }
-        .aspectRatio(coverAspectRatio, contentMode: .fit)
     }
 }
 

@@ -33,3 +33,13 @@ struct MagazineResponse: Codable {
 struct PublishersResponse: Codable {
     let data: [MagazinePublisher]
 }
+
+/// Response for /api/magazines/:id/info - metadata for download
+struct MagazineInfoResponse: Codable {
+    let id: Int
+    let title: String
+    let page_count: Int?
+    let fileSize: Int64?
+    let coverUrl: String?
+    let s3Key: String?  // For R2 public access
+}

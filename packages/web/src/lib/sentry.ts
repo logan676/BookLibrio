@@ -14,10 +14,13 @@ export function initSentry() {
     return
   }
 
+  // Get version from environment
+  const version = import.meta.env.VITE_APP_VERSION || '1.0.0'
+
   Sentry.init({
     dsn,
     environment: import.meta.env.MODE,
-    release: import.meta.env.VITE_APP_VERSION || '1.0.0',
+    release: `booklibrio-web@${version}`,
 
     integrations: [
       // Browser performance tracing

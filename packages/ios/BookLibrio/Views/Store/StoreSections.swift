@@ -352,7 +352,8 @@ struct DailyListCard: View {
                     // Book covers preview
                     HStack(spacing: -12) {
                         ForEach(list.previewCovers.prefix(3), id: \.self) { coverUrl in
-                            AsyncImage(url: URL(string: coverUrl)) { phase in
+                            // Use R2Config to convert relative paths to absolute URLs
+                            AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
                                 switch phase {
                                 case .empty:
                                     Rectangle()
@@ -1237,9 +1238,11 @@ struct ExternalRankingCard: View {
 
     // Book cover view - always shows something (image or placeholder)
     // IMPORTANT: Frame and clipped must be applied INSIDE the image handler for consistent sizing
+    // Uses R2Config to convert relative API paths to absolute URLs
     private func bookCover(url: String?, width: CGFloat, height: CGFloat) -> some View {
         Group {
-            if let coverUrl = url, let imageUrl = URL(string: coverUrl) {
+            // Use R2Config to properly convert relative paths (e.g., /api/r2-covers/...) to absolute URLs
+            if let imageUrl = R2Config.convertToPublicURL(url) {
                 AsyncImage(url: imageUrl) { phase in
                     switch phase {
                     case .empty:

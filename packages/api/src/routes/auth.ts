@@ -99,7 +99,8 @@ const registerRoute = createRoute({
 })
 
 app.openapi(registerRoute, async (c) => {
-  const { username, email, password } = c.req.valid('json')
+  const { username, email: rawEmail, password } = c.req.valid('json')
+  const email = rawEmail.trim() // Trim whitespace from email
 
   // Check if user exists
   const existing = await db.select().from(users).where(eq(users.email, email)).limit(1)
@@ -206,22 +207,31 @@ const loginRoute = createRoute({
 })
 
 app.openapi(loginRoute, async (c) => {
-  const { email, password } = c.req.valid('json')
+  const { email: rawEmail, password } = c.req.valid('json')
+  const email = rawEmail.trim() // Trim whitespace from email
+
+  authLog.i(`🔐 Login attempt for email: ${email}`)
 
   // Find user
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1)
   if (!user) {
+    authLog.w(`❌ Login failed: User not found for email: ${email}`)
     return c.json({
       error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
     }, 401)
   }
 
+  authLog.d(`🔐 User found: id=${user.id}, username=${user.username}, hasPasswordHash=${!!user.passwordHash}, passwordHashFormat=${user.passwordHash?.includes(':') ? 'valid' : 'invalid'}`)
+
   // Verify password
   if (!verifyPassword(password, user.passwordHash)) {
+    authLog.w(`❌ Login failed: Password verification failed for user: ${user.id} (${email})`)
     return c.json({
       error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
     }, 401)
   }
+
+  authLog.i(`✅ Login successful for user: ${user.id} (${email})`)
 
   // Create session
   const accessToken = generateToken()
@@ -456,7 +466,8 @@ const resetPasswordRoute = createRoute({
 })
 
 app.openapi(resetPasswordRoute, async (c) => {
-  const { email, newPassword } = c.req.valid('json')
+  const { email: rawEmail, newPassword } = c.req.valid('json')
+  const email = rawEmail.trim() // Trim whitespace from email
 
   authLog.i(`Password reset attempt for email: ${email}`)
 

@@ -23,7 +23,7 @@ export function initSentry() {
   Sentry.init({
     dsn: SENTRY_DSN,
     environment: __DEV__ ? 'development' : 'production',
-    release: `${Platform.OS}@${appVersion}+${buildNumber}`,
+    release: `booklibrio-mobile@${appVersion}+${buildNumber}`,
 
     // Performance monitoring
     tracesSampleRate: __DEV__ ? 1.0 : 0.2,

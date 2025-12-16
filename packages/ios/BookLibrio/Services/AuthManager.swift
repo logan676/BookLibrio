@@ -66,21 +66,25 @@ class AuthManager: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        Log.i("Login attempt for email: \(email)")
+        Log.i("🔐 Login attempt for email: \(email)")
+        Log.d("🔐 Email length: \(email.count), Password length: \(password.count)")
 
         do {
             let response = try await APIClient.shared.login(email: email, password: password)
-            Log.i("Login successful for user ID: \(response.data.user.id)")
+            Log.i("✅ Login successful for user ID: \(response.data.user.id)")
+            Log.d("✅ Username: \(response.data.user.username), AccessToken prefix: \(String(response.data.accessToken.prefix(20)))...")
             saveAuth(
                 user: response.data.user,
                 accessToken: response.data.accessToken,
                 refreshToken: response.data.refreshToken
             )
         } catch let error as APIError {
-            Log.e("Login failed with APIError", error: error)
+            Log.e("❌ Login failed with APIError: \(error)", error: error)
+            Log.e("❌ APIError localized: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
-            Log.e("Login failed with error: \(String(describing: error))", error: error)
+            Log.e("❌ Login failed with unexpected error type: \(type(of: error))", error: error)
+            Log.e("❌ Error details: \(String(describing: error))")
             errorMessage = "Login failed: \(error.localizedDescription)"
         }
 

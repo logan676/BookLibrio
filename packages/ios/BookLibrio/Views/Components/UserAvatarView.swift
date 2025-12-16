@@ -7,9 +7,14 @@ struct UserAvatarView: View {
     let size: CGFloat
     var showEditBadge: Bool = false
 
+    /// Converts avatar URL to absolute URL using R2 public access if enabled
+    private var absoluteURL: URL? {
+        R2Config.convertToPublicURL(avatarUrl)
+    }
+
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            if let avatarUrl = avatarUrl, !avatarUrl.isEmpty, let url = URL(string: avatarUrl) {
+            if let url = absoluteURL {
                 // User's custom avatar
                 AsyncImage(url: url) { phase in
                     switch phase {

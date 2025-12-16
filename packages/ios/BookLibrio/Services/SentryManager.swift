@@ -45,10 +45,10 @@ enum SentryManager {
             options.tracesSampleRate = 0.2
             #endif
 
-            // Release version
+            // Release version: booklibrio-ios@version+build
             if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
                let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
-                options.releaseName = "\(version)+\(build)"
+                options.releaseName = "booklibrio-ios@\(version)+\(build)"
             }
 
             // Performance monitoring

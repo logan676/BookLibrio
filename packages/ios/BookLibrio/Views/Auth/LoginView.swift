@@ -77,19 +77,23 @@ struct LoginView: View {
                 // Login button
                 Button(action: {
                     Task {
-                        await authManager.login(email: email, password: password)
+                        await authManager.login(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
                     }
                 }) {
-                    if authManager.isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Text(L10n.Auth.login)
-                            .fontWeight(.semibold)
+                    HStack {
+                        Spacer()
+                        if authManager.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text(L10n.Auth.login)
+                                .fontWeight(.semibold)
+                        }
+                        Spacer()
                     }
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
                 .background(Color.brandBlue)
                 .foregroundColor(.white)
                 .cornerRadius(10)

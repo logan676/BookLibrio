@@ -172,8 +172,13 @@ class APIClient {
     // MARK: - Auth API
 
     func login(email: String, password: String) async throws -> AuthResponse {
+        Log.d("🔐 APIClient.login - Preparing request for email: \(email)")
         let body = try JSONEncoder().encode(["email": email, "password": password])
+        if let bodyString = String(data: body, encoding: .utf8) {
+            Log.d("🔐 APIClient.login - Request body: \(bodyString)")
+        }
         let request = try buildRequest(path: "/api/auth/login", method: "POST", body: body)
+        Log.d("🔐 APIClient.login - Request URL: \(request.url?.absoluteString ?? "nil")")
         return try await perform(request)
     }
 
@@ -218,6 +223,12 @@ class APIClient {
 
     func getEbookCategories() async throws -> EbookCategoriesResponse {
         let request = try buildRequest(path: "/api/ebook-categories")
+        return try await perform(request)
+    }
+
+    /// Get ebook metadata including s3Key for R2 public access
+    func getEbookInfo(id: Int) async throws -> EbookInfoResponse {
+        let request = try buildRequest(path: "/api/ebooks/\(id)/info")
         return try await perform(request)
     }
 
@@ -275,6 +286,27 @@ class APIClient {
 
     func downloadEbookFile(id: Int, fileType: String? = nil) async throws -> URL {
         Log.i("⬇️ downloadEbookFile: id=\(id), requestedType=\(fileType ?? "auto")")
+
+        // Try R2 public access first if enabled
+        if R2Config.isPublicAccessEnabled {
+            do {
+                let info = try await getEbookInfo(id: id)
+                if let s3Key = info.s3Key, let publicURL = R2Config.ebookURL(s3Key: s3Key) {
+                    Log.d("📡 Using R2 public URL: \(publicURL.absoluteString)")
+                    return try await downloadFile(
+                        from: publicURL,
+                        id: id,
+                        fileType: fileType ?? info.fileType,
+                        category: "ebooks"
+                    )
+                }
+            } catch {
+                Log.w("⚠️ R2 public access failed, falling back to API proxy: \(error.localizedDescription)")
+            }
+        }
+
+        // Fallback to API proxy
+        Log.d("📡 Using API proxy for download")
         let request = try buildRequest(path: "/api/ebooks/\(id)/file", requiresAuth: true)
         Log.d("📡 Request URL: \(request.url?.absoluteString ?? "nil")")
 
@@ -331,6 +363,54 @@ class APIClient {
         return destURL
     }
 
+    /// Generic file download helper for R2 public URLs
+    private func downloadFile(from url: URL, id: Int, fileType: String?, category: String) async throws -> URL {
+        let request = URLRequest(url: url)
+        let (tempURL, response) = try await session.download(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.serverError(httpResponse.statusCode, nil)
+        }
+
+        // Determine file type
+        let actualFileType: String
+        if let type = fileType?.lowercased(), !type.isEmpty {
+            actualFileType = type
+        } else if let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") {
+            if contentType.contains("epub") {
+                actualFileType = "epub"
+            } else if contentType.contains("pdf") {
+                actualFileType = "pdf"
+            } else {
+                actualFileType = url.pathExtension.isEmpty ? "pdf" : url.pathExtension
+            }
+        } else {
+            actualFileType = url.pathExtension.isEmpty ? "pdf" : url.pathExtension
+        }
+
+        // Move to cache directory
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let fileDir = cacheDir.appendingPathComponent("\(actualFileType)s/\(category)", isDirectory: true)
+        try FileManager.default.createDirectory(at: fileDir, withIntermediateDirectories: true)
+
+        let destURL = fileDir.appendingPathComponent("\(id).\(actualFileType)")
+        if FileManager.default.fileExists(atPath: destURL.path) {
+            try FileManager.default.removeItem(at: destURL)
+        }
+        try FileManager.default.moveItem(at: tempURL, to: destURL)
+
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: destURL.path),
+           let fileSize = attrs[.size] as? Int64 {
+            Log.i("✅ File saved: \(destURL.lastPathComponent), size: \(fileSize) bytes")
+        }
+
+        return destURL
+    }
+
     // MARK: - Magazines API
 
     func getMagazines(publisher: Int? = nil, year: Int? = nil, search: String? = nil, limit: Int? = nil, offset: Int? = nil) async throws -> MagazinesResponse {
@@ -355,7 +435,35 @@ class APIClient {
         return try await perform(request)
     }
 
+    /// Get magazine metadata including s3Key for R2 public access
+    func getMagazineInfo(id: Int) async throws -> MagazineInfoResponse {
+        let request = try buildRequest(path: "/api/magazines/\(id)/info")
+        return try await perform(request)
+    }
+
     func downloadMagazineFile(id: Int) async throws -> URL {
+        Log.i("⬇️ downloadMagazineFile: id=\(id)")
+
+        // Try R2 public access first if enabled
+        if R2Config.isPublicAccessEnabled {
+            do {
+                let info = try await getMagazineInfo(id: id)
+                if let s3Key = info.s3Key, let publicURL = R2Config.magazineURL(s3Key: s3Key) {
+                    Log.d("📡 Using R2 public URL: \(publicURL.absoluteString)")
+                    return try await downloadFile(
+                        from: publicURL,
+                        id: id,
+                        fileType: "pdf",
+                        category: "magazines"
+                    )
+                }
+            } catch {
+                Log.w("⚠️ R2 public access failed, falling back to API proxy: \(error.localizedDescription)")
+            }
+        }
+
+        // Fallback to API proxy
+        Log.d("📡 Using API proxy for download")
         let request = try buildRequest(path: "/api/magazines/\(id)/file", requiresAuth: true)
         let (tempURL, response) = try await session.download(for: request)
 

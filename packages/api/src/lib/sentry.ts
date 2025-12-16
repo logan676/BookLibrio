@@ -14,10 +14,13 @@ export function initSentry() {
     return
   }
 
+  // Get version from package.json
+  const version = process.env.npm_package_version || '1.0.0'
+
   Sentry.init({
     dsn,
     environment: process.env.NODE_ENV || 'development',
-    release: process.env.npm_package_version || '1.0.0',
+    release: `booklibrio-api@${version}`,
 
     // Performance monitoring
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,

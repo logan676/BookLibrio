@@ -296,7 +296,8 @@ app.get('/:id/info', async (c) => {
     title: magazine.title,
     page_count: magazine.pageCount,
     fileSize: magazine.fileSize,
-    coverUrl: magazine.coverUrl
+    coverUrl: magazine.coverUrl,
+    s3Key: magazine.s3Key  // For R2 public access
   })
 })
 

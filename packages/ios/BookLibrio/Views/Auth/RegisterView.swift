@@ -112,6 +112,8 @@ struct RegisterView: View {
     private func register() {
         localError = nil
 
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
         guard password.count >= 6 else {
             localError = L10n.Auth.passwordMinLength
             return
@@ -119,7 +121,7 @@ struct RegisterView: View {
 
         // Username will be derived from email on the server
         Task {
-            await authManager.register(username: email.split(separator: "@").first.map(String.init) ?? email, email: email, password: password)
+            await authManager.register(username: trimmedEmail.split(separator: "@").first.map(String.init) ?? trimmedEmail, email: trimmedEmail, password: password)
         }
     }
 }

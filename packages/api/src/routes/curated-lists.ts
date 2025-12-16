@@ -309,9 +309,9 @@ app.openapi(getCuratedListRoute, async (c) => {
         id: ebooks.id,
         title: ebooks.title,
         author: ebooks.author,
-        coverUrl: ebooks.coverImageUrl,
-        rating: ebooks.rating,
-        ratingCount: ebooks.ratingCount,
+        coverUrl: ebooks.coverUrl,
+        rating: ebooks.externalRating,
+        ratingCount: ebooks.externalRatingsCount,
       }).from(ebooks).where(sql`${ebooks.id} IN ${ebookIds}`)
     : []
 
@@ -320,9 +320,9 @@ app.openapi(getCuratedListRoute, async (c) => {
         id: magazines.id,
         title: magazines.title,
         author: sql<string>`null`,
-        coverUrl: magazines.coverImageUrl,
-        rating: magazines.rating,
-        ratingCount: magazines.ratingCount,
+        coverUrl: magazines.coverUrl,
+        rating: sql<string>`null`,
+        ratingCount: sql<number>`null`,
       }).from(magazines).where(sql`${magazines.id} IN ${magazineIds}`)
     : []
 

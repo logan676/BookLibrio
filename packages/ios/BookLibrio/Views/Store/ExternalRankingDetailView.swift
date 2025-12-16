@@ -149,38 +149,10 @@ struct ExternalRankingDetailView: View {
                     .foregroundColor(.secondary)
                     .frame(width: 30)
 
-                // Cover - frame applied inside for consistent sizing
-                AsyncImage(url: URL(string: item.book.coverUrl ?? "")) { phase in
-                    switch phase {
-                    case .empty:
-                        Rectangle()
-                            .fill(Color(.systemGray5))
-                            .overlay(
-                                Image(systemName: "book.closed")
-                                    .foregroundColor(.gray)
-                            )
-                            .frame(width: 50, height: 70)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 50, height: 70)
-                            .clipped()
-                    case .failure:
-                        Rectangle()
-                            .fill(Color(.systemGray5))
-                            .overlay(
-                                Image(systemName: "book.closed")
-                                    .foregroundColor(.gray)
-                            )
-                            .frame(width: 50, height: 70)
-                    @unknown default:
-                        Rectangle()
-                            .fill(Color(.systemGray5))
-                            .frame(width: 50, height: 70)
-                    }
-                }
-                .cornerRadius(4)
+                // Cover - use BookCoverView to handle relative paths (e.g., /api/r2-covers/...)
+                BookCoverView(coverUrl: item.book.coverUrl, title: item.book.title)
+                    .frame(width: 50, height: 70)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
 
                 // Info
                 VStack(alignment: .leading, spacing: 4) {

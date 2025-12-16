@@ -44,6 +44,7 @@ const MIN_VALID_SIZE = 10000
 
 // Books that still need fixing (downloaded placeholder instead of real cover)
 const BOOKS_TO_FIX = [
+  { isbn: '9781250178633', title: 'The Women', author: 'Kristin Hannah' },
   { isbn: '9781250178602', title: 'The Four Winds', author: 'Kristin Hannah' },
   { isbn: '9781524798659', title: 'Malibu Rising', author: 'Taylor Jenkins Reid' },
   { isbn: '9780593593806', title: 'Spare', author: 'Prince Harry Duke of Sussex' },

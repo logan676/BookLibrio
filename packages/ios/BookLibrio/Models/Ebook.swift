@@ -60,3 +60,13 @@ struct EbookUnderline: Codable, Identifiable {
 struct EbookUnderlinesResponse: Codable {
     let data: [EbookUnderline]
 }
+
+/// Response for /api/ebooks/:id/info - metadata for download
+struct EbookInfoResponse: Codable {
+    let id: Int
+    let title: String
+    let fileType: String?
+    let fileSize: Int64?
+    let coverUrl: String?
+    let s3Key: String?  // For R2 public access
+}

@@ -500,7 +500,8 @@ app.get('/:id/info', async (c) => {
     title: ebook.title,
     fileType: ebook.fileType,
     fileSize,
-    coverUrl: ebook.coverUrl
+    coverUrl: ebook.coverUrl,
+    s3Key: ebook.s3Key  // For R2 public access
   })
 })
 

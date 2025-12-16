@@ -500,7 +500,8 @@ struct RelatedListCard: View {
                 ZStack(alignment: .bottomTrailing) {
                     HStack(spacing: -20) {
                         ForEach(list.previewCovers.prefix(3).indices, id: \.self) { index in
-                            AsyncImage(url: URL(string: list.previewCovers[index])) { image in
+                            // Use R2Config to convert relative paths to absolute URLs
+                            AsyncImage(url: R2Config.convertToPublicURL(list.previewCovers[index])) { image in
                                 image
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)

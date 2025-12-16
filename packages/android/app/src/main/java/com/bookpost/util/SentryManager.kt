@@ -29,8 +29,8 @@ object SentryManager {
             // Environment
             options.environment = if (BuildConfig.DEBUG) "development" else "production"
 
-            // Release version
-            options.release = "${BuildConfig.APPLICATION_ID}@${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
+            // Release version: booklibrio-android@version+versionCode
+            options.release = "booklibrio-android@${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
 
             // Sample rates
             if (BuildConfig.DEBUG) {

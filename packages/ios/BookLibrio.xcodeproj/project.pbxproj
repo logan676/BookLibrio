@@ -38,6 +38,7 @@
 		A0C8D0E9D75850C9723B0FE1 /* BookListCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E543190226CF26DFB2035E2 /* BookListCard.swift */; };
 		A5216516691E9DC5F1BE0F11 /* BookCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79DA62E99A6FCDF623EECB9 /* BookCacheManager.swift */; };
 		AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7B638A54971E152540E95 /* ImageCache.swift */; };
+		R2CONFIG001 /* R2Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = R2CONFIG001REF /* R2Config.swift */; };
 		DATACACHE002 /* DataCacheManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DATACACHE001 /* DataCacheManager.swift */; };
 		CACHEKEYS002 /* CacheKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CACHEKEYS001 /* CacheKeys.swift */; };
 		APICACHE002 /* APIClient+Caching.swift in Sources */ = {isa = PBXBuildFile; fileRef = APICACHE001 /* APIClient+Caching.swift */; };
@@ -224,6 +225,7 @@
 		S012 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		S013 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		SENTRY001REF /* SentryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryManager.swift; sourceTree = "<group>"; };
+		R2CONFIG001REF /* R2Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = R2Config.swift; sourceTree = "<group>"; };
 		S014 /* ReadingSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSessionManager.swift; sourceTree = "<group>"; };
 		S015 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		S016 /* BadgesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesViewModel.swift; sourceTree = "<group>"; };
@@ -418,6 +420,7 @@
 				APICACHE001 /* APIClient+Caching.swift */,
 				S013 /* AuthManager.swift */,
 				SENTRY001REF /* SentryManager.swift */,
+				R2CONFIG001REF /* R2Config.swift */,
 				S014 /* ReadingSessionManager.swift */,
 				D2F7B638A54971E152540E95 /* ImageCache.swift */,
 				B79DA62E99A6FCDF623EECB9 /* BookCacheManager.swift */,
@@ -812,6 +815,7 @@
 				F012 /* APIClient.swift in Sources */,
 				F013 /* AuthManager.swift in Sources */,
 				SENTRY001 /* SentryManager.swift in Sources */,
+				R2CONFIG001 /* R2Config.swift in Sources */,
 				F014 /* ReadingSessionManager.swift in Sources */,
 				F015 /* Extensions.swift in Sources */,
 				F016 /* BadgesViewModel.swift in Sources */,
@@ -1038,7 +1042,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.booklibrio.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1124,7 +1128,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.booklibrio.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

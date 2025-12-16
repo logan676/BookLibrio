@@ -45,12 +45,18 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
     }
 
     private func loadImage() {
-        guard let url = url, !isLoading else {
-            Log.d("CachedAsyncImage: skipping load - url=\(url?.absoluteString ?? "nil"), isLoading=\(isLoading)")
+        // Track when URL is nil - this shouldn't happen but is critical to debug
+        guard let url = url else {
+            Log.e("CachedAsyncImage: URL is nil, cannot load image")
             return
         }
 
-        Log.d("CachedAsyncImage: loading image from \(url.absoluteString)")
+        guard !isLoading else {
+            Log.d("CachedAsyncImage: already loading, skipping - url=\(url.absoluteString)")
+            return
+        }
+
+        Log.d("CachedAsyncImage: starting load for \(url.absoluteString)")
         isLoading = true
 
         Task {
@@ -58,50 +64,57 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
             if let cached = await ImageCache.shared.image(for: url) {
                 // Validate cached image is not a placeholder
                 if cached.size.width >= minimumImageSize && cached.size.height >= minimumImageSize {
-                    Log.d("CachedAsyncImage: found valid image in cache \(url.absoluteString)")
+                    Log.d("CachedAsyncImage: cache hit (\(Int(cached.size.width))x\(Int(cached.size.height))) - \(url.absoluteString)")
                     await MainActor.run {
                         loadedImage = cached
                         isLoading = false
                     }
                     return
                 } else {
-                    Log.w("CachedAsyncImage: cached image too small, will try network \(url.absoluteString)")
+                    Log.e("CachedAsyncImage: cached image too small (\(Int(cached.size.width))x\(Int(cached.size.height))), rejecting - \(url.absoluteString)")
                 }
             }
 
-            Log.d("CachedAsyncImage: not in cache, fetching from network \(url.absoluteString)")
+            Log.d("CachedAsyncImage: cache miss, fetching from network - \(url.absoluteString)")
 
             // Fetch from network
             do {
                 let (data, response) = try await URLSession.shared.data(from: url)
-                Log.d("CachedAsyncImage: received \(data.count) bytes from \(url.absoluteString)")
 
+                // Check HTTP status
                 if let httpResponse = response as? HTTPURLResponse {
-                    Log.d("CachedAsyncImage: HTTP status \(httpResponse.statusCode) for \(url.absoluteString)")
+                    if !(200...299).contains(httpResponse.statusCode) {
+                        Log.e("CachedAsyncImage: HTTP error \(httpResponse.statusCode) for \(url.absoluteString)")
+                        await MainActor.run { isLoading = false }
+                        return
+                    }
+                    Log.d("CachedAsyncImage: HTTP \(httpResponse.statusCode), received \(data.count) bytes - \(url.absoluteString)")
                 }
 
-                if let image = UIImage(data: data) {
-                    // Check if image is too small (likely a placeholder like Open Library's "image not available")
-                    if image.size.width < minimumImageSize || image.size.height < minimumImageSize {
-                        Log.w("CachedAsyncImage: image too small (\(Int(image.size.width))x\(Int(image.size.height))), treating as placeholder: \(url.absoluteString)")
-                        // Don't load or cache placeholder images
-                    } else {
-                        Log.d("CachedAsyncImage: successfully created UIImage (\(Int(image.size.width))x\(Int(image.size.height))) from \(url.absoluteString)")
-                        // Cache for offline use
-                        await ImageCache.shared.cache(image: image, for: url)
-                        await MainActor.run {
-                            loadedImage = image
-                        }
-                    }
-                } else {
-                    Log.e("CachedAsyncImage: failed to create UIImage from data for \(url.absoluteString)")
+                // Create UIImage from data
+                guard let image = UIImage(data: data) else {
+                    Log.e("CachedAsyncImage: failed to create UIImage from \(data.count) bytes - \(url.absoluteString)")
+                    await MainActor.run { isLoading = false }
+                    return
+                }
+
+                // Check if image is too small (likely a placeholder)
+                if image.size.width < minimumImageSize || image.size.height < minimumImageSize {
+                    Log.e("CachedAsyncImage: image too small (\(Int(image.size.width))x\(Int(image.size.height))), rejecting as placeholder - \(url.absoluteString)")
+                    await MainActor.run { isLoading = false }
+                    return
+                }
+
+                // Success! Cache and display
+                Log.i("CachedAsyncImage: loaded successfully (\(Int(image.size.width))x\(Int(image.size.height))) - \(url.absoluteString)")
+                await ImageCache.shared.cache(image: image, for: url)
+                await MainActor.run {
+                    loadedImage = image
+                    isLoading = false
                 }
             } catch {
-                Log.e("Failed to load image: \(url)", error: error)
-            }
-
-            await MainActor.run {
-                isLoading = false
+                Log.e("CachedAsyncImage: network error loading \(url.absoluteString) - \(error.localizedDescription)")
+                await MainActor.run { isLoading = false }
             }
         }
     }

@@ -50,8 +50,9 @@ struct TimelineMilestoneRow: View {
                 Spacer()
 
                 // Book cover thumbnail (if applicable)
+                // Use R2Config to convert relative paths to absolute URLs
                 if milestone.bookCoverUrl != nil {
-                    AsyncImage(url: URL(string: milestone.bookCoverUrl ?? "")) { image in
+                    AsyncImage(url: R2Config.convertToPublicURL(milestone.bookCoverUrl)) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -137,10 +138,11 @@ struct TimelineMilestoneCard: View {
                 Spacer()
 
                 // Book cover
+                // Use R2Config to convert relative paths to absolute URLs
                 if let bookTitle = milestone.bookTitle {
                     VStack {
                         if let coverUrl = milestone.bookCoverUrl {
-                            AsyncImage(url: URL(string: coverUrl)) { image in
+                            AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { image in
                                 image
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
