@@ -33,6 +33,7 @@
 		8525368F2550DF067D366C88 /* CuratedListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D86A0A5F010A50F5F6055C /* CuratedListDetailView.swift */; };
 		88EACBC3AB35F96710453A9B /* ExternalRankingsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7D2BEBE8B851B4D43032CB /* ExternalRankingsListView.swift */; };
 		ALLBOOKS001B /* AllBooksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ALLBOOKS001F /* AllBooksView.swift */; };
+		MIXEDBOOK001B /* MixedBookSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = MIXEDBOOK001F /* MixedBookSection.swift */; };
 		91AA530CA3222FE4F9EEAD50 /* StatsShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A5FA287476AF43000DBDE1C /* StatsShareCardView.swift */; };
 		94AB6AA065E8A74FA4B169E2 /* CuratedListsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F08127D2B89D6E57C258CC /* CuratedListsViewModel.swift */; };
 		96B8265A5D1FF3DDCBA9C1DF /* UnavailableBooksAdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 806C3BE9F0DD45369C75E47B /* UnavailableBooksAdminView.swift */; };
@@ -149,6 +150,7 @@
 		F085 /* RelatedBooksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S085 /* RelatedBooksView.swift */; };
 		F086 /* RedeemCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S086 /* RedeemCodeView.swift */; };
 		F087 /* PublishThoughtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S087 /* PublishThoughtView.swift */; };
+		F088 /* StoreCoverImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = S088 /* StoreCoverImage.swift */; };
 		F4B8BC42B20032A214491F41 /* AwardSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D5B18E0F0A8E2065C5886D /* AwardSections.swift */; };
 		F9B9A3AECC7E366A0AE82596 /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4833F0DD088FC56E2EFC38A2 /* CategoryDetailView.swift */; };
 		FA719BD078D431F3E01DBE89 /* EPUBBookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29296F4BACA66508F83E36D8 /* EPUBBookmarksView.swift */; };
@@ -212,6 +214,7 @@
 		DATACACHE001 /* DataCacheManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCacheManager.swift; sourceTree = "<group>"; };
 		DB7D2BEBE8B851B4D43032CB /* ExternalRankingsListView.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; includeInIndex = 1; name = ExternalRankingsListView.swift; path = BookLibrio/Views/Store/ExternalRankingsListView.swift; sourceTree = SOURCE_ROOT; };
 		ALLBOOKS001F /* AllBooksView.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; includeInIndex = 1; name = AllBooksView.swift; path = BookLibrio/Views/Store/AllBooksView.swift; sourceTree = SOURCE_ROOT; };
+		MIXEDBOOK001F /* MixedBookSection.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; includeInIndex = 1; name = MixedBookSection.swift; path = BookLibrio/Views/Store/MixedBookSection.swift; sourceTree = SOURCE_ROOT; };
 		E33500B76637EEC8CF6A111E /* ReadingRecordsGridView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ReadingRecordsGridView.swift; path = ReadingRecordsGridView.swift; sourceTree = "<group>"; };
 		E5C8F5067F67D13B385D6486 /* FriendThoughtsOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FriendThoughtsOverlay.swift; path = FriendThoughtsOverlay.swift; sourceTree = "<group>"; };
 		E657812082C14524A787E310 /* Bookmark.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Bookmark.swift; path = Bookmark.swift; sourceTree = "<group>"; };
@@ -309,6 +312,7 @@
 		S085 /* RelatedBooksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatedBooksView.swift; sourceTree = "<group>"; };
 		S086 /* RedeemCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedeemCodeView.swift; sourceTree = "<group>"; };
 		S087 /* PublishThoughtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublishThoughtView.swift; sourceTree = "<group>"; };
+		S088 /* StoreCoverImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreCoverImage.swift; sourceTree = "<group>"; };
 		SENTRY001REF /* SentryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryManager.swift; sourceTree = "<group>"; };
 		STOREREF /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -557,6 +561,7 @@
 				S023 /* BookCoverView.swift */,
 				S024 /* LoadingView.swift */,
 				S025 /* SearchBarView.swift */,
+				S088 /* StoreCoverImage.swift */,
 				4F36EA14C54965AFEAB0C367 /* CachedAsyncImage.swift */,
 				87353DAAC97839076674EC30 /* UserAvatarView.swift */,
 			);
@@ -735,6 +740,7 @@
 				64E8AB2D00DF565011343681 /* EditorPicksListView.swift */,
 				DB7D2BEBE8B851B4D43032CB /* ExternalRankingsListView.swift */,
 				ALLBOOKS001F /* AllBooksView.swift */,
+				MIXEDBOOK001F /* MixedBookSection.swift */,
 				3DA6B345AC275DC26C0BF5F8 /* PlatformListSections.swift */,
 				B6D5B18E0F0A8E2065C5886D /* AwardSections.swift */,
 			);
@@ -906,6 +912,7 @@
 				F085 /* RelatedBooksView.swift in Sources */,
 				F086 /* RedeemCodeView.swift in Sources */,
 				F087 /* PublishThoughtView.swift in Sources */,
+				F088 /* StoreCoverImage.swift in Sources */,
 				AD48C27CA6FCAAEDFA375378 /* ImageCache.swift in Sources */,
 				DATACACHE002 /* DataCacheManager.swift in Sources */,
 				CACHEKEYS002 /* CacheKeys.swift in Sources */,
@@ -962,6 +969,7 @@
 				FFBFF705B25ECED55A8A1BB9 /* EditorPicksListView.swift in Sources */,
 				88EACBC3AB35F96710453A9B /* ExternalRankingsListView.swift in Sources */,
 				ALLBOOKS001B /* AllBooksView.swift in Sources */,
+				MIXEDBOOK001B /* MixedBookSection.swift in Sources */,
 				00651D170A9A93841BDACF9D /* PlatformListSections.swift in Sources */,
 				F4B8BC42B20032A214491F41 /* AwardSections.swift in Sources */,
 			);

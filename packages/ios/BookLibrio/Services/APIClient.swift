@@ -1631,4 +1631,160 @@ class APIClient {
         )
         return try await perform(request)
     }
+
+    // MARK: - Lists With Books (Flattened Data for Store Sections)
+
+    /// Get NYT bestseller lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getNYTListsWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/nyt-lists-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get Amazon best book lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getAmazonListsWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/amazon-lists-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get Goodreads choice book lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getGoodreadsListsWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/goodreads-lists-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get Pulitzer Prize lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getPulitzerAwardsWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/pulitzer-awards-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get Booker Prize lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getBookerAwardsWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/booker-awards-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get Newbery Medal lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getNewberyAwardsWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/newbery-awards-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get editor pick lists with books embedded
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    ///   - booksPerList: Number of books to include per list
+    func getEditorPicksWithBooks(limit: Int = 20, offset: Int = 0, booksPerList: Int = 10) async throws -> ListsWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)"),
+            URLQueryItem(name: "booksPerList", value: "\(booksPerList)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/editor-picks-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Category Collections with Books
+
+    /// Get AI & ML collection with books embedded
+    /// - Parameter booksLimit: Number of books to include
+    func getAICollectionWithBooks(booksLimit: Int = 50) async throws -> SingleListWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "booksLimit", value: "\(booksLimit)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/ai-collection-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    /// Get Biography collection with books embedded
+    /// - Parameter booksLimit: Number of books to include
+    func getBiographyCollectionWithBooks(booksLimit: Int = 50) async throws -> SingleListWithBooksResponse {
+        let queryItems = [
+            URLQueryItem(name: "booksLimit", value: "\(booksLimit)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/biography-collection-with-books",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
 }

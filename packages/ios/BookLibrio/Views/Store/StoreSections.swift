@@ -352,34 +352,12 @@ struct DailyListCard: View {
                     // Book covers preview
                     HStack(spacing: -12) {
                         ForEach(list.previewCovers.prefix(3), id: \.self) { coverUrl in
-                            // Use R2Config to convert relative paths to absolute URLs
-                            AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                switch phase {
-                                case .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.2))
-                                        .frame(width: 36, height: 50)
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 36, height: 50)
-                                        .clipped()
-                                case .failure:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.2))
-                                        .frame(width: 36, height: 50)
-                                @unknown default:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.2))
-                                        .frame(width: 36, height: 50)
-                                }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.white, lineWidth: 2)
-                            )
+                            StoreCoverImage(coverUrl: coverUrl, cornerRadius: 4, shadowRadius: 0)
+                                .frame(width: 36, height: 50)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(Color.white, lineWidth: 2)
+                                )
                         }
 
                         if list.bookCount > 3 {
@@ -809,25 +787,16 @@ struct CuratedCollectionCard: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
                 // Cover image or gradient background
-                if let coverUrl = list.coverUrl, let url = URL(string: coverUrl) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
-                            collectionPlaceholder
-                                .frame(width: 160, height: 100)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 160, height: 100)
-                                .clipped()
-                        case .failure:
-                            collectionPlaceholder
-                                .frame(width: 160, height: 100)
-                        @unknown default:
-                            collectionPlaceholder
-                                .frame(width: 160, height: 100)
-                        }
+                if let coverUrl = list.coverUrl {
+                    CachedAsyncImage(url: R2Config.convertToPublicURL(coverUrl, useThumbnail: true)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 160, height: 100)
+                            .clipped()
+                    } placeholder: {
+                        collectionPlaceholder
+                            .frame(width: 160, height: 100)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
@@ -1238,29 +1207,20 @@ struct ExternalRankingCard: View {
 
     // Book cover view - always shows something (image or placeholder)
     // IMPORTANT: Frame and clipped must be applied INSIDE the image handler for consistent sizing
-    // Uses R2Config to convert relative API paths to absolute URLs
+    // Uses R2Config to convert relative API paths to absolute URLs with thumbnail support
     private func bookCover(url: String?, width: CGFloat, height: CGFloat) -> some View {
         Group {
             // Use R2Config to properly convert relative paths (e.g., /api/r2-covers/...) to absolute URLs
-            if let imageUrl = R2Config.convertToPublicURL(url) {
-                AsyncImage(url: imageUrl) { phase in
-                    switch phase {
-                    case .empty:
-                        placeholderCover
-                            .frame(width: width, height: height)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: width, height: height)
-                            .clipped()
-                    case .failure:
-                        placeholderCover
-                            .frame(width: width, height: height)
-                    @unknown default:
-                        placeholderCover
-                            .frame(width: width, height: height)
-                    }
+            if let imageUrl = R2Config.convertToPublicURL(url, useThumbnail: true) {
+                CachedAsyncImage(url: imageUrl) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: width, height: height)
+                        .clipped()
+                } placeholder: {
+                    placeholderCover
+                        .frame(width: width, height: height)
                 }
             } else {
                 placeholderCover
@@ -1294,16 +1254,13 @@ struct ExternalRankingCard: View {
     // Logo view
     @ViewBuilder
     private var logoView: some View {
-        if let logoUrl = ranking.sourceLogoUrl, !logoUrl.isEmpty {
-            AsyncImage(url: URL(string: logoUrl)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                default:
-                    sourceNameText
-                }
+        if let logoUrl = ranking.sourceLogoUrl, !logoUrl.isEmpty, let url = URL(string: logoUrl) {
+            CachedAsyncImage(url: url) { image in
+                image
+                    .resizable()
+                    .scaledToFit()
+            } placeholder: {
+                sourceNameText
             }
         } else {
             sourceNameText

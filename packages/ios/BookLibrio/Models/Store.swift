@@ -207,3 +207,35 @@ struct NewberyAwardsResponse: Codable {
     let total: Int
     let hasMore: Bool
 }
+
+// MARK: - Flattened List with Books (for Store sections)
+// These models support the new architecture where each section displays books directly
+
+struct ListWithBooks: Identifiable, Codable {
+    let id: Int
+    let listType: String
+    let sourceName: String?
+    let sourceLogoUrl: String?
+    let title: String
+    let subtitle: String?
+    let description: String?
+    let bookCount: Int?
+    let lastUpdated: String?
+    let externalUrl: String?
+    let books: [ExternalRankingBook]
+
+    var displaySourceName: String {
+        sourceName ?? CuratedListType(rawValue: listType)?.displayName ?? listType
+    }
+}
+
+struct ListsWithBooksResponse: Codable {
+    let data: [ListWithBooks]
+    let total: Int
+    let hasMore: Bool
+}
+
+/// Response for single collection endpoints (AI, Kevin Kelly, Biography)
+struct SingleListWithBooksResponse: Codable {
+    let data: ListWithBooks?
+}

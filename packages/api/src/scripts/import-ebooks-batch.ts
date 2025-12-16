@@ -12,9 +12,16 @@
  *   npx tsx src/scripts/import-ebooks-batch.ts [options]
  *
  * Options:
- *   --dry-run         Preview without saving
- *   --skip-upload     Skip R2 upload (for testing)
- *   --category=slug   Import only specific category
+ *   --dry-run              Preview without saving
+ *   --skip-upload          Skip R2 upload (for testing)
+ *   --category=slug        Import only specific category
+ *   --start-from=N         Start from file index N (skip earlier files)
+ *   --skip-files=a,b,c     Skip files containing these substrings
+ *
+ * Examples:
+ *   npx tsx src/scripts/import-ebooks-batch.ts --category=artificial-intelligence
+ *   npx tsx src/scripts/import-ebooks-batch.ts --category=artificial-intelligence --start-from=14
+ *   npx tsx src/scripts/import-ebooks-batch.ts --skip-files=Blockchain,Finance
  */
 
 import 'dotenv/config'
@@ -92,6 +99,7 @@ const IMPORT_CONFIGS = [
     categorySlug: 'kevin-kelly',
     recursive: true,
     foreignOnly: false, // 凯文凯利是美国作者，全部导入
+    minFileSize: 0, // No minimum file size
   },
   {
     name: '人物传记大合集',
@@ -99,6 +107,7 @@ const IMPORT_CONFIGS = [
     categorySlug: 'biography',
     recursive: false,
     foreignOnly: true, // 只导入国外人物传记
+    minFileSize: 0,
   },
   {
     name: 'AI/机器学习书籍',
@@ -106,8 +115,80 @@ const IMPORT_CONFIGS = [
     categorySlug: 'artificial-intelligence',
     recursive: false,
     foreignOnly: true, // 只导入国外作者书籍
+    minFileSize: 0,
+  },
+  // New directories for foreign author books
+  {
+    name: '纽约时报畅销书',
+    directory: '/Volumes/杂志/电子书/纽约时报畅销书106册（EPUB+MOBI）  106本',
+    categorySlug: 'nyt-bestseller',
+    recursive: true,
+    foreignOnly: false, // 全是外国作者
+    minFileSize: 1024 * 1024, // 1MB minimum
+  },
+  {
+    name: 'Modern Library百大经典',
+    directory: '/Volumes/杂志/电子书/Modern Library Top 100 Novels',
+    categorySlug: 'modern-library-100',
+    recursive: false,
+    foreignOnly: false, // 全是外国作者
+    minFileSize: 1024 * 1024, // 1MB minimum
+  },
+  {
+    name: '1600本英文原版',
+    directory: '/Volumes/杂志/电子书/1600本ePub格式英文原版电子书',
+    categorySlug: 'english-originals',
+    recursive: true,
+    foreignOnly: false, // 全是英文书
+    minFileSize: 1024 * 1024, // 1MB minimum
+  },
+  {
+    name: '英文原版专区',
+    directory: '/Volumes/杂志/电子书/书库5丨英文原版专区',
+    categorySlug: 'english-originals',
+    recursive: true,
+    foreignOnly: false, // 全是英文书
+    minFileSize: 1024 * 1024, // 1MB minimum
   },
 ]
+
+/**
+ * Common ad patterns to clean from metadata
+ */
+const AD_PATTERNS = [
+  /【淘宝店铺[：:].+?】/g,
+  /【店铺[：:].+?】/g,
+  /【.+?工作室】/g,
+  /\[淘宝店铺[：:].+?\]/g,
+  /\[店铺[：:].+?\]/g,
+  /\[.+?工作室\]/g,
+  /淘宝店铺[：:].+/g,
+  /微信[：:].+/g,
+  /QQ[：:]\d+/g,
+  /公众号[：:].+/g,
+  /关注.+?获取更多/g,
+  /更多电子书.+/g,
+  /本书由.+?整理/g,
+  /本书来自.+/g,
+  /驳壳工作室/g,
+  /\(\d+\)$/g, // Remove trailing numbers like (1420)
+]
+
+/**
+ * Clean ad text from metadata strings
+ */
+function cleanAdText(text: string): string {
+  if (!text) return text
+  let cleaned = text
+  for (const pattern of AD_PATTERNS) {
+    cleaned = cleaned.replace(pattern, '')
+  }
+  // Clean up multiple spaces and trim
+  cleaned = cleaned.replace(/\s+/g, ' ').trim()
+  // Remove leading/trailing special characters
+  cleaned = cleaned.replace(/^[\s\-_【】\[\]]+|[\s\-_【】\[\]]+$/g, '').trim()
+  return cleaned
+}
 
 /**
  * Check if author/title is Chinese (domestic)
@@ -225,19 +306,22 @@ async function extractEpubMetadata(filePath: string): Promise<EpubMetadata | nul
     try {
       const epub = new EPub(filePath)
 
-      // Set a timeout to prevent hanging on problematic files
+      // Set a timeout to prevent hanging on problematic files (5 seconds)
       const timeout = setTimeout(() => {
         console.error(`  ❌ EPUB parse timeout`)
         resolve(null)
-      }, 30000)
+      }, 5000)
 
       epub.on('end', async () => {
         clearTimeout(timeout)
+      // Clean ad text from all metadata fields
+      const rawTitle = epub.metadata.title || path.basename(filePath, '.epub')
+      const rawAuthor = epub.metadata.creator || 'Unknown'
       const metadata: EpubMetadata = {
-        title: epub.metadata.title || path.basename(filePath, '.epub'),
-        author: epub.metadata.creator || 'Unknown',
+        title: cleanAdText(rawTitle),
+        author: cleanAdText(rawAuthor),
         description: cleanDescription(epub.metadata.description),
-        publisher: epub.metadata.publisher,
+        publisher: cleanAdText(epub.metadata.publisher || ''),
         language: epub.metadata.language,
       }
 
@@ -245,14 +329,8 @@ async function extractEpubMetadata(filePath: string): Promise<EpubMetadata | nul
         metadata.isbn = epub.metadata.ISBN
       }
 
-      try {
-        const wordCount = await extractWordCount(epub)
-        if (wordCount > 0) {
-          metadata.wordCount = wordCount
-        }
-      } catch (err) {
-        // Ignore word count errors
-      }
+      // Skip word count extraction to speed up import (can be enriched later)
+      // Word count extraction can hang on malformed EPUBs
 
       // Try to extract cover image
       try {
@@ -350,8 +428,9 @@ async function getCategoryId(slug: string): Promise<number | null> {
 
 /**
  * Find EPUB files in directory (recursive or not)
+ * @param minFileSize - Minimum file size in bytes (default 0 = no minimum)
  */
-function findEpubFiles(directory: string, recursive: boolean): string[] {
+function findEpubFiles(directory: string, recursive: boolean, minFileSize: number = 0): string[] {
   if (!fs.existsSync(directory)) {
     console.error(`Directory not found: ${directory}`)
     return []
@@ -369,6 +448,13 @@ function findEpubFiles(directory: string, recursive: boolean): string[] {
       if (entry.isDirectory() && recursive) {
         scanDir(fullPath)
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.epub')) {
+        // Check file size if minFileSize is specified
+        if (minFileSize > 0) {
+          const stats = fs.statSync(fullPath)
+          if (stats.size < minFileSize) {
+            continue // Skip files smaller than minimum
+          }
+        }
         epubFiles.push(fullPath)
       }
     }
@@ -404,7 +490,23 @@ async function processEpub(
     return { success: true, skipped: true }
   }
 
-  // 2. Generate keys for R2
+  // 2.5. Check if book already exists in database (avoid duplicates)
+  if (!dryRun) {
+    const [existing] = await db
+      .select()
+      .from(ebooks)
+      .where(and(
+        ilike(ebooks.title, metadata.title),
+        ilike(ebooks.author, metadata.author)
+      ))
+      .limit(1)
+    if (existing) {
+      console.log(`  ⏭️ Skipped: Already exists in database (ID: ${existing.id})`)
+      return { success: true, skipped: true }
+    }
+  }
+
+  // 3. Generate keys for R2
   const sanitizedTitle = metadata.title.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '_').substring(0, 50)
   const timestamp = Date.now()
   const epubKey = `ebooks/${sanitizedTitle}_${timestamp}.epub`
@@ -511,14 +613,18 @@ async function main() {
       continue
     }
 
-    // Find EPUB files
-    const epubFiles = findEpubFiles(config.directory, config.recursive)
+    // Find EPUB files (with optional size filter)
+    const minSize = config.minFileSize || 0
+    const epubFiles = findEpubFiles(config.directory, config.recursive, minSize)
     if (epubFiles.length === 0) {
       console.log(`  ⚠️ No EPUB files found`)
       continue
     }
 
     console.log(`\n📚 Found ${epubFiles.length} EPUB files`)
+    if (minSize > 0) {
+      console.log(`📏 Minimum file size: ${(minSize / 1024 / 1024).toFixed(1)} MB`)
+    }
     if (config.foreignOnly) {
       console.log(`🌍 Foreign authors only mode enabled`)
     }

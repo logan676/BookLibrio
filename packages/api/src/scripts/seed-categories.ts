@@ -255,6 +255,37 @@ const CATEGORIES = [
     bookTypes: 'ebook',
     description: '凯文·凯利经典作品系列：失控、必然、科技想要什么等',
   },
+  // Book Lists / Awards
+  {
+    name: '纽约时报畅销书',
+    nameEn: 'NYT Bestsellers',
+    slug: 'nyt-bestseller',
+    icon: 'star.fill',
+    themeColor: '#EAB308', // Yellow
+    sortOrder: 25,
+    bookTypes: 'ebook',
+    description: '《纽约时报》畅销书榜单精选',
+  },
+  {
+    name: '现代文库百大',
+    nameEn: 'Modern Library Top 100',
+    slug: 'modern-library-100',
+    icon: 'trophy',
+    themeColor: '#CA8A04', // Yellow darker
+    sortOrder: 26,
+    bookTypes: 'ebook',
+    description: 'Modern Library 评选的20世纪百大英文小说',
+  },
+  {
+    name: '英文原版',
+    nameEn: 'English Originals',
+    slug: 'english-originals',
+    icon: 'globe.americas',
+    themeColor: '#0284C7', // Light blue
+    sortOrder: 27,
+    bookTypes: 'ebook',
+    description: '英文原版书籍精选',
+  },
 ]
 
 // Sub-categories mapping (parentSlug -> childSlugs)

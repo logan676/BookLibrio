@@ -254,26 +254,8 @@ struct BookGridItem: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Cover
                 if let coverUrl = book.coverUrl {
-                    AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(2/3, contentMode: .fill)
-                        case .failure:
-                            coverPlaceholder
-                        case .empty:
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                                .aspectRatio(2/3, contentMode: .fit)
-                        @unknown default:
-                            coverPlaceholder
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(2/3, contentMode: .fit)
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+                    StoreCoverImage(coverUrl: coverUrl, cornerRadius: 8, shadowRadius: 4)
+                        .frame(maxWidth: .infinity)
                 } else {
                     coverPlaceholder
                 }

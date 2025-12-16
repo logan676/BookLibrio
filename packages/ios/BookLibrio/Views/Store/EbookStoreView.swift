@@ -47,6 +47,8 @@ struct EbookStoreView: View {
                         onShowAll: { showEditorPicksList = true }
                     )
                 }
+                // Mixed books after Editor's Picks
+                mixedBookSectionView(at: 0)
 
                 // 4. NYT Best Sellers (platform-specific branded section with actual books)
                 if !viewModel.nytListsWithBooks.isEmpty {
@@ -56,6 +58,8 @@ struct EbookStoreView: View {
                         onShowAll: { showNYTListsView = true }
                     )
                 }
+                // Mixed books after NYT
+                mixedBookSectionView(at: 1)
 
                 // 4.1 Amazon Best Books (platform-specific branded section with actual books)
                 if !viewModel.amazonListsWithBooks.isEmpty {
@@ -65,6 +69,8 @@ struct EbookStoreView: View {
                         onShowAll: { showAmazonListsView = true }
                     )
                 }
+                // Mixed books after Amazon
+                mixedBookSectionView(at: 2)
 
                 // 4.2 Goodreads Choice Awards (platform-specific branded section with actual books)
                 if !viewModel.goodreadsListsWithBooks.isEmpty {
@@ -74,6 +80,8 @@ struct EbookStoreView: View {
                         onShowAll: { showGoodreadsListsView = true }
                     )
                 }
+                // Mixed books after Goodreads
+                mixedBookSectionView(at: 3)
 
                 // 5. Individual Award Sections with actual books (Pulitzer, Booker, Newbery)
                 if !viewModel.pulitzerAwardsWithBooks.isEmpty {
@@ -83,6 +91,8 @@ struct EbookStoreView: View {
                         onShowAll: { showPulitzerAwardsView = true }
                     )
                 }
+                // Mixed books after Pulitzer
+                mixedBookSectionView(at: 4)
 
                 if !viewModel.bookerAwardsWithBooks.isEmpty {
                     BookerFlattenedSection(
@@ -91,6 +101,8 @@ struct EbookStoreView: View {
                         onShowAll: { showBookerAwardsView = true }
                     )
                 }
+                // Mixed books after Booker
+                mixedBookSectionView(at: 5)
 
                 if !viewModel.newberyAwardsWithBooks.isEmpty {
                     NewberyFlattenedSection(
@@ -99,6 +111,8 @@ struct EbookStoreView: View {
                         onShowAll: { showNewberyAwardsView = true }
                     )
                 }
+                // Mixed books after Newbery
+                mixedBookSectionView(at: 6)
 
                 // 6. Series Collections (peer-level section)
                 if !viewModel.bookSeries.isEmpty {
@@ -110,6 +124,8 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after Series
+                mixedBookSectionView(at: 7)
 
                 // 7. Weekly Picks (peer-level section)
                 if !viewModel.weeklyPicks.isEmpty {
@@ -121,6 +137,8 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after Weekly Picks
+                mixedBookSectionView(at: 8)
 
                 // 8. Celebrity Picks (peer-level section - e.g., Bill Gates)
                 if !viewModel.celebrityPicks.isEmpty {
@@ -132,6 +150,8 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after Celebrity Picks
+                mixedBookSectionView(at: 9)
 
                 // 9. AI/ML Collection (simple book style)
                 if let aiCollection = viewModel.aiCollection {
@@ -143,6 +163,8 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after AI Collection
+                mixedBookSectionView(at: 10)
 
                 // 10. Biography Collection (simple book style)
                 if let bioCollection = viewModel.biographyCollection {
@@ -154,6 +176,8 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after Biography Collection
+                mixedBookSectionView(at: 11)
 
                 // 12. Biographies (peer-level section - legacy list cards)
                 if !viewModel.biographies.isEmpty {
@@ -165,6 +189,8 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after Biographies
+                mixedBookSectionView(at: 12)
 
                 // 10. Books by Year (mixed years display)
                 if !viewModel.mixedYearBooks.isEmpty {
@@ -185,6 +211,8 @@ struct EbookStoreView: View {
                         onShowAll: { showCategoryBrowser = true }
                     )
                 }
+                // Mixed books after Books by Year
+                mixedBookSectionView(at: 13)
 
                 // 10. Top Rated (with weighted random)
                 if !viewModel.topRatedBooks.isEmpty {
@@ -205,14 +233,31 @@ struct EbookStoreView: View {
                         onShowAll: { showRankings = true }
                     )
                 }
+                // Mixed books after Top Rated
+                mixedBookSectionView(at: 14)
 
                 // 11. User Book Lists (用户创建的书单，类似豆瓣豆列)
                 if !viewModel.popularBookLists.isEmpty {
                     curatedCollectionsSection
                 }
 
-                // 12. All Books Grid (无限滚动加载所有书籍)
-                allBooksGridSection
+                // Remaining mixed book sections (infinite scroll continuation)
+                if viewModel.mixedBookGroups.count > 15 {
+                    ForEach(15..<viewModel.mixedBookGroups.count, id: \.self) { index in
+                        mixedBookSectionView(at: index)
+                    }
+                }
+
+                // Single load-more trigger at the very end (prevents multiple triggers)
+                if viewModel.hasMoreBooks && !viewModel.mixedBookGroups.isEmpty {
+                    Color.clear
+                        .frame(height: 1)
+                        .onAppear {
+                            Task {
+                                await viewModel.loadMoreAllBooks()
+                            }
+                        }
+                }
             }
             .padding(.bottom, 32)
         }
@@ -269,6 +314,28 @@ struct EbookStoreView: View {
         }
     }
 
+    // MARK: - Helper to get mixed book section by index
+
+    @ViewBuilder
+    private func mixedBookSectionView(at index: Int) -> some View {
+        if index < viewModel.mixedBookGroups.count {
+            let books = viewModel.mixedBookGroups[index]
+            MixedBookSection(books: books) { book in
+                selectedItem = StoreItem(
+                    id: book.id,
+                    itemType: .ebook,
+                    itemId: book.id,
+                    title: book.title,
+                    subtitle: book.author,
+                    coverUrl: book.coverUrl,
+                    badge: nil
+                )
+            }
+            // NOTE: Load-more trigger moved to single sentinel view at end of ScrollView
+            // to prevent infinite loading loop caused by multiple .onAppear calls
+        }
+    }
+
     // MARK: - Book Tap Handler (for flattened sections)
 
     private func handleBookTap(_ book: ExternalRankingBook) {
@@ -318,132 +385,6 @@ struct EbookStoreView: View {
         }
     }
 
-    // MARK: - All Books Grid Section (Inline Infinite Scroll)
-
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
-    private var allBooksGridSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section header
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "books.vertical.fill")
-                        .foregroundColor(.blue)
-                    Text(L10n.Store.allBooks)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                }
-
-                Spacer()
-
-                if viewModel.allBooksTotal > 0 {
-                    Text("\(viewModel.allBooks.count)/\(viewModel.allBooksTotal)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 16)
-
-            // Books grid
-            LazyVGrid(columns: gridColumns, spacing: 16) {
-                ForEach(viewModel.allBooks) { book in
-                    AllBooksGridItem(book: book) {
-                        selectedItem = StoreItem(
-                            id: book.id,
-                            itemType: .ebook,
-                            itemId: book.id,
-                            title: book.title,
-                            subtitle: nil,
-                            coverUrl: book.coverUrl,
-                            badge: nil
-                        )
-                    }
-                    .onAppear {
-                        // Auto-load more when reaching near the end
-                        if book.id == viewModel.allBooks.last?.id {
-                            Task {
-                                await viewModel.loadMoreAllBooks()
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 12)
-
-            // Loading indicator
-            if viewModel.isLoadingMoreBooks {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                        .padding(.vertical, 16)
-                    Spacer()
-                }
-            }
-        }
-    }
-}
-
-// MARK: - All Books Grid Item
-
-private struct AllBooksGridItem: View {
-    let book: Ebook
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 8) {
-                // Cover
-                if let coverUrl = book.coverUrl {
-                    AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(2/3, contentMode: .fill)
-                        case .failure:
-                            coverPlaceholder
-                        case .empty:
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                                .aspectRatio(2/3, contentMode: .fit)
-                        @unknown default:
-                            coverPlaceholder
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(2/3, contentMode: .fit)
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
-                } else {
-                    coverPlaceholder
-                }
-
-                // Title
-                Text(book.title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-
-    private var coverPlaceholder: some View {
-        Rectangle()
-            .fill(Color.gray.opacity(0.2))
-            .aspectRatio(2/3, contentMode: .fit)
-            .cornerRadius(8)
-            .overlay(
-                Image(systemName: "book.closed.fill")
-                    .font(.title2)
-                    .foregroundColor(.gray.opacity(0.5))
-            )
-    }
 }
 
 // MARK: - Ebook Store ViewModel
@@ -486,12 +427,17 @@ class EbookStoreViewModel: ObservableObject {
     @Published var isLoadingMoreBooks = false
     @Published var isLoading = false
     @Published var errorMessage: String?
+    // Mixed book groups for interleaving with ranking sections
+    @Published var mixedBookGroups: [[Ebook]] = []
 
     private let apiClient = APIClient.shared
     private var hasLoaded = false
     private var allBooksOffset = 0
     private let allBooksPageSize = 30
-    private var hasMoreBooks = true
+    @Published private(set) var hasMoreBooks = true
+    private var mixedBooksUsedCount = 0
+    private var lastLoadMoreTime: Date = .distantPast
+    private let loadMoreThrottleInterval: TimeInterval = 0.5 // Minimum 0.5s between load calls
 
     func loadHomeData() async {
         // Skip if already loaded (prevents reload on navigation back)
@@ -547,6 +493,9 @@ class EbookStoreViewModel: ObservableObject {
         allBooksTotal = 0
         allBooksOffset = 0
         hasMoreBooks = true
+        mixedBookGroups = []
+        mixedBooksUsedCount = 0
+        lastLoadMoreTime = .distantPast
         await loadHomeData()
         hasLoaded = true
     }
@@ -880,32 +829,66 @@ class EbookStoreViewModel: ObservableObject {
         do {
             Log.d("Loading all books (initial)...")
             allBooksOffset = 0
+            mixedBooksUsedCount = 0
             let response = try await apiClient.getEbooks(limit: allBooksPageSize, offset: 0)
             allBooks = response.data
             allBooksTotal = response.total
             hasMoreBooks = allBooks.count < allBooksTotal
             allBooksOffset = allBooks.count
-            Log.d("Loaded \(allBooks.count)/\(allBooksTotal) books")
+            // Generate mixed book groups from loaded books
+            generateMixedBookGroups()
+            Log.d("Loaded \(allBooks.count)/\(allBooksTotal) books, \(mixedBookGroups.count) groups")
         } catch {
             Log.e("Failed to load all books: \(error)")
         }
     }
 
     func loadMoreAllBooks() async {
-        guard !isLoadingMoreBooks && hasMoreBooks else { return }
+        // Triple guard: not loading + has more + throttle interval passed
+        let now = Date()
+        guard !isLoadingMoreBooks,
+              hasMoreBooks,
+              now.timeIntervalSince(lastLoadMoreTime) >= loadMoreThrottleInterval else {
+            return
+        }
 
         isLoadingMoreBooks = true
+        lastLoadMoreTime = now
         do {
             Log.d("Loading more books from offset \(allBooksOffset)...")
             let response = try await apiClient.getEbooks(limit: allBooksPageSize, offset: allBooksOffset)
             allBooks.append(contentsOf: response.data)
             hasMoreBooks = allBooks.count < allBooksTotal
             allBooksOffset = allBooks.count
-            Log.d("Now have \(allBooks.count)/\(allBooksTotal) books")
+            // Generate more mixed book groups
+            generateMixedBookGroups()
+            Log.d("Now have \(allBooks.count)/\(allBooksTotal) books, \(mixedBookGroups.count) groups")
         } catch {
             Log.e("Failed to load more books: \(error)")
         }
         isLoadingMoreBooks = false
+    }
+
+    /// Generate mixed book groups (1-4 books each) from allBooks
+    /// Each group is randomly sized and used for interleaving with ranking sections
+    private func generateMixedBookGroups() {
+        // Only process new books that haven't been grouped yet
+        while mixedBooksUsedCount < allBooks.count {
+            // Random group size: 1-4 books
+            let groupSize = Int.random(in: 1...4)
+            let remaining = allBooks.count - mixedBooksUsedCount
+            let actualSize = min(groupSize, remaining)
+
+            if actualSize > 0 {
+                let startIndex = mixedBooksUsedCount
+                let endIndex = startIndex + actualSize
+                let group = Array(allBooks[startIndex..<endIndex])
+                mixedBookGroups.append(group)
+                mixedBooksUsedCount += actualSize
+            } else {
+                break
+            }
+        }
     }
 
     /// Interleave rankings from different sources for browsing diversity

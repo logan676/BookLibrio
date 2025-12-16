@@ -80,21 +80,8 @@ struct EditorsChoiceHeroCard: View {
                     HStack(alignment: .top, spacing: 20) {
                         // Main cover (first preview cover)
                         if let coverUrl = ranking.previewCovers?.first {
-                            AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(2/3, contentMode: .fit)
-                                case .failure, .empty:
-                                    coverPlaceholder
-                                @unknown default:
-                                    coverPlaceholder
-                                }
-                            }
-                            .frame(width: UIScreen.main.bounds.width * 0.28)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                            StoreCoverImage(coverUrl: coverUrl, cornerRadius: 12, shadowRadius: 8)
+                                .frame(width: UIScreen.main.bounds.width * 0.28)
                         }
 
                         // Quote area
@@ -128,21 +115,8 @@ struct EditorsChoiceHeroCard: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
                                 ForEach(Array(covers.dropFirst().enumerated()), id: \.offset) { _, coverUrl in
-                                    AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image
-                                                .resizable()
-                                                .aspectRatio(2/3, contentMode: .fit)
-                                        case .failure, .empty:
-                                            smallCoverPlaceholder
-                                        @unknown default:
-                                            smallCoverPlaceholder
-                                        }
-                                    }
-                                    .frame(width: 80)
-                                    .cornerRadius(8)
-                                    .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
+                                    StoreCoverImageCompact(coverUrl: coverUrl)
+                                        .frame(width: 80)
                                 }
                             }
                             .padding(.horizontal, 4)
@@ -194,24 +168,9 @@ struct EditorPickMiniCard: View {
                 ZStack {
                     if let covers = ranking.previewCovers, !covers.isEmpty {
                         ForEach(Array(covers.prefix(3).reversed().enumerated()), id: \.offset) { index, coverUrl in
-                            AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(2/3, contentMode: .fit)
-                                case .failure, .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                @unknown default:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                }
-                            }
-                            .frame(width: 70)
-                            .cornerRadius(6)
-                            .offset(x: CGFloat(index) * 8, y: CGFloat(index) * -4)
-                            .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            StoreCoverImage(coverUrl: coverUrl, cornerRadius: 6, shadowRadius: 2)
+                                .frame(width: 70)
+                                .offset(x: CGFloat(index) * 8, y: CGFloat(index) * -4)
                         }
                     }
                 }
@@ -235,6 +194,314 @@ struct EditorPickMiniCard: View {
     }
 }
 
+// MARK: - 1b. Flattened Editor's Choice Section (Display actual books)
+// Shows actual books from editor pick lists, not list cards
+
+struct EditorPicksFlattenedSection: View {
+    let lists: [ListWithBooks]
+    let onBookTap: (ExternalRankingBook) -> Void
+    let onShowAll: () -> Void
+
+    // Get the first editor pick as the featured one
+    private var featuredList: ListWithBooks? {
+        lists.first
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack {
+                Text(L10n.Store.editorsPicks)
+                    .font(.title3)
+                    .fontWeight(.bold)
+
+                Spacer()
+
+                Button(L10n.Store.viewMore) {
+                    onShowAll()
+                }
+                .font(.subheadline)
+                .foregroundColor(.primary)
+            }
+            .padding(.horizontal)
+
+            // Featured List with Hero Layout
+            if let featured = featuredList {
+                EditorPicksFeaturedCard(list: featured, onBookTap: onBookTap)
+                    .padding(.horizontal)
+            }
+
+            // Other lists as sub-sections
+            ForEach(Array(lists.dropFirst())) { list in
+                EditorPicksListSubSection(list: list, onBookTap: onBookTap)
+            }
+        }
+    }
+}
+
+/// Featured hero card for the first editor pick list
+/// Design: Holographic background, large featured book on left, smaller books on right
+struct EditorPicksFeaturedCard: View {
+    let list: ListWithBooks
+    let onBookTap: (ExternalRankingBook) -> Void
+
+    // Get the featured (first) book
+    private var featuredBook: ExternalRankingBook? {
+        list.books.first
+    }
+
+    // Get the remaining books (after the first one)
+    private var otherBooks: [ExternalRankingBook] {
+        Array(list.books.dropFirst().prefix(4))
+    }
+
+    var body: some View {
+        ZStack {
+            // Holographic/iridescent background
+            holographicBackground
+
+            VStack(alignment: .leading, spacing: 16) {
+                // Editor Quote Section at top
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.Store.weeklyRecommend)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
+                        .tracking(1)
+
+                    Text("「\(list.title)」")
+                        .font(.system(.body, design: .serif))
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .italic()
+
+                    if let subtitle = list.subtitle {
+                        HStack {
+                            Spacer()
+                            Text("—— \(subtitle)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.bottom, 4)
+
+                // Hero Layout: Large book left + smaller books right
+                HStack(alignment: .top, spacing: 16) {
+                    // Featured large book on the left
+                    if let featured = featuredBook {
+                        Button(action: { onBookTap(featured) }) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                // Large book cover
+                                StoreCoverImage(coverUrl: featured.book.coverUrl, cornerRadius: 12, shadowRadius: 8)
+                                    .frame(width: 130, height: 195)
+
+                                // Title and author below the cover
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(featured.book.title)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                        .lineLimit(2)
+
+                                    if let author = featured.book.author {
+                                        Text(author)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                                .frame(width: 130, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    // Smaller books grid on the right (2x2)
+                    if !otherBooks.isEmpty {
+                        LazyVGrid(columns: [
+                            GridItem(.fixed(70), spacing: 10),
+                            GridItem(.fixed(70), spacing: 10)
+                        ], spacing: 10) {
+                            ForEach(otherBooks) { book in
+                                Button(action: { onBookTap(book) }) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        StoreCoverImageCompact(coverUrl: book.book.coverUrl)
+                                            .frame(width: 70, height: 105)
+
+                                        Text(book.book.title)
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                            .frame(width: 70, alignment: .leading)
+                                    }
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(20)
+        }
+        .background(Color(UIColor.systemBackground).opacity(0.4))
+        .cornerRadius(24)
+        .shadow(color: Color.purple.opacity(0.15), radius: 15, x: 0, y: 8)
+    }
+
+    // MARK: - Holographic Background
+
+    private var holographicBackground: some View {
+        ZStack {
+            // Base gradient layer
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.95, green: 0.9, blue: 1.0),    // Light lavender
+                    Color(red: 1.0, green: 0.95, blue: 0.9),    // Cream
+                    Color(red: 0.9, green: 0.98, blue: 1.0),    // Light cyan
+                    Color(red: 1.0, green: 0.92, blue: 0.95)    // Light pink
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            // Rainbow shimmer overlay
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.pink.opacity(0.15),
+                    Color.purple.opacity(0.12),
+                    Color.blue.opacity(0.15),
+                    Color.cyan.opacity(0.12),
+                    Color.green.opacity(0.1),
+                    Color.yellow.opacity(0.12),
+                    Color.orange.opacity(0.15),
+                    Color.red.opacity(0.1)
+                ]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .blendMode(.overlay)
+
+            // Radial highlight for depth
+            RadialGradient(
+                gradient: Gradient(colors: [
+                    Color.white.opacity(0.4),
+                    Color.clear
+                ]),
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 300
+            )
+        }
+    }
+
+    private var featuredBookPlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.2))
+            .frame(width: 130, height: 195)
+            .cornerRadius(12)
+            .overlay(
+                Image(systemName: "book.closed.fill")
+                    .font(.title)
+                    .foregroundColor(.gray)
+            )
+    }
+
+    private var smallBookPlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.2))
+            .frame(width: 70, height: 105)
+            .cornerRadius(6)
+            .overlay(
+                Image(systemName: "book.closed.fill")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            )
+    }
+}
+
+/// Book card for editor picks
+struct EditorPickBookCard: View {
+    let book: ExternalRankingBook
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Book cover
+                StoreCoverImage(coverUrl: book.book.coverUrl, cornerRadius: 8, shadowRadius: 3)
+                    .frame(width: 90, height: 135)
+
+                // Book title and author
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(book.book.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    if let author = book.book.author {
+                        Text(author)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(width: 90, alignment: .leading)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var bookPlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.2))
+            .frame(width: 90, height: 135)
+            .cornerRadius(8)
+            .overlay(
+                Image(systemName: "book.closed.fill")
+                    .foregroundColor(.gray)
+            )
+    }
+}
+
+/// Sub-section for additional editor pick lists
+struct EditorPicksListSubSection: View {
+    let list: ListWithBooks
+    let onBookTap: (ExternalRankingBook) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // List title
+            HStack {
+                Text(list.title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                if let count = list.bookCount, count > list.books.count {
+                    Text(L10n.Store.bookCount(count))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 16)
+
+            // Books horizontal scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(list.books) { book in
+                        EditorPickBookCard(book: book, onTap: { onBookTap(book) })
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 12)
+    }
+}
+
 // MARK: - 2. Branded Ranking Section (Full-width banner style)
 // For NYT, Amazon, Goodreads etc. with ranking badges
 
@@ -254,17 +521,14 @@ struct BrandedRankingSection: View {
                     HStack(spacing: 12) {
                         // Logo or placeholder
                         if let logoUrl = ranking.sourceLogoUrl, let url = URL(string: logoUrl) {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 30, height: 30)
-                                default:
-                                    sourceInitialCircle
-                                }
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            } placeholder: {
+                                sourceInitialCircle
                             }
+                            .frame(width: 30, height: 30)
                         } else {
                             sourceInitialCircle
                         }
@@ -325,28 +589,8 @@ struct RankedBookItemView: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Cover with ranking badge
                 ZStack(alignment: .topLeading) {
-                    AsyncImage(url: R2Config.convertToPublicURL(book.book.coverUrl)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(2/3, contentMode: .fit)
-                        case .failure, .empty:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                                .aspectRatio(2/3, contentMode: .fit)
-                                .overlay(
-                                    Image(systemName: "book.closed")
-                                        .foregroundColor(.gray)
-                                )
-                        @unknown default:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                        }
-                    }
-                    .frame(width: 100)
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    StoreCoverImage(coverUrl: book.book.coverUrl, cornerRadius: 8, shadowRadius: 4)
+                        .frame(width: 100)
 
                     // Ranking badge
                     RankingBadge(rank: book.rank)
@@ -462,18 +706,15 @@ struct CelebrityCardView: View {
                 VStack(spacing: 12) {
                     // Portrait (using source logo or placeholder)
                     if let logoUrl = ranking.sourceLogoUrl, let url = URL(string: logoUrl) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(Circle())
-                            default:
-                                celebrityPlaceholder
-                            }
+                        CachedAsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            celebrityPlaceholder
                         }
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
                     } else {
                         celebrityPlaceholder
                     }
@@ -508,20 +749,8 @@ struct CelebrityCardView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
                                 ForEach(Array(covers.enumerated()), id: \.offset) { _, coverUrl in
-                                    AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image
-                                                .resizable()
-                                                .aspectRatio(2/3, contentMode: .fit)
-                                        default:
-                                            Rectangle()
-                                                .fill(Color.gray.opacity(0.3))
-                                        }
-                                    }
-                                    .frame(width: 60)
-                                    .cornerRadius(6)
-                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                    StoreCoverImageCompact(coverUrl: coverUrl)
+                                        .frame(width: 60)
                                 }
                             }
                             .padding(.vertical, 4)
@@ -677,29 +906,17 @@ struct StackedCoverView: View {
     var isFront: Bool = false
 
     var body: some View {
-        AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-            switch phase {
-            case .success(let image):
-                image
-                    .resizable()
-                    .aspectRatio(2/3, contentMode: .fit)
-            default:
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .aspectRatio(2/3, contentMode: .fit)
-            }
-        }
-        .frame(width: baseWidth)
-        .cornerRadius(8)
-        .scaleEffect(scale)
-        .rotationEffect(.degrees(rotation))
-        .offset(x: xOffset, y: yOffset)
-        .shadow(
-            color: Color.black.opacity(isFront ? 0.25 : 0.05),
-            radius: isFront ? 6 : 2,
-            x: isFront ? 2 : 0,
-            y: isFront ? 3 : 0
-        )
+        StoreCoverImage(coverUrl: coverUrl, cornerRadius: 8, shadowRadius: 0)
+            .frame(width: baseWidth)
+            .scaleEffect(scale)
+            .rotationEffect(.degrees(rotation))
+            .offset(x: xOffset, y: yOffset)
+            .shadow(
+                color: Color.black.opacity(isFront ? 0.25 : 0.05),
+                radius: isFront ? 6 : 2,
+                x: isFront ? 2 : 0,
+                y: isFront ? 3 : 0
+            )
     }
 }
 
@@ -800,21 +1017,8 @@ struct WeeklyPickCard: View {
                     if let covers = ranking.previewCovers {
                         HStack(spacing: -12) {
                             ForEach(Array(covers.prefix(3).enumerated()), id: \.offset) { _, coverUrl in
-                                AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 36, height: 50)
-                                            .clipped()
-                                    default:
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.2))
-                                            .frame(width: 36, height: 50)
-                                    }
-                                }
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                                StoreCoverImage(coverUrl: coverUrl, cornerRadius: 4, shadowRadius: 0)
+                                    .frame(width: 36, height: 50)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 4)
                                         .stroke(Color.white, lineWidth: 2)
@@ -900,19 +1104,13 @@ struct BiographyCardView: View {
             ZStack(alignment: .bottomLeading) {
                 // Background portrait (first preview cover)
                 if let coverUrl = ranking.previewCovers?.first {
-                    AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        case .failure, .empty:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                        @unknown default:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                        }
+                    CachedAsyncImage(url: R2Config.convertToPublicURL(coverUrl, useThumbnail: false)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
                     }
                     .frame(width: UIScreen.main.bounds.width - 32, height: 220)
                     .clipped()
@@ -939,25 +1137,12 @@ struct BiographyCardView: View {
                 HStack(alignment: .bottom, spacing: 20) {
                     // Book cover overlay (second preview cover if available)
                     if let covers = ranking.previewCovers, covers.count > 1 {
-                        AsyncImage(url: R2Config.convertToPublicURL(covers[1])) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(2/3, contentMode: .fit)
-                            default:
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.5))
-                                    .aspectRatio(2/3, contentMode: .fit)
-                            }
-                        }
-                        .frame(width: 90)
-                        .cornerRadius(6)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                        .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
+                        StoreCoverImage(coverUrl: covers[1], cornerRadius: 6, shadowRadius: 5)
+                            .frame(width: 90)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.white, lineWidth: 2)
+                            )
                     }
 
                     // Text info
@@ -1119,22 +1304,9 @@ struct AwardCardView: View {
                     if let covers = ranking.previewCovers, !covers.isEmpty {
                         HStack(spacing: -20) {
                             ForEach(Array(covers.prefix(4).enumerated()), id: \.offset) { index, coverUrl in
-                                AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(2/3, contentMode: .fit)
-                                    default:
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .aspectRatio(2/3, contentMode: .fit)
-                                    }
-                                }
-                                .frame(width: 55)
-                                .cornerRadius(6)
-                                .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
-                                .zIndex(Double(4 - index))
+                                StoreCoverImageCompact(coverUrl: coverUrl)
+                                    .frame(width: 55)
+                                    .zIndex(Double(4 - index))
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -1158,6 +1330,126 @@ struct AwardCardView: View {
             .shadow(color: awardColor.opacity(0.3), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - 8. Collection Books Section (Simple Book Style)
+// Simple horizontal scroll of individual books from a single collection
+// Used for AI/ML, Kevin Kelly, Biography collections
+
+struct CollectionBooksSection: View {
+    let collection: ListWithBooks
+    let themeColor: Color
+    let icon: String
+    let onBookTap: (ExternalRankingBook) -> Void
+    let onShowAll: () -> Void
+
+    init(
+        collection: ListWithBooks,
+        themeColor: Color = .indigo,
+        icon: String = "books.vertical.fill",
+        onBookTap: @escaping (ExternalRankingBook) -> Void,
+        onShowAll: @escaping () -> Void
+    ) {
+        self.collection = collection
+        self.themeColor = themeColor
+        self.icon = icon
+        self.onBookTap = onBookTap
+        self.onShowAll = onShowAll
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Section header with icon
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .foregroundColor(themeColor)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(collection.title)
+                            .font(.title3)
+                            .fontWeight(.bold)
+
+                        if let subtitle = collection.subtitle {
+                            Text(subtitle)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                Button(L10n.Store.viewMore) {
+                    onShowAll()
+                }
+                .font(.subheadline)
+                .foregroundColor(themeColor)
+            }
+            .padding(.horizontal, 16)
+
+            // Horizontal scroll of simple book cards
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(collection.books) { book in
+                        SimpleBookCard(book: book, themeColor: themeColor) {
+                            onBookTap(book)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+/// Simple book card - just cover, title, and author
+/// This is the "single book style" for most book displays
+struct SimpleBookCard: View {
+    let book: ExternalRankingBook
+    let themeColor: Color
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Book cover
+                StoreCoverImage(coverUrl: book.book.coverUrl, cornerRadius: 8, shadowRadius: 0)
+                    .frame(width: 100, height: 150)
+                    .shadow(color: themeColor.opacity(0.2), radius: 4, x: 0, y: 3)
+
+                // Book info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(book.book.title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    if let author = book.book.author {
+                        Text(author)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(width: 100, alignment: .leading)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var bookPlaceholder: some View {
+        Rectangle()
+            .fill(themeColor.opacity(0.1))
+            .frame(width: 100, height: 150)
+            .cornerRadius(8)
+            .overlay(
+                Image(systemName: "book.closed.fill")
+                    .font(.title2)
+                    .foregroundColor(themeColor.opacity(0.4))
+            )
     }
 }
 

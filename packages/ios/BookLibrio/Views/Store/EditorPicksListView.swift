@@ -92,20 +92,17 @@ struct EditorPicksListView: View {
             // Background Image layer
             GeometryReader { geo in
                 if let firstCover = viewModel.rankings.first?.previewCovers?.first {
-                    AsyncImage(url: R2Config.convertToPublicURL(firstCover)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: geo.size.width, height: geo.size.height + 50)
-                                .blur(radius: 30)
-                                .overlay(Color.black.opacity(0.3))
-                                .offset(y: -geo.frame(in: .global).minY > 0 ? -geo.frame(in: .global).minY * 0.5 : 0)
-                        default:
-                            gradientBackground
-                                .frame(width: geo.size.width, height: geo.size.height + 50)
-                        }
+                    CachedAsyncImage(url: R2Config.convertToPublicURL(firstCover, useThumbnail: true)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geo.size.width, height: geo.size.height + 50)
+                            .blur(radius: 30)
+                            .overlay(Color.black.opacity(0.3))
+                            .offset(y: -geo.frame(in: .global).minY > 0 ? -geo.frame(in: .global).minY * 0.5 : 0)
+                    } placeholder: {
+                        gradientBackground
+                            .frame(width: geo.size.width, height: geo.size.height + 50)
                     }
                 } else {
                     gradientBackground
@@ -194,15 +191,12 @@ struct EditorPicksListView: View {
                 HStack(alignment: .top, spacing: 20) {
                     // Large Cover
                     if let coverUrl = ranking.previewCovers?.first {
-                        AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(2/3, contentMode: .fit)
-                            default:
-                                coverPlaceholder
-                            }
+                        CachedAsyncImage(url: R2Config.convertToPublicURL(coverUrl, useThumbnail: true)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(2/3, contentMode: .fit)
+                        } placeholder: {
+                            coverPlaceholder
                         }
                         .frame(width: 110)
                         .cornerRadius(12)
@@ -302,16 +296,13 @@ struct EditorPicksListView: View {
             HStack(alignment: .top, spacing: 16) {
                 // Cover
                 if let coverUrl = ranking.previewCovers?.first {
-                    AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(2/3, contentMode: .fit)
-                        default:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                        }
+                    CachedAsyncImage(url: R2Config.convertToPublicURL(coverUrl, useThumbnail: true)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(2/3, contentMode: .fit)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
                     }
                     .frame(width: 80)
                     .cornerRadius(8)

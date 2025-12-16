@@ -63,7 +63,7 @@ struct ExternalRankingDetailView: View {
             // Source badge
             HStack {
                 if let logoUrl = ranking.sourceLogoUrl, let url = URL(string: logoUrl) {
-                    AsyncImage(url: url) { image in
+                    CachedAsyncImage(url: url) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fit)

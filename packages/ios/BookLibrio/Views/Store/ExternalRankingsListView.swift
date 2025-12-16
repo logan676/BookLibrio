@@ -210,19 +210,13 @@ struct ExternalRankingsListView: View {
                 ZStack {
                     if let covers = ranking.previewCovers, !covers.isEmpty {
                         ForEach(Array(covers.prefix(3).reversed().enumerated()), id: \.offset) { idx, coverUrl in
-                            AsyncImage(url: R2Config.convertToPublicURL(coverUrl)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(2/3, contentMode: .fill)
-                                case .failure, .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                @unknown default:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                }
+                            CachedAsyncImage(url: R2Config.convertToPublicURL(coverUrl, useThumbnail: true)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(2/3, contentMode: .fill)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
                             }
                             .frame(width: 50, height: 70)
                             .cornerRadius(4)
@@ -247,23 +241,20 @@ struct ExternalRankingsListView: View {
                     // Source badge
                     HStack(spacing: 6) {
                         if let logoUrl = ranking.sourceLogoUrl, let url = URL(string: logoUrl) {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(height: 16)
-                                default:
-                                    Text(ranking.displaySourceName)
-                                        .font(.caption2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(cardColors[index % cardColors.count])
-                                        .cornerRadius(4)
-                                }
+                            CachedAsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 16)
+                            } placeholder: {
+                                Text(ranking.displaySourceName)
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(cardColors[index % cardColors.count])
+                                    .cornerRadius(4)
                             }
                         } else {
                             Text(ranking.displaySourceName)

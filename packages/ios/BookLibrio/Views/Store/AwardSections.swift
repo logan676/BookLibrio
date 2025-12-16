@@ -118,30 +118,8 @@ struct AwardBookCardView: View {
         Button(action: onTap) {
             VStack(alignment: .center, spacing: 10) {
                 // Book cover - clean, no badge overlay
-                ZStack {
-                    if let coverUrl = ranking.previewCovers?.first {
-                        AsyncImage(url: URL(string: coverUrl)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(2/3, contentMode: .fill)
-                            case .failure:
-                                bookPlaceholder
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: cardWidth, height: cardWidth * 1.5)
-                            @unknown default:
-                                bookPlaceholder
-                            }
-                        }
-                        .frame(width: cardWidth, height: cardWidth * 1.5)
-                        .cornerRadius(8)
-                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 2, y: 4)
-                    } else {
-                        bookPlaceholder
-                    }
-                }
+                StoreCoverImage(coverUrl: ranking.previewCovers?.first, cornerRadius: 8, shadowRadius: 8)
+                    .frame(width: cardWidth, height: cardWidth * 1.5)
 
                 // Award category label below book (not on cover)
                 AwardCategoryBadge(award: award, isWinner: index == 0)
@@ -689,23 +667,12 @@ struct AwardRankingRow: View {
                 // Preview covers
                 HStack(spacing: -12) {
                     ForEach(Array((ranking.previewCovers ?? []).prefix(3).enumerated()), id: \.offset) { _, url in
-                        AsyncImage(url: URL(string: url)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            default:
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                            }
-                        }
-                        .frame(width: 44, height: 66)
-                        .cornerRadius(4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.white, lineWidth: 2)
-                        )
+                        StoreCoverImage(coverUrl: url, cornerRadius: 4, shadowRadius: 0)
+                            .frame(width: 44, height: 66)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.white, lineWidth: 2)
+                            )
                     }
                 }
                 .frame(width: 76)
@@ -778,6 +745,237 @@ class AwardListViewModel: ObservableObject {
             Log.e("Failed to load \(award.rawValue) awards: \(error)")
         }
         isLoading = false
+    }
+}
+
+// MARK: - Flattened Award Sections (Display actual books per list)
+
+/// Award book card - displays actual book with award category badge
+struct AwardFlattenedBookCardView: View {
+    let book: ExternalRankingBook
+    let award: Award
+    let cardWidth: CGFloat
+
+    init(book: ExternalRankingBook, award: Award, cardWidth: CGFloat = 100) {
+        self.book = book
+        self.award = award
+        self.cardWidth = cardWidth
+    }
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 8) {
+            // Book cover - clean, no numbered badge
+            StoreCoverImage(coverUrl: book.book.coverUrl, cornerRadius: 8, shadowRadius: 6)
+                .frame(width: cardWidth, height: cardWidth * 1.5)
+
+            // Award category badge (Winner/Shortlist)
+            AwardCategoryBadge(award: award, isWinner: book.rank == 1)
+
+            // Book title and author
+            VStack(alignment: .center, spacing: 2) {
+                Text(book.book.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+
+                if let author = book.book.author {
+                    Text(author)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: cardWidth)
+        }
+    }
+
+    private var bookPlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.2))
+            .overlay(
+                Image(systemName: "book.closed.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(20)
+                    .foregroundColor(.gray)
+            )
+            .frame(width: cardWidth, height: cardWidth * 1.5)
+            .cornerRadius(8)
+    }
+}
+
+/// Pulitzer Flattened Section - displays actual award-winning books
+struct PulitzerFlattenedSection: View {
+    let lists: [ListWithBooks]
+    let onBookTap: (ExternalRankingBook) -> Void
+    let onShowAll: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Main Pulitzer header
+            PulitzerHeaderView(onViewAll: onShowAll)
+
+            // Each list as a sub-section (e.g., Fiction, Biography, Poetry)
+            ForEach(lists) { list in
+                PulitzerListSubSection(list: list, onBookTap: onBookTap)
+            }
+        }
+    }
+}
+
+/// Sub-section for a single Pulitzer category showing actual books
+struct PulitzerListSubSection: View {
+    let list: ListWithBooks
+    let onBookTap: (ExternalRankingBook) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Category title (e.g., "Fiction Winner", "Biography Winner")
+            HStack {
+                Text(list.title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+
+            // Books horizontal scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(list.books) { book in
+                        Button(action: { onBookTap(book) }) {
+                            AwardFlattenedBookCardView(
+                                book: book,
+                                award: .pulitzer,
+                                cardWidth: 100
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 12)
+        .background(Color(UIColor.systemBackground))
+    }
+}
+
+/// Booker Flattened Section - displays actual award-winning books
+struct BookerFlattenedSection: View {
+    let lists: [ListWithBooks]
+    let onBookTap: (ExternalRankingBook) -> Void
+    let onShowAll: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Main Booker header
+            BookerHeaderView(onViewAll: onShowAll)
+
+            // Each list as a sub-section
+            ForEach(lists) { list in
+                BookerListSubSection(list: list, onBookTap: onBookTap)
+            }
+        }
+    }
+}
+
+/// Sub-section for a single Booker category showing actual books
+struct BookerListSubSection: View {
+    let list: ListWithBooks
+    let onBookTap: (ExternalRankingBook) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Category title
+            HStack {
+                Text(list.title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+
+            // Books horizontal scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(list.books) { book in
+                        Button(action: { onBookTap(book) }) {
+                            AwardFlattenedBookCardView(
+                                book: book,
+                                award: .booker,
+                                cardWidth: 100
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 12)
+        .background(Color(UIColor.systemBackground))
+    }
+}
+
+/// Newbery Flattened Section - displays actual award-winning books
+struct NewberyFlattenedSection: View {
+    let lists: [ListWithBooks]
+    let onBookTap: (ExternalRankingBook) -> Void
+    let onShowAll: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Main Newbery header
+            NewberyHeaderView(onViewAll: onShowAll)
+
+            // Each list as a sub-section
+            ForEach(lists) { list in
+                NewberyListSubSection(list: list, onBookTap: onBookTap)
+            }
+        }
+    }
+}
+
+/// Sub-section for a single Newbery category showing actual books
+struct NewberyListSubSection: View {
+    let list: ListWithBooks
+    let onBookTap: (ExternalRankingBook) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Category title
+            HStack {
+                Text(list.title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+
+            // Books horizontal scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(list.books) { book in
+                        Button(action: { onBookTap(book) }) {
+                            AwardFlattenedBookCardView(
+                                book: book,
+                                award: .newbery,
+                                cardWidth: 100
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 12)
+        .background(Color(UIColor.systemBackground))
     }
 }
 

@@ -11,6 +11,9 @@ struct Ebook: Codable, Identifiable, Hashable {
     let coverUrl: String?
     let s3Key: String?
     let createdAt: String?
+    // Extended metadata
+    let author: String?
+    let description: String?
 
     var isPdf: Bool {
         fileType?.lowercased() == "pdf"
