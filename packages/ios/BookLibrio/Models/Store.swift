@@ -128,3 +128,42 @@ struct ExternalRankingDetailResponse: Codable {
     let books: [ExternalRankingBook]
     let total: Int
 }
+
+// MARK: - Peer-Level Section Responses
+// These are separate endpoints that return rankings filtered by specific list_types
+
+struct EditorPicksResponse: Codable {
+    let data: [ExternalRanking]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct BookSeriesResponse: Codable {
+    let data: [ExternalRanking]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct WeeklyPicksResponse: Codable {
+    let data: [ExternalRanking]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct CelebrityPicksResponse: Codable {
+    let data: [ExternalRanking]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct BiographiesResponse: Codable {
+    let data: [ExternalRanking]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct AwardsResponse: Codable {
+    let data: [ExternalRanking]
+    let total: Int
+    let hasMore: Bool
+}

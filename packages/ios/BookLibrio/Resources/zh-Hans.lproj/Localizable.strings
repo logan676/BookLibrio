@@ -706,8 +706,8 @@
 "store.resultCount" = "共找到 %d 个结果";
 "store.recommendedForYou" = "为你推荐";
 "store.booksByYear" = "按年份浏览";
-"store.externalRankings" = "精选榜单";
-"store.curatedCollections" = "精选书单";
+"store.externalRankings" = "平台榜单";
+"store.curatedCollections" = "用户书单";
 "store.topRated" = "高分好书";
 "store.categories" = "分类";
 "store.noCategories" = "暂无分类";
@@ -730,8 +730,8 @@
 "store.viewAll" = "查看全部";
 "store.viewMore" = "查看更多";
 "store.booksByYear" = "按年份浏览";
-"store.externalRankings" = "精选榜单";
-"store.curatedCollections" = "精选书单";
+"store.externalRankings" = "平台榜单";
+"store.curatedCollections" = "用户书单";
 "store.topRated" = "高分好书";
 "store.categories" = "分类";
 "store.noCategories" = "暂无分类";
@@ -744,6 +744,25 @@
 "store.done" = "完成";
 "store.bookCount" = "%d本";
 "store.booksCountLabel" = "%d 本书";
+// 新增平级栏目 (WYSIWYG: 与Dashboard名称保持一致)
+"store.editorsPicks" = "编辑精选";
+"store.celebrityPicks" = "名人书单";
+"store.seriesCollections" = "系列丛书";
+"store.weeklyPicks" = "每周推荐";
+"store.awards" = "文学奖";
+"store.weeklyRecommend" = "本周不容错过";
+"store.biographies" = "人物传记";
+"store.booksLabel" = "本";
+"store.fullSetCount" = "全%d册";
+
+// Editor Picks Detail View
+"store.editorPicksSubtitle" = "编辑团队为你精心挑选";
+"store.editorNote" = "主编寄语";
+"store.editorName" = "BookLibrio 编辑部";
+"store.editorNoteContent" = "本周我们聚焦科幻与未来的边界。从硬核的太空歌剧到深刻的人文反思，这几本书将带你重塑对现实的认知。精选不易，希望你能喜欢。";
+"store.topPick" = "本周力荐";
+"store.moreSelections" = "更多精选";
+"store.viewList" = "查看书单";
 
 // MARK: - AI Question
 "ai.title" = "AI 问答";

@@ -1423,4 +1423,112 @@ class APIClient {
         )
         return try await perform(request)
     }
+
+    // MARK: - Editor Picks
+
+    /// Get editor pick lists
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    func getEditorPicks(limit: Int = 20, offset: Int = 0) async throws -> EditorPicksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/editor-picks",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Book Series
+
+    /// Get book series lists
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    func getBookSeries(limit: Int = 20, offset: Int = 0) async throws -> BookSeriesResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/book-series",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Weekly Picks
+
+    /// Get weekly pick lists
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    func getWeeklyPicks(limit: Int = 20, offset: Int = 0) async throws -> WeeklyPicksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/weekly-picks",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Celebrity Picks
+
+    /// Get celebrity recommendation lists (e.g., Bill Gates)
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    func getCelebrityPicks(limit: Int = 20, offset: Int = 0) async throws -> CelebrityPicksResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/celebrity-picks",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Biographies
+
+    /// Get biography book lists
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    func getBiographies(limit: Int = 20, offset: Int = 0) async throws -> BiographiesResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/biographies",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
+
+    // MARK: - Awards
+
+    /// Get literary award lists (Pulitzer, Booker, Newbery, etc.)
+    /// - Parameters:
+    ///   - limit: Number of lists to return
+    ///   - offset: Offset for pagination
+    func getAwards(limit: Int = 20, offset: Int = 0) async throws -> AwardsResponse {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "offset", value: "\(offset)")
+        ]
+        let request = try buildRequest(
+            path: "/api/store/awards",
+            queryItems: queryItems
+        )
+        return try await perform(request)
+    }
 }

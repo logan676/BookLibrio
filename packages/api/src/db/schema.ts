@@ -119,6 +119,8 @@ export const ebookCategories = pgTable('ebook_categories', {
   sortOrder: integer('sort_order').default(0),
   // Content type applicability
   bookTypes: text('book_types').default('ebook,magazine'), // Comma-separated: 'ebook', 'magazine', or both
+  // Tags for categorization (e.g., 'fiction,featured,curated')
+  tags: text('tags'), // Comma-separated tags: 'fiction', 'nonfiction', 'featured', 'curated', etc.
   // Stats
   ebookCount: integer('ebook_count').default(0),
   magazineCount: integer('magazine_count').default(0),

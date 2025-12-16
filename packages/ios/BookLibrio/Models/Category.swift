@@ -18,6 +18,7 @@ struct Category: Codable, Identifiable, Hashable {
     let themeColor: String?
     let sortOrder: Int
     let bookTypes: String?
+    let tags: String? // Comma-separated tags: 'fiction', 'nonfiction', 'featured', etc.
     let ebookCount: Int
     let magazineCount: Int
     let isActive: Bool
@@ -53,6 +54,33 @@ struct Category: Codable, Identifiable, Hashable {
 
     var isTopLevel: Bool {
         parentId == nil
+    }
+
+    /// Check if category has a specific tag
+    func hasTag(_ tag: String) -> Bool {
+        guard let tags = tags else { return false }
+        return tags.lowercased().split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.contains(tag.lowercased())
+    }
+
+    /// Check if category is fiction-related (has 'fiction' tag)
+    var isFiction: Bool {
+        hasTag("fiction")
+    }
+
+    /// Check if category is nonfiction-related (has 'nonfiction' tag)
+    var isNonfiction: Bool {
+        hasTag("nonfiction")
+    }
+
+    /// Check if category is featured
+    var isFeatured: Bool {
+        hasTag("featured")
+    }
+
+    /// Get all tags as array
+    var tagsArray: [String] {
+        guard let tags = tags else { return [] }
+        return tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
     // MARK: - Hashable

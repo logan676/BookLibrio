@@ -897,6 +897,29 @@ enum L10n {
         static func booksCountLabel(_ count: Int) -> String {
             String(format: NSLocalizedString("store.booksCountLabel", comment: ""), count)
         }
+
+        // New peer-level sections
+        static var editorsPicks: String { NSLocalizedString("store.editorsPicks", comment: "") }
+        static var celebrityPicks: String { NSLocalizedString("store.celebrityPicks", comment: "") }
+        static var seriesCollections: String { NSLocalizedString("store.seriesCollections", comment: "") }
+        static var weeklyPicks: String { NSLocalizedString("store.weeklyPicks", comment: "") }
+        static var awards: String { NSLocalizedString("store.awards", comment: "") }
+        static var weeklyRecommend: String { NSLocalizedString("store.weeklyRecommend", comment: "") }
+        static var biographies: String { NSLocalizedString("store.biographies", comment: "") }
+        static var booksLabel: String { NSLocalizedString("store.booksLabel", comment: "") }
+
+        static func fullSetCount(_ count: Int) -> String {
+            String(format: NSLocalizedString("store.fullSetCount", comment: ""), count)
+        }
+
+        // Editor Picks Detail View
+        static var editorPicksSubtitle: String { NSLocalizedString("store.editorPicksSubtitle", comment: "") }
+        static var editorNote: String { NSLocalizedString("store.editorNote", comment: "") }
+        static var editorName: String { NSLocalizedString("store.editorName", comment: "") }
+        static var editorNoteContent: String { NSLocalizedString("store.editorNoteContent", comment: "") }
+        static var topPick: String { NSLocalizedString("store.topPick", comment: "") }
+        static var moreSelections: String { NSLocalizedString("store.moreSelections", comment: "") }
+        static var viewList: String { NSLocalizedString("store.viewList", comment: "") }
     }
 
     // MARK: - AI Question

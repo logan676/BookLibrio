@@ -124,6 +124,7 @@ enum CuratedListType: String, CaseIterable {
     case editorPick = "editor_pick"
     case bookSeries = "book_series"
     case weeklyPick = "weekly_pick"
+    case biography = "biography"
 
     var displayName: String {
         switch self {
@@ -142,6 +143,7 @@ enum CuratedListType: String, CaseIterable {
         case .editorPick: return "Editor's Pick"
         case .bookSeries: return "Book Series"
         case .weeklyPick: return "Weekly Pick"
+        case .biography: return "Biographies"
         }
     }
 
@@ -162,6 +164,7 @@ enum CuratedListType: String, CaseIterable {
         case .editorPick: return "star.square.on.square"
         case .bookSeries: return "books.vertical"
         case .weeklyPick: return "calendar.badge.clock"
+        case .biography: return "person.text.rectangle"
         }
     }
 }

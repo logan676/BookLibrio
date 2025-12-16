@@ -276,20 +276,23 @@ app.openapi(topRatedRoute, async (c) => {
 // ============================================
 
 // External ranking list types (from external sources like NYT, Amazon, etc.)
-// Maps to Dashboard categories: NYT Lists, Platform Lists, Awards, Celebrity Lists
+// Maps to Dashboard categories: NYT Lists, Platform Lists
+// Note: Awards (pulitzer, booker, etc.) are now in /awards endpoint
+// Note: bill_gates is now in /celebrity-picks endpoint
 const EXTERNAL_RANKING_TYPES = [
   // NYT Lists
   'nyt_bestseller',
   // Platform Lists
   'amazon_best',
   'goodreads_choice',
-  // Awards
+]
+
+// Award types (literary prizes)
+const AWARD_TYPES = [
   'pulitzer',
   'booker',
   'booker_international',
   'newbery',
-  // Celebrity Lists
-  'bill_gates',
 ]
 
 const externalRankingsRoute = createRoute({
@@ -874,6 +877,312 @@ app.openapi(weeklyPicksRoute, async (c) => {
         .where(eq(curatedListItems.listId, list.id))
         .orderBy(curatedListItems.position)
         .limit(3)
+
+      const previewCovers: string[] = []
+      for (const item of items) {
+        if (item.bookId && item.bookType === 'ebook') {
+          const [book] = await db.select({ coverUrl: ebooks.coverUrl }).from(ebooks).where(eq(ebooks.id, item.bookId)).limit(1)
+          if (book?.coverUrl) previewCovers.push(book.coverUrl)
+        } else if (item.externalCoverUrl) {
+          previewCovers.push(`${item.externalCoverUrl}?v=7`)
+        }
+      }
+
+      return {
+        ...list,
+        lastUpdated: list.lastUpdated?.toISOString() ?? null,
+        previewCovers,
+      }
+    })
+  )
+
+  return c.json({
+    data: listsWithCovers,
+    total: Number(total),
+    hasMore: offset + lists.length < Number(total),
+  })
+})
+
+// ============================================
+// GET /api/store/celebrity-picks
+// ============================================
+
+const celebrityPicksRoute = createRoute({
+  method: 'get',
+  path: '/celebrity-picks',
+  tags: ['Store'],
+  summary: 'Get celebrity recommendation lists (e.g., Bill Gates)',
+  request: {
+    query: z.object({
+      limit: z.coerce.number().default(20),
+      offset: z.coerce.number().default(0),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Celebrity recommendation lists',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(ExternalRankingSchema),
+            total: z.number(),
+            hasMore: z.boolean(),
+          }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(celebrityPicksRoute, async (c) => {
+  const { limit, offset } = c.req.valid('query')
+
+  const [{ count: total }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(curatedLists)
+    .where(and(
+      eq(curatedLists.listType, 'bill_gates'),
+      eq(curatedLists.isActive, true)
+    ))
+
+  const lists = await db
+    .select({
+      id: curatedLists.id,
+      listType: curatedLists.listType,
+      sourceName: curatedLists.sourceName,
+      sourceLogoUrl: curatedLists.sourceLogoUrl,
+      title: curatedLists.title,
+      subtitle: curatedLists.subtitle,
+      description: curatedLists.description,
+      bookCount: curatedLists.bookCount,
+      lastUpdated: curatedLists.updatedAt,
+      externalUrl: curatedLists.sourceUrl,
+    })
+    .from(curatedLists)
+    .where(and(
+      eq(curatedLists.listType, 'bill_gates'),
+      eq(curatedLists.isActive, true)
+    ))
+    .orderBy(desc(curatedLists.sortOrder), desc(curatedLists.createdAt))
+    .limit(limit)
+    .offset(offset)
+
+  const listsWithCovers = await Promise.all(
+    lists.map(async (list) => {
+      const items = await db
+        .select({
+          externalCoverUrl: curatedListItems.externalCoverUrl,
+          bookId: curatedListItems.bookId,
+          bookType: curatedListItems.bookType,
+        })
+        .from(curatedListItems)
+        .where(eq(curatedListItems.listId, list.id))
+        .orderBy(curatedListItems.position)
+        .limit(5)
+
+      const previewCovers: string[] = []
+      for (const item of items) {
+        if (item.bookId && item.bookType === 'ebook') {
+          const [book] = await db.select({ coverUrl: ebooks.coverUrl }).from(ebooks).where(eq(ebooks.id, item.bookId)).limit(1)
+          if (book?.coverUrl) previewCovers.push(book.coverUrl)
+        } else if (item.externalCoverUrl) {
+          previewCovers.push(`${item.externalCoverUrl}?v=7`)
+        }
+      }
+
+      return {
+        ...list,
+        lastUpdated: list.lastUpdated?.toISOString() ?? null,
+        previewCovers,
+      }
+    })
+  )
+
+  return c.json({
+    data: listsWithCovers,
+    total: Number(total),
+    hasMore: offset + lists.length < Number(total),
+  })
+})
+
+// ============================================
+// GET /api/store/biographies
+// ============================================
+
+const biographiesRoute = createRoute({
+  method: 'get',
+  path: '/biographies',
+  tags: ['Store'],
+  summary: 'Get biography book lists',
+  request: {
+    query: z.object({
+      limit: z.coerce.number().default(20),
+      offset: z.coerce.number().default(0),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Biography book lists',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(ExternalRankingSchema),
+            total: z.number(),
+            hasMore: z.boolean(),
+          }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(biographiesRoute, async (c) => {
+  const { limit, offset } = c.req.valid('query')
+
+  const [{ count: total }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(curatedLists)
+    .where(and(
+      eq(curatedLists.listType, 'biography'),
+      eq(curatedLists.isActive, true)
+    ))
+
+  const lists = await db
+    .select({
+      id: curatedLists.id,
+      listType: curatedLists.listType,
+      sourceName: curatedLists.sourceName,
+      sourceLogoUrl: curatedLists.sourceLogoUrl,
+      title: curatedLists.title,
+      subtitle: curatedLists.subtitle,
+      description: curatedLists.description,
+      bookCount: curatedLists.bookCount,
+      lastUpdated: curatedLists.updatedAt,
+      externalUrl: curatedLists.sourceUrl,
+    })
+    .from(curatedLists)
+    .where(and(
+      eq(curatedLists.listType, 'biography'),
+      eq(curatedLists.isActive, true)
+    ))
+    .orderBy(desc(curatedLists.sortOrder), desc(curatedLists.createdAt))
+    .limit(limit)
+    .offset(offset)
+
+  const listsWithCovers = await Promise.all(
+    lists.map(async (list) => {
+      const items = await db
+        .select({
+          externalCoverUrl: curatedListItems.externalCoverUrl,
+          bookId: curatedListItems.bookId,
+          bookType: curatedListItems.bookType,
+        })
+        .from(curatedListItems)
+        .where(eq(curatedListItems.listId, list.id))
+        .orderBy(curatedListItems.position)
+        .limit(3)
+
+      const previewCovers: string[] = []
+      for (const item of items) {
+        if (item.bookId && item.bookType === 'ebook') {
+          const [book] = await db.select({ coverUrl: ebooks.coverUrl }).from(ebooks).where(eq(ebooks.id, item.bookId)).limit(1)
+          if (book?.coverUrl) previewCovers.push(book.coverUrl)
+        } else if (item.externalCoverUrl) {
+          previewCovers.push(`${item.externalCoverUrl}?v=7`)
+        }
+      }
+
+      return {
+        ...list,
+        lastUpdated: list.lastUpdated?.toISOString() ?? null,
+        previewCovers,
+      }
+    })
+  )
+
+  return c.json({
+    data: listsWithCovers,
+    total: Number(total),
+    hasMore: offset + lists.length < Number(total),
+  })
+})
+
+// ============================================
+// GET /api/store/awards
+// ============================================
+
+const awardsRoute = createRoute({
+  method: 'get',
+  path: '/awards',
+  tags: ['Store'],
+  summary: 'Get literary award lists (Pulitzer, Booker, Newbery, etc.)',
+  request: {
+    query: z.object({
+      limit: z.coerce.number().default(20),
+      offset: z.coerce.number().default(0),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Literary award lists',
+      content: {
+        'application/json': {
+          schema: z.object({
+            data: z.array(ExternalRankingSchema),
+            total: z.number(),
+            hasMore: z.boolean(),
+          }),
+        },
+      },
+    },
+  },
+})
+
+app.openapi(awardsRoute, async (c) => {
+  const { limit, offset } = c.req.valid('query')
+
+  const [{ count: total }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(curatedLists)
+    .where(and(
+      inArray(curatedLists.listType, AWARD_TYPES),
+      eq(curatedLists.isActive, true)
+    ))
+
+  const lists = await db
+    .select({
+      id: curatedLists.id,
+      listType: curatedLists.listType,
+      sourceName: curatedLists.sourceName,
+      sourceLogoUrl: curatedLists.sourceLogoUrl,
+      title: curatedLists.title,
+      subtitle: curatedLists.subtitle,
+      description: curatedLists.description,
+      bookCount: curatedLists.bookCount,
+      lastUpdated: curatedLists.updatedAt,
+      externalUrl: curatedLists.sourceUrl,
+    })
+    .from(curatedLists)
+    .where(and(
+      inArray(curatedLists.listType, AWARD_TYPES),
+      eq(curatedLists.isActive, true)
+    ))
+    .orderBy(desc(curatedLists.sortOrder), desc(curatedLists.createdAt))
+    .limit(limit)
+    .offset(offset)
+
+  const listsWithCovers = await Promise.all(
+    lists.map(async (list) => {
+      const items = await db
+        .select({
+          externalCoverUrl: curatedListItems.externalCoverUrl,
+          bookId: curatedListItems.bookId,
+          bookType: curatedListItems.bookType,
+        })
+        .from(curatedListItems)
+        .where(eq(curatedListItems.listId, list.id))
+        .orderBy(curatedListItems.position)
+        .limit(5)
 
       const previewCovers: string[] = []
       for (const item of items) {

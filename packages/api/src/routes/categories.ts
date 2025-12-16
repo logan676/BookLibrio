@@ -30,6 +30,7 @@ const CategorySchema = z.object({
   themeColor: z.string().nullable(),
   sortOrder: z.number(),
   bookTypes: z.string().nullable(),
+  tags: z.string().nullable(), // Comma-separated tags: 'fiction', 'nonfiction', 'featured', etc.
   ebookCount: z.number(),
   magazineCount: z.number(),
   isActive: z.boolean(),

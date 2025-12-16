@@ -9,6 +9,7 @@ struct EbookStoreView: View {
     @State private var showCategoryBrowser = false
     @State private var showRankings = false
     @State private var showBookLists = false
+    @State private var showEditorPicksList = false
     @State private var selectedBookList: BookList?
     @State private var selectedRanking: ExternalRanking?
     @State private var bookType = "ebook" // Used by CategoryGridView
@@ -16,6 +17,9 @@ struct EbookStoreView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // Top spacing to avoid being covered by the fixed Ebook/Magazine tab bar
+                Color.clear.frame(height: 8)
+
                 // 1. Recommended for You (horizontal scroll - covers only)
                 if !viewModel.recommendedBooks.isEmpty {
                     RecommendedCoversSection(
@@ -28,7 +32,18 @@ struct EbookStoreView: View {
                 // 2. Categories (fiction categories only)
                 CategoryGridView(selectedBookType: $bookType, showFictionOnly: true)
 
-                // 3. External Rankings & Recommended Lists
+                // 3. Editor's Picks (peer-level section)
+                if !viewModel.editorPicks.isEmpty {
+                    EditorsChoiceSection(
+                        rankings: viewModel.editorPicks,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showEditorPicksList = true }
+                    )
+                }
+
+                // 4. External Rankings & Recommended Lists
                 if !viewModel.externalRankings.isEmpty {
                     ExternalRankingsSection(
                         rankings: viewModel.externalRankings,
@@ -39,7 +54,62 @@ struct EbookStoreView: View {
                     )
                 }
 
-                // 4. Books by Year (mixed years display)
+                // 5. Awards (peer-level section - Pulitzer, Booker, Newbery, etc.)
+                if !viewModel.awards.isEmpty {
+                    AwardsSection(
+                        rankings: viewModel.awards,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showRankings = true }
+                    )
+                }
+
+                // 6. Series Collections (peer-level section)
+                if !viewModel.bookSeries.isEmpty {
+                    SeriesCollectionsSection(
+                        rankings: viewModel.bookSeries,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showRankings = true }
+                    )
+                }
+
+                // 7. Weekly Picks (peer-level section)
+                if !viewModel.weeklyPicks.isEmpty {
+                    WeeklyPicksSection(
+                        rankings: viewModel.weeklyPicks,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showRankings = true }
+                    )
+                }
+
+                // 8. Celebrity Picks (peer-level section - e.g., Bill Gates)
+                if !viewModel.celebrityPicks.isEmpty {
+                    CelebrityPicksSection(
+                        rankings: viewModel.celebrityPicks,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showRankings = true }
+                    )
+                }
+
+                // 9. Biographies (peer-level section)
+                if !viewModel.biographies.isEmpty {
+                    BiographySection(
+                        rankings: viewModel.biographies,
+                        onRankingTap: { ranking in
+                            selectedRanking = ranking
+                        },
+                        onShowAll: { showRankings = true }
+                    )
+                }
+
+                // 10. Books by Year (mixed years display)
                 if !viewModel.mixedYearBooks.isEmpty {
                     MixedYearBooksSection(
                         books: viewModel.mixedYearBooks,
@@ -59,7 +129,7 @@ struct EbookStoreView: View {
                     )
                 }
 
-                // 5. Top Rated (with weighted random)
+                // 10. Top Rated (with weighted random)
                 if !viewModel.topRatedBooks.isEmpty {
                     TopRatedSection(
                         books: viewModel.topRatedBooks,
@@ -79,7 +149,7 @@ struct EbookStoreView: View {
                     )
                 }
 
-                // 6. Curated Collections
+                // 11. User Book Lists (用户创建的书单，类似豆瓣豆列)
                 if !viewModel.popularBookLists.isEmpty {
                     curatedCollectionsSection
                 }
@@ -107,6 +177,9 @@ struct EbookStoreView: View {
         .sheet(isPresented: $showBookLists) {
             BookListsView()
         }
+        .sheet(isPresented: $showEditorPicksList) {
+            EditorPicksListView()
+        }
         .navigationDestination(item: $selectedBookList) { list in
             BookListDetailView(listId: list.id)
         }
@@ -115,7 +188,7 @@ struct EbookStoreView: View {
         }
     }
 
-    // MARK: - Curated Collections Section
+    // MARK: - User Book Lists Section (用户书单)
 
     private var curatedCollectionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -157,6 +230,13 @@ class EbookStoreViewModel: ObservableObject {
     @Published var mixedYearBooks: [BookByYear] = []
     @Published var topRatedBooks: [TopRatedBook] = []
     @Published var externalRankings: [ExternalRanking] = []
+    // Peer-level sections
+    @Published var editorPicks: [ExternalRanking] = []
+    @Published var bookSeries: [ExternalRanking] = []
+    @Published var weeklyPicks: [ExternalRanking] = []
+    @Published var celebrityPicks: [ExternalRanking] = []
+    @Published var biographies: [ExternalRanking] = []
+    @Published var awards: [ExternalRanking] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -176,6 +256,13 @@ class EbookStoreViewModel: ObservableObject {
             group.addTask { await self.loadMixedYearBooks() }
             group.addTask { await self.loadTopRatedBooks() }
             group.addTask { await self.loadExternalRankings() }
+            // Peer-level sections
+            group.addTask { await self.loadEditorPicks() }
+            group.addTask { await self.loadBookSeries() }
+            group.addTask { await self.loadWeeklyPicks() }
+            group.addTask { await self.loadCelebrityPicks() }
+            group.addTask { await self.loadBiographies() }
+            group.addTask { await self.loadAwards() }
         }
 
         isLoading = false
@@ -272,10 +359,81 @@ class EbookStoreViewModel: ObservableObject {
 
     private func loadExternalRankings() async {
         do {
+            Log.d("Loading external rankings...")
             let response = try await apiClient.getExternalRankings(bookType: "ebook")
+            Log.d("Loaded \(response.data.count) external rankings")
             externalRankings = interleaveRankingsBySources(rankings: response.data)
+            Log.d("After interleave: \(externalRankings.count) rankings")
         } catch {
-            print("Failed to load external rankings: \(error)")
+            Log.e("Failed to load external rankings: \(error)")
+        }
+    }
+
+    // MARK: - Peer-Level Sections
+
+    private func loadEditorPicks() async {
+        do {
+            Log.d("Loading editor picks...")
+            let response = try await apiClient.getEditorPicks(limit: 10)
+            editorPicks = response.data
+            Log.d("Loaded \(editorPicks.count) editor picks")
+        } catch {
+            Log.e("Failed to load editor picks: \(error)")
+        }
+    }
+
+    private func loadBookSeries() async {
+        do {
+            Log.d("Loading book series...")
+            let response = try await apiClient.getBookSeries(limit: 10)
+            bookSeries = response.data
+            Log.d("Loaded \(bookSeries.count) book series")
+        } catch {
+            Log.e("Failed to load book series: \(error)")
+        }
+    }
+
+    private func loadWeeklyPicks() async {
+        do {
+            Log.d("Loading weekly picks...")
+            let response = try await apiClient.getWeeklyPicks(limit: 10)
+            weeklyPicks = response.data
+            Log.d("Loaded \(weeklyPicks.count) weekly picks")
+        } catch {
+            Log.e("Failed to load weekly picks: \(error)")
+        }
+    }
+
+    private func loadCelebrityPicks() async {
+        do {
+            Log.d("Loading celebrity picks...")
+            let response = try await apiClient.getCelebrityPicks(limit: 10)
+            celebrityPicks = response.data
+            Log.d("Loaded \(celebrityPicks.count) celebrity picks")
+        } catch {
+            Log.e("Failed to load celebrity picks: \(error)")
+        }
+    }
+
+    private func loadBiographies() async {
+        do {
+            Log.d("Loading biographies...")
+            let response = try await apiClient.getBiographies(limit: 10)
+            biographies = response.data
+            Log.d("Loaded \(biographies.count) biographies")
+        } catch {
+            Log.e("Failed to load biographies: \(error)")
+        }
+    }
+
+    private func loadAwards() async {
+        do {
+            Log.d("Loading awards...")
+            let response = try await apiClient.getAwards(limit: 10)
+            awards = response.data
+            Log.d("Loaded \(awards.count) awards")
+        } catch {
+            Log.e("Failed to load awards: \(error)")
         }
     }
 

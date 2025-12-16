@@ -706,8 +706,8 @@
 "store.resultCount" = "Found %d results";
 "store.recommendedForYou" = "Recommended For You";
 "store.booksByYear" = "Books by Year";
-"store.externalRankings" = "External Rankings";
-"store.curatedCollections" = "Curated Collections";
+"store.externalRankings" = "Platform Lists";
+"store.curatedCollections" = "User Book Lists";
 "store.topRated" = "Top Rated";
 "store.categories" = "Categories";
 "store.noCategories" = "No categories";
@@ -730,8 +730,8 @@
 "store.viewAll" = "View All";
 "store.viewMore" = "View More";
 "store.booksByYear" = "Books by Year";
-"store.externalRankings" = "External Rankings";
-"store.curatedCollections" = "Curated Collections";
+"store.externalRankings" = "Platform Lists";
+"store.curatedCollections" = "User Book Lists";
 "store.topRated" = "Top Rated";
 "store.categories" = "Categories";
 "store.noCategories" = "No categories";
@@ -744,6 +744,25 @@
 "store.done" = "Done";
 "store.bookCount" = "%d books";
 "store.booksCountLabel" = "%d books";
+// New peer-level sections (WYSIWYG: Match Dashboard names exactly)
+"store.editorsPicks" = "Editor Pick";
+"store.celebrityPicks" = "Celebrity Lists";
+"store.seriesCollections" = "Book Series";
+"store.weeklyPicks" = "Weekly Pick";
+"store.awards" = "Awards";
+"store.weeklyRecommend" = "This Week's Recommendations";
+"store.biographies" = "Biographies";
+"store.booksLabel" = "books";
+"store.fullSetCount" = "Full %d volumes";
+
+// Editor Picks Detail View
+"store.editorPicksSubtitle" = "Handpicked by our editorial team";
+"store.editorNote" = "Editor's Note";
+"store.editorName" = "Editorial Team";
+"store.editorNoteContent" = "This week we focus on the boundary between sci-fi and the future. From hardcore space opera to profound humanistic reflections, these books will reshape your perception of reality.";
+"store.topPick" = "Top Pick";
+"store.moreSelections" = "More Selections";
+"store.viewList" = "View List";
 
 // MARK: - AI Question
 "ai.title" = "AI Q&A";

@@ -4,10 +4,7 @@ import SwiftUI
 struct CategoryGridView: View {
     @StateObject private var viewModel = CategoryGridViewModel()
     @Binding var selectedBookType: String // "ebook" or "magazine"
-    var showFictionOnly: Bool = false // When true, only show fiction-related categories
-
-    // Fiction-related category slugs/names to show when showFictionOnly is true
-    private let fictionCategorySlugs = ["fiction", "literature", "history", "technology", "science", "philosophy", "biography", "mystery", "romance", "fantasy", "thriller"]
+    var showFictionOnly: Bool = false // When true, only show fiction-related categories (using 'fiction' tag from API)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -65,12 +62,8 @@ struct CategoryGridView: View {
 
     private var filteredCategories: [Category] {
         if showFictionOnly {
-            // Filter to only show fiction-related categories
-            return viewModel.displayedCategories.filter { category in
-                let slug = category.slug?.lowercased() ?? ""
-                let name = category.name.lowercased()
-                return fictionCategorySlugs.contains(where: { slug.contains($0) || name.contains($0) })
-            }
+            // Filter to only show fiction-related categories (using 'fiction' tag from API)
+            return viewModel.displayedCategories.filter { $0.isFiction }
         }
         return viewModel.displayedCategories
     }
