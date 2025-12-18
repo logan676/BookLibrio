@@ -1,6 +1,24 @@
 package com.bookpost.domain.model
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
 
 /**
@@ -83,6 +101,26 @@ enum class BadgeCategory(val value: String) {
             EXPLORER -> Color(0xFF339980)  // Teal
             MILESTONE -> Color(0xFFE5B319)  // Gold
             SEASONAL -> Color(0xFF99CC4D)  // Fresh green
+        }
+
+    val iconVector: ImageVector
+        get() = when (this) {
+            READING_STREAK -> Icons.Default.LocalFireDepartment
+            READING_DURATION -> Icons.Default.Schedule
+            READING_DAYS -> Icons.Default.CalendarMonth
+            BOOKS_FINISHED -> Icons.AutoMirrored.Filled.MenuBook
+            WEEKLY_CHALLENGE -> Icons.Default.Star
+            MONTHLY_CHALLENGE -> Icons.Default.WorkspacePremium
+            SOCIAL -> Icons.Default.Group
+            SPECIAL -> Icons.Default.AutoAwesome
+            EARLY_BIRD -> Icons.Default.WbSunny
+            NIGHT_OWL -> Icons.Default.DarkMode
+            SPEED_READER -> Icons.Default.Speed
+            REVIEWER -> Icons.Default.RateReview
+            COLLECTOR -> Icons.Default.CollectionsBookmark
+            EXPLORER -> Icons.Default.Explore
+            MILESTONE -> Icons.Default.Flag
+            SEASONAL -> Icons.Default.Eco
         }
 
     companion object {

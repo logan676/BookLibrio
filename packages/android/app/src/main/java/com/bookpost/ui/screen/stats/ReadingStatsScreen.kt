@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.FormatUnderlined
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -76,6 +77,7 @@ private val OrangeAccent = Color(0xFFFF9800)
 @Composable
 fun ReadingStatsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToShareCard: () -> Unit = {},
     viewModel: ReadingStatsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -87,6 +89,11 @@ fun ReadingStatsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToShareCard) {
+                        Icon(Icons.Default.Share, contentDescription = "分享")
                     }
                 }
             )

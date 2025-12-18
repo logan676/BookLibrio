@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.CardMembership
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,6 +61,8 @@ fun ProfileScreen(
     onNavigateToStreak: () -> Unit = {},
     onNavigateToLeaderboard: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToMembership: () -> Unit = {},
+    onNavigateToMessages: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -183,6 +187,22 @@ fun ProfileScreen(
                     icon = { Icon(Icons.Default.Leaderboard, contentDescription = null) },
                     title = stringResource(R.string.leaderboard),
                     onClick = onNavigateToLeaderboard
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Account section
+            ProfileSection(title = "账户") {
+                ProfileMenuItem(
+                    icon = { Icon(Icons.Default.CardMembership, contentDescription = null) },
+                    title = "会员中心",
+                    onClick = onNavigateToMembership
+                )
+                ProfileMenuItem(
+                    icon = { Icon(Icons.Default.Mail, contentDescription = null) },
+                    title = "消息中心",
+                    onClick = onNavigateToMessages
                 )
             }
 

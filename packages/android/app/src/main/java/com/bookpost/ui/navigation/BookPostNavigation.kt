@@ -45,6 +45,20 @@ import com.bookpost.ui.screen.profile.NotesListScreen
 import com.bookpost.ui.screen.streak.StreakScreen
 import com.bookpost.ui.screen.leaderboard.LeaderboardScreen
 import com.bookpost.ui.screen.settings.SettingsScreen
+import com.bookpost.ui.screen.friends.FriendsScreen
+import com.bookpost.ui.screen.friends.PublishThoughtScreen
+import com.bookpost.ui.screen.friends.UserProfileScreen
+import com.bookpost.ui.screen.ai.AILookupScreen
+import com.bookpost.ui.screen.ai.AIGuideScreen
+import com.bookpost.ui.screen.ai.AIOutlineScreen
+import com.bookpost.ui.screen.audio.AudioPlayerScreen
+import com.bookpost.ui.screen.store.StoreSearchScreen
+import com.bookpost.ui.screen.store.StoreRankingScreen
+import com.bookpost.ui.screen.membership.MembershipScreen
+import com.bookpost.ui.screen.messages.MessageInboxScreen
+import com.bookpost.ui.screen.stats.StatsShareCardScreen
+import com.bookpost.ui.screen.stats.ShareCardData
+import java.util.Date
 
 /**
  * Navigation structure matching iOS:
@@ -93,6 +107,43 @@ sealed class Screen(val route: String) {
     data object Streak : Screen("streak")
     data object Leaderboard : Screen("leaderboard")
     data object Settings : Screen("settings")
+
+    // Social screens
+    data object Friends : Screen("friends")
+    data object PublishThought : Screen("publish_thought")
+    data object UserProfile : Screen("user_profile/{userId}") {
+        fun createRoute(userId: Int) = "user_profile/$userId"
+    }
+    data object FollowList : Screen("follow_list/{userId}/{type}") {
+        fun createRoute(userId: Int, type: String) = "follow_list/$userId/$type"
+    }
+
+    // AI screens
+    data object AILookup : Screen("ai_lookup/{word}") {
+        fun createRoute(word: String) = "ai_lookup/$word"
+    }
+    data object AIGuide : Screen("ai_guide/{bookId}/{bookTitle}") {
+        fun createRoute(bookId: Int, bookTitle: String) = "ai_guide/$bookId/$bookTitle"
+    }
+    data object AIOutline : Screen("ai_outline/{bookId}/{bookTitle}") {
+        fun createRoute(bookId: Int, bookTitle: String) = "ai_outline/$bookId/$bookTitle"
+    }
+
+    // Audio screens
+    data object AudioPlayer : Screen("audio_player/{bookId}/{bookTitle}") {
+        fun createRoute(bookId: Int, bookTitle: String) = "audio_player/$bookId/$bookTitle"
+    }
+
+    // Store sub-screens
+    data object StoreSearch : Screen("store_search")
+    data object StoreRanking : Screen("store_ranking")
+
+    // Membership & Messages
+    data object Membership : Screen("membership")
+    data object MessageInbox : Screen("message_inbox")
+
+    // Stats
+    data object StatsShareCard : Screen("stats_share_card")
 }
 
 sealed class BottomNavItem(
@@ -236,6 +287,12 @@ fun BookPostNavigation(
                     },
                     onMagazineClick = { id ->
                         navController.navigate(Screen.MagazineDetail.createRoute(id))
+                    },
+                    onNavigateToSearch = {
+                        navController.navigate(Screen.StoreSearch.route)
+                    },
+                    onNavigateToRanking = {
+                        navController.navigate(Screen.StoreRanking.route)
                     }
                 )
             }
@@ -271,6 +328,12 @@ fun BookPostNavigation(
                     },
                     onNavigateToSettings = {
                         navController.navigate(Screen.Settings.route)
+                    },
+                    onNavigateToMembership = {
+                        navController.navigate(Screen.Membership.route)
+                    },
+                    onNavigateToMessages = {
+                        navController.navigate(Screen.MessageInbox.route)
                     }
                 )
             }
@@ -370,7 +433,10 @@ fun BookPostNavigation(
 
             composable(Screen.ReadingStats.route) {
                 ReadingStatsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToShareCard = {
+                        navController.navigate(Screen.StatsShareCard.route)
+                    }
                 )
             }
 
@@ -435,6 +501,175 @@ fun BookPostNavigation(
 
             composable(Screen.Settings.route) {
                 SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Social screens
+            composable(Screen.Friends.route) {
+                FriendsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToUserProfile = { userId ->
+                        navController.navigate(Screen.UserProfile.createRoute(userId))
+                    },
+                    onNavigateToPublishThought = {
+                        navController.navigate(Screen.PublishThought.route)
+                    },
+                    onNavigateToBookDetail = { id, type ->
+                        when (type) {
+                            "ebook" -> navController.navigate(Screen.EbookDetail.createRoute(id))
+                            "magazine" -> navController.navigate(Screen.MagazineDetail.createRoute(id))
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.PublishThought.route) {
+                PublishThoughtScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onPublishSuccess = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.UserProfile.route,
+                arguments = listOf(navArgument("userId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getInt("userId") ?: return@composable
+                UserProfileScreen(
+                    userId = userId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToFollowers = { uid ->
+                        navController.navigate(Screen.FollowList.createRoute(uid, "followers"))
+                    },
+                    onNavigateToFollowing = { uid ->
+                        navController.navigate(Screen.FollowList.createRoute(uid, "following"))
+                    },
+                    onNavigateToBookDetail = { id, type ->
+                        when (type) {
+                            "ebook" -> navController.navigate(Screen.EbookDetail.createRoute(id))
+                            "magazine" -> navController.navigate(Screen.MagazineDetail.createRoute(id))
+                        }
+                    }
+                )
+            }
+
+            // AI screens
+            composable(
+                route = Screen.AILookup.route,
+                arguments = listOf(navArgument("word") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val word = backStackEntry.arguments?.getString("word") ?: return@composable
+                AILookupScreen(
+                    word = word,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToBookDetail = { id ->
+                        navController.navigate(Screen.EbookDetail.createRoute(id))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.AIGuide.route,
+                arguments = listOf(
+                    navArgument("bookId") { type = NavType.IntType },
+                    navArgument("bookTitle") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val bookId = backStackEntry.arguments?.getInt("bookId") ?: return@composable
+                val bookTitle = backStackEntry.arguments?.getString("bookTitle") ?: return@composable
+                AIGuideScreen(
+                    bookId = bookId,
+                    bookTitle = bookTitle,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.AIOutline.route,
+                arguments = listOf(
+                    navArgument("bookId") { type = NavType.IntType },
+                    navArgument("bookTitle") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val bookId = backStackEntry.arguments?.getInt("bookId") ?: return@composable
+                val bookTitle = backStackEntry.arguments?.getString("bookTitle") ?: return@composable
+                AIOutlineScreen(
+                    bookId = bookId,
+                    bookTitle = bookTitle,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Audio screens
+            composable(
+                route = Screen.AudioPlayer.route,
+                arguments = listOf(
+                    navArgument("bookId") { type = NavType.IntType },
+                    navArgument("bookTitle") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val bookId = backStackEntry.arguments?.getInt("bookId") ?: return@composable
+                val bookTitle = backStackEntry.arguments?.getString("bookTitle") ?: return@composable
+                AudioPlayerScreen(
+                    bookId = bookId,
+                    bookTitle = bookTitle,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Store sub-screens
+            composable(Screen.StoreSearch.route) {
+                StoreSearchScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onItemClick = { id, type ->
+                        when (type) {
+                            "ebook" -> navController.navigate(Screen.EbookDetail.createRoute(id))
+                            "magazine" -> navController.navigate(Screen.MagazineDetail.createRoute(id))
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.StoreRanking.route) {
+                StoreRankingScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onItemClick = { id, type ->
+                        when (type) {
+                            "ebook" -> navController.navigate(Screen.EbookDetail.createRoute(id))
+                            "magazine" -> navController.navigate(Screen.MagazineDetail.createRoute(id))
+                        }
+                    }
+                )
+            }
+
+            // Membership & Messages screens
+            composable(Screen.Membership.route) {
+                MembershipScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.MessageInbox.route) {
+                MessageInboxScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Stats share card screen
+            composable(Screen.StatsShareCard.route) {
+                // Sample data - in production, this would come from the ViewModel
+                val sampleData = ShareCardData(
+                    username = "读书达人",
+                    totalBooks = 42,
+                    totalHours = 156,
+                    currentStreak = 15,
+                    notesCount = 128,
+                    topCategory = "文学",
+                    generatedDate = Date()
+                )
+                StatsShareCardScreen(
+                    cardData = sampleData,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

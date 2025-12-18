@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -60,6 +61,7 @@ import com.bookpost.ui.components.LoadingState
 import com.bookpost.ui.components.ReaderSearchBar
 import com.bookpost.ui.screen.reader.components.AIFeaturesSheet
 import com.bookpost.ui.screen.reader.components.BookmarksSheet
+import com.bookpost.ui.screen.reader.components.ReaderMoreActionsSheet
 import com.bookpost.ui.screen.reader.components.ReaderSettingsSheet
 import com.bookpost.ui.screen.reader.components.SocialFeaturesSheet
 import com.bookpost.ui.screen.reader.components.TableOfContentsSheet
@@ -101,6 +103,7 @@ fun EpubReaderScreen(
     var showBookmarks by remember { mutableStateOf(false) }
     var showAIFeatures by remember { mutableStateOf(false) }
     var showSocialFeatures by remember { mutableStateOf(false) }
+    var showMoreActions by remember { mutableStateOf(false) }
     var showToolbar by remember { mutableStateOf(true) }
 
     val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -108,6 +111,7 @@ fun EpubReaderScreen(
     val bookmarksSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val aiFeaturesSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val socialFeaturesSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val moreActionsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(ebookId) {
         viewModel.loadEpub(ebookId, context)
@@ -201,6 +205,9 @@ fun EpubReaderScreen(
                         }
                         IconButton(onClick = { showSettings = true }) {
                             Icon(Icons.Filled.Settings, contentDescription = "设置")
+                        }
+                        IconButton(onClick = { showMoreActions = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "更多")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -442,6 +449,52 @@ fun EpubReaderScreen(
                     scope.launch {
                         socialFeaturesSheetState.hide()
                         showSocialFeatures = false
+                    }
+                }
+            )
+        }
+    }
+
+    // More Actions Bottom Sheet
+    if (showMoreActions) {
+        ModalBottomSheet(
+            onDismissRequest = { showMoreActions = false },
+            sheetState = moreActionsSheetState
+        ) {
+            ReaderMoreActionsSheet(
+                bookType = "ebook",
+                bookId = ebookId,
+                bookTitle = uiState.title ?: "",
+                onReviewBook = { /* Navigate to review */ },
+                onDownloadOffline = { /* Download for offline */ },
+                onAddBookmark = {
+                    viewModel.addBookmark(
+                        ebookId = ebookId,
+                        title = uiState.title,
+                        page = uiState.currentPosition?.currentPage,
+                        cfi = uiState.currentPosition?.cfi,
+                        note = null
+                    )
+                },
+                onAddToList = { /* Show add to list dialog */ },
+                onSearchBook = {
+                    viewModel.activateSearch()
+                },
+                onViewNotes = {
+                    viewModel.loadBookmarks(ebookId)
+                    showBookmarks = true
+                },
+                onPopularHighlights = {
+                    viewModel.loadPopularUnderlines(ebookId)
+                    showSocialFeatures = true
+                },
+                onDisplaySettings = {
+                    showSettings = true
+                },
+                onDismiss = {
+                    scope.launch {
+                        moreActionsSheetState.hide()
+                        showMoreActions = false
                     }
                 }
             )

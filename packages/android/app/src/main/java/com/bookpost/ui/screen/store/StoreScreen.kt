@@ -14,8 +14,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -47,6 +52,8 @@ enum class StoreTab {
 fun StoreScreen(
     onEbookClick: (Int) -> Unit,
     onMagazineClick: (Int) -> Unit,
+    onNavigateToSearch: () -> Unit = {},
+    onNavigateToRanking: () -> Unit = {},
     viewModel: StoreViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -54,7 +61,21 @@ fun StoreScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.nav_store)) }
+                title = { Text(stringResource(R.string.nav_store)) },
+                actions = {
+                    IconButton(onClick = onNavigateToSearch) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "搜索"
+                        )
+                    }
+                    IconButton(onClick = onNavigateToRanking) {
+                        Icon(
+                            imageVector = Icons.Default.Leaderboard,
+                            contentDescription = "排行榜"
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->

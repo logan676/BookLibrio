@@ -20,10 +20,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -52,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import com.bookpost.domain.model.BadgeItem
 import com.bookpost.domain.model.BadgeProgress
 import com.bookpost.domain.model.BadgeRarity
+import com.bookpost.domain.model.BadgeCategory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,11 +99,15 @@ fun BadgeDetailScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Large badge display
-            LargeBadgeView(
-                level = badge.level,
+            // Large 3D badge display with interactive gestures
+            Interactive3DBadgeView(
+                iconName = badge.badgeCategory.iconVector,
                 color = categoryColor,
-                isEarned = isEarned
+                isEarned = isEarned,
+                level = badge.level,
+                badgeName = badge.name,
+                badgeDescription = badge.description,
+                earnedDate = if (badge is BadgeItem.Earned) badge.earnedAt.take(10) else null
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -136,54 +155,6 @@ fun BadgeDetailScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun LargeBadgeView(
-    level: Int,
-    color: Color,
-    isEarned: Boolean
-) {
-    Box(
-        modifier = Modifier
-            .size(140.dp)
-            .shadow(
-                elevation = if (isEarned) 16.dp else 4.dp,
-                shape = CircleShape,
-                ambientColor = color.copy(alpha = 0.5f),
-                spotColor = color.copy(alpha = 0.5f)
-            )
-            .clip(CircleShape)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = if (isEarned) {
-                        listOf(color, color.copy(alpha = 0.7f))
-                    } else {
-                        listOf(color.copy(alpha = 0.3f), color.copy(alpha = 0.2f))
-                    }
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (isEarned) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-            Text(
-                text = "Lv $level",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
