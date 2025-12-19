@@ -27,15 +27,20 @@ import com.bookpost.domain.model.ReadingSettings
 import com.bookpost.domain.model.SearchResult
 import com.bookpost.domain.model.SearchState
 import com.bookpost.domain.model.TOCItem
+import com.bookpost.ui.screen.reader.components.SelectionRect
+import com.bookpost.ui.screen.reader.components.TextSelectionState
 import com.bookpost.util.NetworkResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -93,6 +98,19 @@ class EpubReaderViewModel @Inject constructor(
 
     private val _isGeneratingShare = MutableStateFlow(false)
     val isGeneratingShare: StateFlow<Boolean> = _isGeneratingShare.asStateFlow()
+
+    // Text Selection state
+    private val _textSelectionState = MutableStateFlow(TextSelectionState())
+    val textSelectionState: StateFlow<TextSelectionState> = _textSelectionState.asStateFlow()
+
+    // Auto Page Turn
+    private var autoPageTurnJob: Job? = null
+    private val _isAutoPageTurnActive = MutableStateFlow(false)
+    val isAutoPageTurnActive: StateFlow<Boolean> = _isAutoPageTurnActive.asStateFlow()
+
+    // Focus Mode
+    private val _isFocusModeActive = MutableStateFlow(false)
+    val isFocusModeActive: StateFlow<Boolean> = _isFocusModeActive.asStateFlow()
 
     val settings: StateFlow<ReadingSettings> = readingSettingsStore.settings
         .stateIn(
@@ -267,12 +285,16 @@ class EpubReaderViewModel @Inject constructor(
                 )
             }
 
-            readingHistoryRepository.updateReadingHistory(
-                itemType = ItemType.EBOOK,
-                itemId = ebookId,
-                title = _uiState.value.title,
-                lastPage = page
-            )
+            // Only save reading history if private reading mode is disabled
+            val currentSettings = settings.value
+            if (!currentSettings.privateReadingMode) {
+                readingHistoryRepository.updateReadingHistory(
+                    itemType = ItemType.EBOOK,
+                    itemId = ebookId,
+                    title = _uiState.value.title,
+                    lastPage = page
+                )
+            }
         }
     }
 
@@ -777,6 +799,145 @@ class EpubReaderViewModel @Inject constructor(
                 )
             )
         }
+    }
+
+    // ======== Text Selection Functions ========
+
+    /**
+     * Called when text is selected in the WebView
+     */
+    fun onTextSelected(
+        text: String,
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        highlightId: Int? = null,
+        ideaCount: Int = 0,
+        currentColor: HighlightColor? = null
+    ) {
+        _textSelectionState.value = TextSelectionState(
+            text = text,
+            rect = SelectionRect(x, y, width, height),
+            highlightId = highlightId,
+            ideaCount = ideaCount,
+            currentColor = currentColor
+        )
+    }
+
+    /**
+     * Clear text selection
+     */
+    fun clearTextSelection() {
+        _textSelectionState.value = TextSelectionState()
+    }
+
+    /**
+     * Create highlight from current selection
+     */
+    fun createHighlightFromSelection(color: HighlightColor) {
+        val selection = _textSelectionState.value
+        if (selection.text.isEmpty()) return
+
+        viewModelScope.launch {
+            ebookRepository.createUnderline(
+                ebookId = currentBookId,
+                text = selection.text,
+                cfiRange = null,  // Would need to be passed from WebView
+                chapterIndex = _uiState.value.currentPosition?.chapterIndex,
+                paragraphIndex = null,
+                startOffset = null,
+                endOffset = null
+            )
+            loadHighlights(currentBookId)
+            clearTextSelection()
+        }
+    }
+
+    /**
+     * Delete an existing highlight
+     */
+    fun deleteCurrentHighlight() {
+        val highlightId = _textSelectionState.value.highlightId ?: return
+        viewModelScope.launch {
+            ebookRepository.deleteUnderline(currentBookId, highlightId)
+            _uiState.update { state ->
+                state.copy(highlights = state.highlights.filter { it.id != highlightId })
+            }
+            clearTextSelection()
+        }
+    }
+
+    /**
+     * Get meaning for selected text using AI
+     */
+    fun getMeaningForSelection() {
+        val text = _textSelectionState.value.text
+        if (text.isEmpty()) return
+        lookupWord(text)
+    }
+
+    // ======== Auto Page Turn Functions ========
+
+    /**
+     * Start auto page turn with current settings interval
+     */
+    fun startAutoPageTurn(onNextPage: () -> Unit) {
+        val interval = settings.value.autoPageTurnInterval
+        autoPageTurnJob?.cancel()
+        _isAutoPageTurnActive.value = true
+
+        autoPageTurnJob = viewModelScope.launch {
+            while (isActive) {
+                delay(interval * 1000L)
+                if (_isAutoPageTurnActive.value) {
+                    onNextPage()
+                }
+            }
+        }
+    }
+
+    /**
+     * Stop auto page turn
+     */
+    fun stopAutoPageTurn() {
+        autoPageTurnJob?.cancel()
+        autoPageTurnJob = null
+        _isAutoPageTurnActive.value = false
+    }
+
+    /**
+     * Toggle auto page turn
+     */
+    fun toggleAutoPageTurn(onNextPage: () -> Unit) {
+        if (_isAutoPageTurnActive.value) {
+            stopAutoPageTurn()
+        } else {
+            startAutoPageTurn(onNextPage)
+        }
+    }
+
+    // ======== Focus Mode Functions ========
+
+    /**
+     * Toggle focus mode (hides toolbar and status)
+     */
+    fun toggleFocusMode() {
+        _isFocusModeActive.value = !_isFocusModeActive.value
+    }
+
+    /**
+     * Set focus mode state
+     */
+    fun setFocusMode(enabled: Boolean) {
+        _isFocusModeActive.value = enabled
+    }
+
+    /**
+     * Exit focus mode
+     */
+    fun exitFocusMode() {
+        _isFocusModeActive.value = false
     }
 
     override fun onCleared() {

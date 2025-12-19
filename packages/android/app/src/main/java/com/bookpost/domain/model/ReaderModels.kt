@@ -16,10 +16,35 @@ data class ReadingSettings(
     val marginSize: MarginSize = MarginSize.MEDIUM,
     val pageFlipStyle: PageFlipStyle = PageFlipStyle.HORIZONTAL,
     val brightness: Float = 1.0f,
-    val keepScreenOn: Boolean = true
+    val keepScreenOn: Boolean = true,
+    // Advanced Features
+    val autoPageTurnEnabled: Boolean = false,
+    val autoPageTurnInterval: Int = 30, // seconds
+    val focusModeEnabled: Boolean = false,
+    val privateReadingMode: Boolean = false
 ) {
     companion object {
         val Default = ReadingSettings()
+    }
+}
+
+/**
+ * Auto page turn interval options
+ */
+@Serializable
+enum class AutoPageTurnInterval(
+    val displayName: String,
+    val seconds: Int
+) {
+    SLOW("慢速 (60秒)", 60),
+    MEDIUM("中速 (30秒)", 30),
+    FAST("快速 (15秒)", 15),
+    VERY_FAST("很快 (10秒)", 10);
+
+    companion object {
+        fun fromSeconds(seconds: Int): AutoPageTurnInterval {
+            return entries.minByOrNull { kotlin.math.abs(it.seconds - seconds) } ?: MEDIUM
+        }
     }
 }
 

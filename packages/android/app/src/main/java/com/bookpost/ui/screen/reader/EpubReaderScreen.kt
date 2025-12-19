@@ -1,11 +1,20 @@
 package com.bookpost.ui.screen.reader
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,22 +22,30 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,6 +59,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -53,6 +73,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.bookpost.domain.model.HighlightColor
 import com.bookpost.domain.model.ReadingSettings
 import com.bookpost.domain.model.SearchResult
 import com.bookpost.domain.model.TOCItem
@@ -65,6 +86,7 @@ import com.bookpost.ui.screen.reader.components.ReaderMoreActionsSheet
 import com.bookpost.ui.screen.reader.components.ReaderSettingsSheet
 import com.bookpost.ui.screen.reader.components.SocialFeaturesSheet
 import com.bookpost.ui.screen.reader.components.TableOfContentsSheet
+import com.bookpost.ui.screen.reader.components.TextSelectionMenu
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -98,6 +120,11 @@ fun EpubReaderScreen(
     val shareImageUrl by viewModel.shareImageUrl.collectAsState()
     val isGeneratingShare by viewModel.isGeneratingShare.collectAsState()
 
+    // Advanced feature states
+    val textSelectionState by viewModel.textSelectionState.collectAsState()
+    val isAutoPageTurnActive by viewModel.isAutoPageTurnActive.collectAsState()
+    val isFocusModeActive by viewModel.isFocusModeActive.collectAsState()
+
     var showSettings by remember { mutableStateOf(false) }
     var showTableOfContents by remember { mutableStateOf(false) }
     var showBookmarks by remember { mutableStateOf(false) }
@@ -115,6 +142,29 @@ fun EpubReaderScreen(
 
     LaunchedEffect(ebookId) {
         viewModel.loadEpub(ebookId, context)
+    }
+
+    // Handle focus mode - hide/show system UI
+    LaunchedEffect(isFocusModeActive) {
+        val activity = context as? Activity ?: return@LaunchedEffect
+        val window = activity.window
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+
+        if (isFocusModeActive) {
+            windowInsetsController.apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    // Sync toolbar visibility with focus mode
+    LaunchedEffect(isFocusModeActive) {
+        if (isFocusModeActive) {
+            showToolbar = false
+        }
     }
 
     // Handle lifecycle events for session pause/resume
@@ -140,7 +190,12 @@ fun EpubReaderScreen(
 
     Scaffold(
         topBar = {
-            if (showToolbar) {
+            // Hide toolbar in focus mode or when user toggles it off
+            AnimatedVisibility(
+                visible = showToolbar && !isFocusModeActive,
+                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+            ) {
                 TopAppBar(
                     title = {
                         Column {
@@ -216,6 +271,83 @@ fun EpubReaderScreen(
                 )
             }
         },
+        floatingActionButton = {
+            // Floating action buttons for quick access to advanced features
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Auto Page Turn indicator/toggle
+                AnimatedVisibility(
+                    visible = settings.autoPageTurnEnabled || isAutoPageTurnActive,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+                ) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            if (isAutoPageTurnActive) {
+                                viewModel.stopAutoPageTurn()
+                            } else {
+                                viewModel.startAutoPageTurn {
+                                    webViewRef?.evaluateJavascript("nextPage();", null)
+                                }
+                            }
+                        },
+                        containerColor = if (isAutoPageTurnActive)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else
+                            MaterialTheme.colorScheme.surface,
+                        contentColor = if (isAutoPageTurnActive)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoMode,
+                            contentDescription = if (isAutoPageTurnActive) "停止自动翻页" else "开始自动翻页",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // Focus mode toggle (only visible when toolbar is shown)
+                AnimatedVisibility(
+                    visible = showToolbar && !isFocusModeActive,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+                ) {
+                    SmallFloatingActionButton(
+                        onClick = { viewModel.toggleFocusMode() },
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SelfImprovement,
+                            contentDescription = "专注模式",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // Private reading indicator
+                AnimatedVisibility(
+                    visible = settings.privateReadingMode,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    SmallFloatingActionButton(
+                        onClick = { showSettings = true },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VisibilityOff,
+                            contentDescription = "私密阅读模式",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+            }
+        },
         containerColor = backgroundColor
     ) { paddingValues ->
         Column(
@@ -289,26 +421,79 @@ fun EpubReaderScreen(
                     )
                 }
                 uiState.epubFilePath != null -> {
-                    EpubWebView(
-                        epubFilePath = uiState.epubFilePath!!,
-                        settings = settings,
-                        onProgressChanged = { page, total, progress, cfi ->
-                            viewModel.updateReadingProgress(ebookId, page, progress, cfi)
-                        },
-                        onTocLoaded = { toc ->
-                            viewModel.updateTableOfContents(toc)
-                        },
-                        onSearchResults = { results ->
-                            viewModel.onSearchResultsReceived(results)
-                        },
-                        onWebViewReady = { webView ->
-                            webViewRef = webView
-                        },
-                        onTap = {
-                            showToolbar = !showToolbar
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        EpubWebView(
+                            epubFilePath = uiState.epubFilePath!!,
+                            settings = settings,
+                            onProgressChanged = { page, total, progress, cfi ->
+                                viewModel.updateReadingProgress(ebookId, page, progress, cfi)
+                            },
+                            onTocLoaded = { toc ->
+                                viewModel.updateTableOfContents(toc)
+                            },
+                            onSearchResults = { results ->
+                                viewModel.onSearchResultsReceived(results)
+                            },
+                            onTextSelected = { text, x, y, width, height ->
+                                viewModel.onTextSelected(text, x, y, width, height)
+                            },
+                            onWebViewReady = { webView ->
+                                webViewRef = webView
+                            },
+                            onTap = {
+                                if (isFocusModeActive) {
+                                    // In focus mode, tap exits focus mode
+                                    viewModel.exitFocusMode()
+                                    showToolbar = true
+                                } else {
+                                    showToolbar = !showToolbar
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // Text Selection Menu Overlay
+                        if (textSelectionState.isVisible) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable(onClick = { viewModel.clearTextSelection() })
+                            ) {
+                                TextSelectionMenu(
+                                    state = textSelectionState,
+                                    onHighlight = { color ->
+                                        viewModel.createHighlightFromSelection(color)
+                                    },
+                                    onCopy = {
+                                        viewModel.clearTextSelection()
+                                    },
+                                    onShare = {
+                                        viewModel.clearTextSelection()
+                                    },
+                                    onMeaning = {
+                                        viewModel.getMeaningForSelection()
+                                        showAIFeatures = true
+                                    },
+                                    onAddNote = {
+                                        // Would open note sheet
+                                        viewModel.clearTextSelection()
+                                    },
+                                    onViewIdeas = {
+                                        // Would show ideas popup
+                                    },
+                                    onDelete = {
+                                        viewModel.deleteCurrentHighlight()
+                                    },
+                                    onDismiss = {
+                                        viewModel.clearTextSelection()
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .padding(top = 100.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -510,6 +695,7 @@ private fun EpubWebView(
     onProgressChanged: (page: Int, total: Int, progress: Double, cfi: String?) -> Unit,
     onTocLoaded: (List<TOCItem>) -> Unit,
     onSearchResults: (List<SearchResult>) -> Unit,
+    onTextSelected: (text: String, x: Float, y: Float, width: Float, height: Float) -> Unit,
     onWebViewReady: (WebView) -> Unit,
     onTap: () -> Unit,
     modifier: Modifier = Modifier
@@ -573,6 +759,7 @@ private fun EpubWebView(
                         onProgressChanged = onProgressChanged,
                         onTocLoaded = onTocLoaded,
                         onSearchResults = onSearchResults,
+                        onTextSelected = onTextSelected,
                         onTap = onTap
                     ),
                     "Android"
@@ -600,6 +787,7 @@ private class EpubJsInterface(
     private val onProgressChanged: (page: Int, total: Int, progress: Double, cfi: String?) -> Unit,
     private val onTocLoaded: (List<TOCItem>) -> Unit,
     private val onSearchResults: (List<SearchResult>) -> Unit,
+    private val onTextSelected: (text: String, x: Float, y: Float, width: Float, height: Float) -> Unit,
     private val onTap: () -> Unit
 ) {
     @JavascriptInterface
@@ -622,6 +810,13 @@ private class EpubJsInterface(
             onSearchResults(results)
         } catch (e: Exception) {
             onSearchResults(emptyList())
+        }
+    }
+
+    @JavascriptInterface
+    fun onTextSelection(text: String, x: Float, y: Float, width: Float, height: Float) {
+        if (text.isNotBlank()) {
+            onTextSelected(text, x, y, width, height)
         }
     }
 
@@ -825,6 +1020,54 @@ private fun createEpubReaderHtml(epubFilePath: String): String {
                 function highlightSearchResult(index) {
                     if (currentSearchResults[index] && currentSearchResults[index].cfi) {
                         rendition.display(currentSearchResults[index].cfi);
+                    }
+                }
+
+                // Text selection handling
+                rendition.on("selected", function(cfiRange, contents) {
+                    var selection = contents.window.getSelection();
+                    if (selection && selection.rangeCount > 0) {
+                        var range = selection.getRangeAt(0);
+                        var rect = range.getBoundingClientRect();
+                        var selectedText = selection.toString().trim();
+
+                        if (selectedText.length > 0) {
+                            Android.onTextSelection(
+                                selectedText,
+                                rect.x,
+                                rect.y,
+                                rect.width,
+                                rect.height
+                            );
+                        }
+                    }
+                });
+
+                // Clear selection when content is displayed
+                rendition.on("relocated", function() {
+                    var iframe = document.querySelector("iframe");
+                    if (iframe && iframe.contentWindow) {
+                        var sel = iframe.contentWindow.getSelection();
+                        if (sel) sel.removeAllRanges();
+                    }
+                });
+
+                // Create highlight in epub
+                function createHighlight(cfiRange, color) {
+                    if (cfiRange) {
+                        rendition.annotations.highlight(cfiRange, {}, function(e) {
+                            console.log("Highlight created", cfiRange);
+                        }, null, {
+                            "fill": color || "yellow",
+                            "fill-opacity": "0.3"
+                        });
+                    }
+                }
+
+                // Remove highlight
+                function removeHighlight(cfiRange) {
+                    if (cfiRange) {
+                        rendition.annotations.remove(cfiRange, "highlight");
                     }
                 }
             </script>
