@@ -185,6 +185,10 @@ export const ebooks = pgTable('ebooks', {
   viewCount: integer('view_count').default(0),
   searchCount: integer('search_count').default(0),
   trendingScore: decimal('trending_score', { precision: 10, scale: 4 }).default('0'),
+  // External source tracking (for imports from Gutenberg, etc.)
+  externalId: text('external_id'), // e.g., 'gutenberg:12345'
+  externalSource: text('external_source'), // 'gutenberg', 'archive.org', etc.
+  externalUrl: text('external_url'), // Link to original source
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 }, (table) => ({
@@ -192,6 +196,7 @@ export const ebooks = pgTable('ebooks', {
   authorIdx: index('idx_ebooks_author').on(table.author),
   paymentTypeIdx: index('idx_ebooks_payment_type').on(table.paymentType),
   trendingIdx: index('idx_ebooks_trending').on(table.trendingScore),
+  externalIdIdx: index('idx_ebooks_external_id').on(table.externalId),
 }))
 
 // ============================================

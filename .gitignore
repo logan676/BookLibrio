@@ -96,3 +96,6 @@ pdfs/
 **/backups/
 *.backup.sql
 *.backup.json
+
+# Confidential business documents (NEVER commit)
+readmigo/
